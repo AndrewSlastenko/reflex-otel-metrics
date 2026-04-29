@@ -2,6 +2,7 @@ package com.reflex.otelmetrics.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 
 public class MetricConfigValidator {
 
@@ -40,6 +41,33 @@ public class MetricConfigValidator {
             }
         }
 
+        validateLockDuration("lockAtMostFor", config.metricId(), config.lockAtMostFor(), errors);
+        validateLockDuration("lockAtLeastFor", config.metricId(), config.lockAtLeastFor(), errors);
+
+        if (config.lockAtMostFor() != null
+                && config.lockAtLeastFor() != null
+                && !config.lockAtMostFor().isNegative()
+                && !config.lockAtLeastFor().isNegative()
+                && config.lockAtLeastFor().compareTo(config.lockAtMostFor()) > 0) {
+            errors.add("Metric '" + config.metricId() + "' requires lockAtLeastFor to be less than or equal to lockAtMostFor");
+        }
+
         return errors;
+    }
+
+    private static void validateLockDuration(
+            String fieldName,
+            String metricId,
+            Duration duration,
+            List<String> errors
+    ) {
+        if (duration == null) {
+            errors.add("Metric '" + metricId + "' requires " + fieldName);
+            return;
+        }
+
+        if (duration.isNegative()) {
+            errors.add("Metric '" + metricId + "' requires " + fieldName + " to be non-negative");
+        }
     }
 }

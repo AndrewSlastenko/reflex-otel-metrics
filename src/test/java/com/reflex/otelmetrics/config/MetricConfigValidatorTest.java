@@ -93,6 +93,38 @@ class MetricConfigValidatorTest {
     }
 
     @Test
+    void shouldRejectNullLockDurations() {
+        ResolvedMetricConfig config = baseConfig(null, null);
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly(
+                        "Metric 'documents-by-status' requires lockAtMostFor",
+                        "Metric 'documents-by-status' requires lockAtLeastFor"
+                );
+    }
+
+    @Test
+    void shouldRejectNegativeLockDurations() {
+        ResolvedMetricConfig config = baseConfig(Duration.ofSeconds(-1), Duration.ofSeconds(-2));
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly(
+                        "Metric 'documents-by-status' requires lockAtMostFor to be non-negative",
+                        "Metric 'documents-by-status' requires lockAtLeastFor to be non-negative"
+                );
+    }
+
+    @Test
+    void shouldRejectLockAtLeastForGreaterThanLockAtMostFor() {
+        ResolvedMetricConfig config = baseConfig(Duration.ofSeconds(1), Duration.ofSeconds(2));
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly(
+                        "Metric 'documents-by-status' requires lockAtLeastFor to be less than or equal to lockAtMostFor"
+                );
+    }
+
+    @Test
     void runtimeCronSwitchShouldValidateAgainstFixedDelayDefault() {
         ReflexOtelMetricsProperties properties = baseProperties();
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
@@ -116,6 +148,24 @@ class MetricConfigValidatorTest {
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new CronMetricSource());
 
         assertThat(new MetricConfigValidator().validate(resolved)).isEmpty();
+    }
+
+    private static ResolvedMetricConfig baseConfig(Duration lockAtMostFor, Duration lockAtLeastFor) {
+        return new ResolvedMetricConfig(
+                "documents-by-status",
+                true,
+                "ci054147.documents.current",
+                "documents.current",
+                "business",
+                "businessReplicaDataSource",
+                MetricKind.GAUGE,
+                MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(30)),
+                Duration.ofSeconds(45),
+                lockAtMostFor,
+                lockAtLeastFor,
+                500,
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+        );
     }
 
     private static ReflexOtelMetricsProperties baseProperties() {

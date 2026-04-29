@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OtelInstrumentRegistry {
 
     private final Meter meter;
-    private final Map<String, Object> instruments = new ConcurrentHashMap<>();
+    private final Map<String, RegisteredInstrument> instruments = new ConcurrentHashMap<>();
 
     public OtelInstrumentRegistry(Meter meter) {
         this.meter = Objects.requireNonNull(meter, "meter must not be null");
@@ -22,9 +22,24 @@ public class OtelInstrumentRegistry {
         Objects.requireNonNull(name, "name must not be null");
         Objects.requireNonNull(kind, "kind must not be null");
 
-        return instruments.computeIfAbsent(name, key -> switch (kind) {
-            case GAUGE -> (LongGauge) meter.gaugeBuilder(name).ofLongs().build();
-            case UP_DOWN_COUNTER -> (LongUpDownCounter) meter.upDownCounterBuilder(name).build();
-        });
+        return instruments.compute(name, (key, existing) -> {
+            if (existing != null) {
+                if (existing.kind() != kind) {
+                    throw new IllegalStateException(
+                            "Metric '" + name + "' is already registered as " + existing.kind() + " but requested as " + kind
+                    );
+                }
+
+                return existing;
+            }
+
+            return new RegisteredInstrument(kind, switch (kind) {
+                case GAUGE -> (LongGauge) meter.gaugeBuilder(name).ofLongs().build();
+                case UP_DOWN_COUNTER -> (LongUpDownCounter) meter.upDownCounterBuilder(name).build();
+            });
+        }).instrument();
+    }
+
+    private record RegisteredInstrument(MetricKind kind, Object instrument) {
     }
 }
