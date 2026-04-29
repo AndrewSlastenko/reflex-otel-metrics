@@ -63,4 +63,47 @@ class MetricExecutionTaskTest {
         verify(publisher).publish(any(), any());
         verify(telemetryRecorder).recordSuccess(any());
     }
+
+    @Test
+    void shouldRecordFailureWithoutThrowing() {
+        MetricExecutionCoordinator coordinator = mock(MetricExecutionCoordinator.class);
+        com.reflex.otelmetrics.locking.MetricLockManager lockManager = mock(com.reflex.otelmetrics.locking.MetricLockManager.class);
+        OtelMetricPublisher publisher = mock(OtelMetricPublisher.class);
+        InternalTelemetryRecorder telemetryRecorder = mock(InternalTelemetryRecorder.class);
+        SeriesLimiter seriesLimiter = new SeriesLimiter(new OverflowAggregationStrategy());
+        when(coordinator.collect()).thenThrow(new IllegalStateException("boom"));
+        when(lockManager.executeWithLock(any(), any())).thenAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(1);
+            runnable.run();
+            return true;
+        });
+
+        MetricExecutionTask task = new MetricExecutionTask(
+                coordinator,
+                lockManager,
+                publisher,
+                telemetryRecorder,
+                seriesLimiter,
+                new ResolvedMetricConfig(
+                        "documents-by-status",
+                        true,
+                        "ci054147.documents.current",
+                        "documents.current",
+                        "business",
+                        "businessReplicaDataSource",
+                        com.reflex.otelmetrics.api.MetricKind.UP_DOWN_COUNTER,
+                        MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(5)),
+                        Duration.ofSeconds(30),
+                        Duration.ofMinutes(10),
+                        Duration.ZERO,
+                        500,
+                        SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+                )
+        );
+
+        MetricRunOutcome outcome = task.runOnce();
+
+        assertThat(outcome).isEqualTo(MetricRunOutcome.FAILED);
+        verify(telemetryRecorder).recordFailure(any(), any());
+    }
 }
