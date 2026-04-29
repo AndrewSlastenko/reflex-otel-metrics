@@ -63,6 +63,43 @@ class MetricConfigResolverTest {
         assertThat(resolved.dataSourceRef()).isEqualTo("overrideDataSource");
     }
 
+    @Test
+    void partialFixedDelayOverrideShouldBeHonoredWithoutRuntimeScheduleMode() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
+        properties.getSources().put("documents-by-status", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
+
+        assertThat(resolved.schedule().mode()).isEqualTo(MetricScheduleSettings.Mode.FIXED_DELAY);
+        assertThat(resolved.schedule().fixedDelay()).isEqualTo(Duration.ofMinutes(2));
+        assertThat(resolved.schedule().initialDelay()).isEqualTo(Duration.ofSeconds(10));
+    }
+
+    @Test
+    void partialInitialDelayOverrideShouldBeHonoredWithoutRuntimeScheduleMode() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setInitialDelay(Duration.ofSeconds(45));
+        properties.getSources().put("documents-by-status", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
+
+        assertThat(resolved.schedule().mode()).isEqualTo(MetricScheduleSettings.Mode.FIXED_DELAY);
+        assertThat(resolved.schedule().fixedDelay()).isEqualTo(Duration.ofMinutes(5));
+        assertThat(resolved.schedule().initialDelay()).isEqualTo(Duration.ofSeconds(45));
+    }
+
+    private static ReflexOtelMetricsProperties baseProperties() {
+        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        properties.setMetricPrefix("ci054147");
+        properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        return properties;
+    }
+
     private static final class TestJdbcMetricSource implements JdbcMetricSource {
 
         @Override

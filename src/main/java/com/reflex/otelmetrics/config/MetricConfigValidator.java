@@ -23,9 +23,20 @@ public class MetricConfigValidator {
                 errors.add("Metric '" + config.metricId() + "' requires fixedDelay for FIXED_DELAY mode");
             }
 
+            if (schedule.mode() == MetricScheduleSettings.Mode.FIXED_DELAY
+                    && schedule.cron() != null
+                    && !schedule.cron().isBlank()) {
+                errors.add("Metric '" + config.metricId() + "' must not set cron for FIXED_DELAY mode");
+            }
+
             if (schedule.mode() == MetricScheduleSettings.Mode.CRON
                     && (schedule.cron() == null || schedule.cron().isBlank())) {
                 errors.add("Metric '" + config.metricId() + "' requires cron for CRON mode");
+            }
+
+            if (schedule.mode() == MetricScheduleSettings.Mode.CRON
+                    && schedule.fixedDelay() != null) {
+                errors.add("Metric '" + config.metricId() + "' must not set fixedDelay for CRON mode");
             }
         }
 

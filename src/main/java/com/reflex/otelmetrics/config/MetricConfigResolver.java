@@ -59,20 +59,14 @@ public class MetricConfigResolver {
     }
 
     private static MetricScheduleSettings resolveSchedule(MetricScheduleDefaults defaults, MetricRuntimeProperties runtime) {
-        if (runtime.getScheduleMode() != null) {
-            return new MetricScheduleSettings(
-                    runtime.getScheduleMode(),
-                    runtime.getFixedDelay(),
-                    runtime.getCron(),
-                    runtime.getInitialDelay()
-            );
-        }
-
+        MetricScheduleSettings.Mode mode = runtime.getScheduleMode() != null
+                ? runtime.getScheduleMode()
+                : MetricScheduleSettings.Mode.valueOf(defaults.mode().name());
         return new MetricScheduleSettings(
-                MetricScheduleSettings.Mode.valueOf(defaults.mode().name()),
-                defaults.fixedDelay(),
-                defaults.cron(),
-                defaults.initialDelay()
+                mode,
+                runtime.getFixedDelay() != null ? runtime.getFixedDelay() : defaults.fixedDelay(),
+                runtime.getCron() != null ? runtime.getCron() : defaults.cron(),
+                runtime.getInitialDelay() != null ? runtime.getInitialDelay() : defaults.initialDelay()
         );
     }
 }
