@@ -46,4 +46,21 @@ class ReflexOtelMetricsAutoConfigurationTest {
                     verify(openTelemetry).getMeter("com.reflex.otelmetrics");
                 });
     }
+
+    @Test
+    void shouldBindStarterPropertiesAndSourceOverrides() {
+        contextRunner
+                .withPropertyValues(
+                        "reflex.otel.metrics.metric-prefix=ci054147",
+                        "reflex.otel.metrics.sources.documents-by-status.suffix=documents.current")
+                .run(context -> {
+                    ReflexOtelMetricsProperties properties = context.getBean(ReflexOtelMetricsProperties.class);
+
+                    assertThat(properties.getMetricPrefix()).isEqualTo("ci054147");
+                    assertThat(properties.getSources())
+                            .containsKey("documents-by-status");
+                    assertThat(properties.getSources().get("documents-by-status").getSuffix())
+                            .isEqualTo("documents.current");
+                });
+    }
 }
