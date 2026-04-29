@@ -81,6 +81,12 @@ public class ReflexOtelMetricsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    OpenTelemetry openTelemetry(OpenTelemetrySdk openTelemetrySdk) {
+        return openTelemetrySdk;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     Meter meter(OpenTelemetry openTelemetry) {
         return openTelemetry.getMeter("com.reflex.otelmetrics");
     }
