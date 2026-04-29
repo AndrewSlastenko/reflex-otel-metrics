@@ -40,7 +40,8 @@ class SeriesLimiterTest {
         );
 
         assertThat(limited).hasSize(2);
-        assertThat(limited.get(1).value()).isEqualTo(3);
+        assertThat(limited.get(0).value()).isEqualTo(1);
+        assertThat(limited.get(1).value()).isEqualTo(5);
         assertThat(limited.get(1).attributes()).containsEntry("bucket", "other");
     }
 }

@@ -21,7 +21,7 @@ public class SeriesLimiter {
             case TRUNCATE -> new ArrayList<>(points.subList(0, maxSeries));
             case AGGREGATE_TO_OTHER -> {
                 List<MetricPoint> head = new ArrayList<>(points.subList(0, maxSeries - 1));
-                head.add(overflowAggregationStrategy.aggregate(points.subList(maxSeries, points.size())));
+                head.add(overflowAggregationStrategy.aggregate(points.subList(maxSeries - 1, points.size())));
                 yield head;
             }
             case FAIL -> throw new IllegalStateException("Metric produced " + points.size() + " series, max allowed is " + maxSeries);
