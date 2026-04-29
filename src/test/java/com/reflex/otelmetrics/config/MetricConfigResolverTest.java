@@ -8,12 +8,40 @@ import com.reflex.otelmetrics.api.MetricScheduleDefaults;
 import com.reflex.otelmetrics.api.QueryDefinition;
 import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MetricConfigResolverTest {
+
+    @Test
+    void beanDefaultsShouldExposeAllOperationalFields() {
+        MetricDefinitionDefaults definitionDefaults = new MetricDefinitionDefaults(
+                "documents.by.status",
+                MetricKind.UP_DOWN_COUNTER,
+                "business",
+                "businessReplicaDataSource",
+                new MetricScheduleDefaults(
+                        MetricScheduleDefaults.Mode.FIXED_DELAY,
+                        Duration.ofMinutes(5),
+                        null,
+                        Duration.ofSeconds(10)
+                ),
+                Duration.ofSeconds(30),
+                Duration.ofMinutes(10),
+                Duration.ZERO,
+                500,
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+        );
+
+        assertThat(definitionDefaults.metricSuffix()).isEqualTo("documents.by.status");
+        assertThat(definitionDefaults.metricKind()).isEqualTo(MetricKind.UP_DOWN_COUNTER);
+        assertThat(definitionDefaults.scope()).isEqualTo("business");
+        assertThat(definitionDefaults.dataSourceRef()).isEqualTo("businessReplicaDataSource");
+        assertThat(definitionDefaults.maxSeries()).isEqualTo(500);
+    }
 
     @Test
     void propertiesShouldOverrideBeanDefaults() {
@@ -27,31 +55,8 @@ class MetricConfigResolverTest {
         runtimeProperties.setDataSourceRef("overrideDataSource");
         properties.getSources().put("documents-by-status", runtimeProperties);
 
-        MetricDefinitionDefaults defaults = new MetricDefinitionDefaults(
-                "documents-by-status",
-                MetricKind.GAUGE,
-                "business",
-                "primaryDataSource",
-                new MetricScheduleDefaults(
-                        MetricScheduleDefaults.Mode.FIXED_DELAY,
-                        Duration.ofMinutes(5),
-                        null,
-                        Duration.ofSeconds(30)
-                ),
-                Duration.ofSeconds(45),
-                Duration.ofMinutes(10),
-                Duration.ZERO,
-                500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-        );
-        TestJdbcMetricSource source = new TestJdbcMetricSource(
-                "documents-by-status",
-                defaults,
-                new QueryDefinition("select 1"),
-                (rs, rowNum) -> new MetricPoint(0L, java.util.Map.of())
-        );
-
-        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(source);
+        MetricConfigResolver resolver = new MetricConfigResolver(properties);
+        ResolvedMetricConfig resolved = resolver.resolve(new TestJdbcMetricSource());
 
         assertThat(resolved.enabled()).isFalse();
         assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
@@ -60,41 +65,40 @@ class MetricConfigResolverTest {
 
     private static final class TestJdbcMetricSource implements JdbcMetricSource {
 
-        private final String metricId;
-        private final MetricDefinitionDefaults defaults;
-        private final QueryDefinition queryDefinition;
-        private final RowMapper<MetricPoint> rowMapper;
-
-        private TestJdbcMetricSource(
-                String metricId,
-                MetricDefinitionDefaults defaults,
-                QueryDefinition queryDefinition,
-                RowMapper<MetricPoint> rowMapper
-        ) {
-            this.metricId = metricId;
-            this.defaults = defaults;
-            this.queryDefinition = queryDefinition;
-            this.rowMapper = rowMapper;
-        }
-
         @Override
         public String metricId() {
-            return metricId;
+            return "documents-by-status";
         }
 
         @Override
         public MetricDefinitionDefaults defaults() {
-            return defaults;
+            return new MetricDefinitionDefaults(
+                    "documents.by.status",
+                    MetricKind.UP_DOWN_COUNTER,
+                    "business",
+                    "businessReplicaDataSource",
+                    new MetricScheduleDefaults(
+                            MetricScheduleDefaults.Mode.FIXED_DELAY,
+                            Duration.ofMinutes(5),
+                            null,
+                            Duration.ofSeconds(10)
+                    ),
+                    Duration.ofSeconds(30),
+                    Duration.ofMinutes(10),
+                    Duration.ZERO,
+                    500,
+                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+            );
         }
 
         @Override
         public QueryDefinition queryDefinition() {
-            return queryDefinition;
+            return new QueryDefinition("select 1");
         }
 
         @Override
         public RowMapper<MetricPoint> rowMapper() {
-            return rowMapper;
+            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
         }
     }
 }
