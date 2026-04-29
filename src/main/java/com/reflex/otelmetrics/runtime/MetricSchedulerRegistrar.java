@@ -3,7 +3,10 @@ package com.reflex.otelmetrics.runtime;
 import com.reflex.otelmetrics.config.MetricScheduleSettings;
 import com.reflex.otelmetrics.config.ResolvedMetricConfig;
 
+import org.springframework.scheduling.support.CronExpression;
+
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,13 +24,64 @@ public class MetricSchedulerRegistrar {
         Objects.requireNonNull(runnable, "runnable must not be null");
 
         if (config.schedule().mode() == MetricScheduleSettings.Mode.FIXED_DELAY) {
-            Duration initialDelay = config.schedule().initialDelay() == null ? Duration.ZERO : config.schedule().initialDelay();
-            scheduledExecutorService.scheduleWithFixedDelay(
-                    runnable,
-                    initialDelay.toMillis(),
-                    config.schedule().fixedDelay().toMillis(),
-                    TimeUnit.MILLISECONDS
-            );
+            scheduleWithFixedDelay(config, runnable);
+            return;
         }
+
+        if (config.schedule().mode() == MetricScheduleSettings.Mode.CRON) {
+            scheduleCron(config, runnable);
+        }
+    }
+
+    private void scheduleWithFixedDelay(ResolvedMetricConfig config, Runnable runnable) {
+        Duration initialDelay = config.schedule().initialDelay() == null ? Duration.ZERO : config.schedule().initialDelay();
+        scheduledExecutorService.scheduleWithFixedDelay(
+                runnable,
+                initialDelay.toMillis(),
+                config.schedule().fixedDelay().toMillis(),
+                TimeUnit.MILLISECONDS
+        );
+    }
+
+    private void scheduleCron(ResolvedMetricConfig config, Runnable runnable) {
+        CronExpression cronExpression = CronExpression.parse(normalizeCronExpression(config.schedule().cron()));
+        Duration initialDelay = config.schedule().initialDelay() == null
+                ? nextDelay(cronExpression)
+                : config.schedule().initialDelay();
+        scheduleCronRun(cronExpression, runnable, initialDelay);
+    }
+
+    private void scheduleCronRun(CronExpression cronExpression, Runnable runnable, Duration delay) {
+        scheduledExecutorService.schedule(
+                () -> {
+                    try {
+                        runnable.run();
+                    } finally {
+                        scheduleCronRun(cronExpression, runnable, nextDelay(cronExpression));
+                    }
+                },
+                Math.max(0L, delay.toMillis()),
+                TimeUnit.MILLISECONDS
+        );
+    }
+
+    private Duration nextDelay(CronExpression cronExpression) {
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime nextExecution = cronExpression.next(now);
+        if (nextExecution == null) {
+            throw new IllegalStateException("cron expression did not produce a next execution time");
+        }
+        return Duration.between(now, nextExecution);
+    }
+
+    private static String normalizeCronExpression(String cronExpression) {
+        String[] fields = cronExpression.trim().split("\\s+");
+        if (fields.length == 5) {
+            return "0 " + cronExpression.trim();
+        }
+        if (fields.length == 6) {
+            return cronExpression.trim();
+        }
+        throw new IllegalArgumentException("cron expression must have 5 or 6 fields");
     }
 }
