@@ -7,6 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SeriesLimiterTest {
 
@@ -43,5 +44,18 @@ class SeriesLimiterTest {
         assertThat(limited.get(0).value()).isEqualTo(1);
         assertThat(limited.get(1).value()).isEqualTo(5);
         assertThat(limited.get(1).attributes()).containsEntry("bucket", "other");
+    }
+
+    @Test
+    void shouldRejectNonPositiveMaxSeries() {
+        SeriesLimiter limiter = new SeriesLimiter(new OverflowAggregationStrategy());
+
+        assertThatThrownBy(() -> limiter.apply(
+                List.of(new MetricPoint(1, Map.of("status", "a"))),
+                0,
+                SeriesOverflowPolicy.TRUNCATE
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("maxSeries must be greater than 0");
     }
 }

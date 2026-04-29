@@ -14,6 +14,9 @@ public class SeriesLimiter {
     }
 
     public List<MetricPoint> apply(List<MetricPoint> points, int maxSeries, SeriesOverflowPolicy policy) {
+        if (maxSeries <= 0) {
+            throw new IllegalArgumentException("maxSeries must be greater than 0");
+        }
         if (points.size() <= maxSeries) {
             return points;
         }
