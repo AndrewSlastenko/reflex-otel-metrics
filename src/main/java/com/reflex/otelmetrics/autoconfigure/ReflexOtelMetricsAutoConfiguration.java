@@ -55,7 +55,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, OpenTelemetry.class})
     OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexOtelMetricsProperties properties) {
         return OtlpGrpcMetricExporter.builder()
                 .setEndpoint(properties.getOtlp().getMetricsEndpoint())
@@ -64,7 +64,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean({SdkMeterProvider.class, OpenTelemetry.class})
     SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter) {
         return SdkMeterProvider.builder()
                 .registerMetricReader(PeriodicMetricReader.builder(exporter).build())
@@ -72,7 +72,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean({OpenTelemetrySdk.class, OpenTelemetry.class})
     OpenTelemetrySdk openTelemetrySdk(SdkMeterProvider sdkMeterProvider) {
         return OpenTelemetrySdk.builder()
                 .setMeterProvider(sdkMeterProvider)
@@ -80,7 +80,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean({OpenTelemetry.class, OpenTelemetrySdk.class})
     OpenTelemetry openTelemetry(OpenTelemetrySdk openTelemetrySdk) {
         return openTelemetrySdk;
     }
