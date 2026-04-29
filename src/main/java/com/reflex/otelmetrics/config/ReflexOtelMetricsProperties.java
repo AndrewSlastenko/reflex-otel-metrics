@@ -55,20 +55,45 @@ public class ReflexOtelMetricsProperties {
 
     public static class OtlpProperties {
 
-        private boolean enabled = true;
+        private String metricsEndpoint = "http://localhost:4317";
+        private String tracesEndpoint = "http://localhost:4317";
+        private java.time.Duration exportTimeout = java.time.Duration.ofSeconds(10);
 
-        public boolean isEnabled() {
-            return enabled;
+        public String getMetricsEndpoint() {
+            return metricsEndpoint;
         }
 
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
+        public void setMetricsEndpoint(String metricsEndpoint) {
+            this.metricsEndpoint = metricsEndpoint;
+        }
+
+        public String getTracesEndpoint() {
+            return tracesEndpoint;
+        }
+
+        public void setTracesEndpoint(String tracesEndpoint) {
+            this.tracesEndpoint = tracesEndpoint;
+        }
+
+        public java.time.Duration getExportTimeout() {
+            return exportTimeout;
+        }
+
+        public void setExportTimeout(java.time.Duration exportTimeout) {
+            this.exportTimeout = exportTimeout;
         }
     }
 
     public static class ScopeProperties {
 
         private boolean enabled = true;
+
+        public ScopeProperties() {
+        }
+
+        public ScopeProperties(boolean enabled) {
+            this.enabled = enabled;
+        }
 
         public boolean isEnabled() {
             return enabled;

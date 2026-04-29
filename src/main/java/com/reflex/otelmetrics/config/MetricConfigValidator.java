@@ -8,11 +8,6 @@ public class MetricConfigValidator {
     public List<String> validate(ResolvedMetricConfig config) {
         List<String> errors = new ArrayList<>();
 
-        if (config == null) {
-            errors.add("config must not be null");
-            return errors;
-        }
-
         if (config.suffix() == null || config.suffix().isBlank()) {
             errors.add("Metric '" + config.metricId() + "' requires suffix");
         }
@@ -25,12 +20,12 @@ public class MetricConfigValidator {
         if (schedule != null && schedule.mode() != null) {
             if (schedule.mode() == MetricScheduleSettings.Mode.FIXED_DELAY
                     && schedule.fixedDelay() == null) {
-                errors.add("Metric '" + config.metricId() + "' requires fixedDelay for FIXED_DELAY schedule mode");
+                errors.add("Metric '" + config.metricId() + "' requires fixedDelay for FIXED_DELAY mode");
             }
 
             if (schedule.mode() == MetricScheduleSettings.Mode.CRON
                     && (schedule.cron() == null || schedule.cron().isBlank())) {
-                errors.add("Metric '" + config.metricId() + "' requires cron for CRON schedule mode");
+                errors.add("Metric '" + config.metricId() + "' requires cron for CRON mode");
             }
         }
 
