@@ -1,5 +1,14 @@
 package com.reflex.otelmetrics.autoconfigure;
 
+import com.reflex.otelmetrics.api.JdbcMetricSource;
+import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
+import com.reflex.otelmetrics.api.MetricKind;
+import com.reflex.otelmetrics.api.MetricPoint;
+import com.reflex.otelmetrics.api.MetricScheduleDefaults;
+import com.reflex.otelmetrics.api.QueryDefinition;
+import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import com.reflex.otelmetrics.config.MetricConfigResolver;
+import com.reflex.otelmetrics.config.ResolvedMetricConfig;
 import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
 import com.reflex.otelmetrics.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
@@ -8,6 +17,10 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.jdbc.core.RowMapper;
+
+import java.time.Duration;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -50,17 +63,60 @@ class ReflexOtelMetricsAutoConfigurationTest {
     @Test
     void shouldBindStarterPropertiesAndSourceOverrides() {
         contextRunner
+                .withBean(JdbcMetricSource.class, TestJdbcMetricSource::new)
                 .withPropertyValues(
                         "reflex.otel.metrics.metric-prefix=ci054147",
                         "reflex.otel.metrics.sources.documents-by-status.suffix=documents.current")
                 .run(context -> {
                     ReflexOtelMetricsProperties properties = context.getBean(ReflexOtelMetricsProperties.class);
+                    MetricConfigResolver resolver = context.getBean(MetricConfigResolver.class);
+                    JdbcMetricSource source = context.getBean(JdbcMetricSource.class);
+                    ResolvedMetricConfig resolved = resolver.resolve(source);
 
                     assertThat(properties.getMetricPrefix()).isEqualTo("ci054147");
                     assertThat(properties.getSources())
                             .containsKey("documents-by-status");
                     assertThat(properties.getSources().get("documents-by-status").getSuffix())
                             .isEqualTo("documents.current");
+                    assertThat(resolved.suffix()).isEqualTo("documents.current");
+                    assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
                 });
+    }
+
+    private static final class TestJdbcMetricSource implements JdbcMetricSource {
+
+        @Override
+        public String metricId() {
+            return "documents-by-status";
+        }
+
+        @Override
+        public MetricDefinitionDefaults defaults() {
+            return new MetricDefinitionDefaults(
+                    "documents.by-status",
+                    MetricKind.UP_DOWN_COUNTER,
+                    "business",
+                    "businessReplicaDataSource",
+                    new MetricScheduleDefaults(
+                            MetricScheduleDefaults.Mode.FIXED_DELAY,
+                            Duration.ofMinutes(5),
+                            null,
+                            Duration.ofSeconds(30)),
+                    Duration.ofSeconds(30),
+                    Duration.ofMinutes(2),
+                    Duration.ofSeconds(10),
+                    500,
+                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
+        }
+
+        @Override
+        public QueryDefinition queryDefinition() {
+            return new QueryDefinition("select 1");
+        }
+
+        @Override
+        public RowMapper<MetricPoint> rowMapper() {
+            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
+        }
     }
 }

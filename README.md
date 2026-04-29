@@ -9,6 +9,8 @@ The current starter targets:
 - Maven Wrapper (`.\mvnw.cmd`)
 - OpenTelemetry `1.60.1`
 - OTLP/gRPC metric export
+- aggregate technical telemetry
+- fail-safe execution
 
 ## What The Starter Owns
 
@@ -19,6 +21,8 @@ The starter auto-configures the shared metric infrastructure:
 - OTel `OpenTelemetry`, `Meter`, and instrument registry beans
 - config resolution and validation helpers
 - series limiting support
+- aggregate technical telemetry hooks
+- fail-safe execution defaults for starter-managed infrastructure
 
 Application code is expected to contribute metric source beans and their JDBC mapping logic.
 
@@ -50,7 +54,7 @@ reflex:
       metric-prefix: ci054147
       otlp:
         metrics-endpoint: http://localhost:4317
-        traces-endpoint: http://localhost:4317
+        traces-endpoint: http://localhost:4317 # reserved for future trace support; not wired by the current starter
         export-timeout: 10s
       scopes:
         business:
@@ -84,7 +88,7 @@ These keys map directly to the current `ReflexOtelMetricsProperties` and `Metric
 
 - `metric-prefix`
 - `otlp.metrics-endpoint`
-- `otlp.traces-endpoint`
+- `otlp.traces-endpoint` (reserved for future trace support; currently not used by starter wiring)
 - `otlp.export-timeout`
 - `scopes.<scope>.enabled`
 - `sources.<metric-id>.enabled`
