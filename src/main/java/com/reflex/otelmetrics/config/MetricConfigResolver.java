@@ -59,13 +59,32 @@ public class MetricConfigResolver {
     }
 
     private static MetricScheduleSettings resolveSchedule(MetricScheduleDefaults defaults, MetricRuntimeProperties runtime) {
-        MetricScheduleSettings.Mode mode = runtime.getScheduleMode() != null
-                ? runtime.getScheduleMode()
-                : MetricScheduleSettings.Mode.valueOf(defaults.mode().name());
+        MetricScheduleSettings.Mode defaultMode = MetricScheduleSettings.Mode.valueOf(defaults.mode().name());
+        MetricScheduleSettings.Mode runtimeMode = runtime.getScheduleMode();
+
+        if (runtimeMode == null || runtimeMode == defaultMode) {
+            MetricScheduleSettings.Mode mode = runtimeMode != null ? runtimeMode : defaultMode;
+            return new MetricScheduleSettings(
+                    mode,
+                    runtime.getFixedDelay() != null ? runtime.getFixedDelay() : defaults.fixedDelay(),
+                    runtime.getCron() != null ? runtime.getCron() : defaults.cron(),
+                    runtime.getInitialDelay() != null ? runtime.getInitialDelay() : defaults.initialDelay()
+            );
+        }
+
+        if (runtimeMode == MetricScheduleSettings.Mode.CRON) {
+            return new MetricScheduleSettings(
+                    MetricScheduleSettings.Mode.CRON,
+                    null,
+                    runtime.getCron(),
+                    runtime.getInitialDelay() != null ? runtime.getInitialDelay() : defaults.initialDelay()
+            );
+        }
+
         return new MetricScheduleSettings(
-                mode,
-                runtime.getFixedDelay() != null ? runtime.getFixedDelay() : defaults.fixedDelay(),
-                runtime.getCron() != null ? runtime.getCron() : defaults.cron(),
+                MetricScheduleSettings.Mode.FIXED_DELAY,
+                runtime.getFixedDelay(),
+                null,
                 runtime.getInitialDelay() != null ? runtime.getInitialDelay() : defaults.initialDelay()
         );
     }

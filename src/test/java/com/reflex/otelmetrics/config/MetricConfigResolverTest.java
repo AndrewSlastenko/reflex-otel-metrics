@@ -93,6 +93,38 @@ class MetricConfigResolverTest {
         assertThat(resolved.schedule().initialDelay()).isEqualTo(Duration.ofSeconds(45));
     }
 
+    @Test
+    void runtimeCronShouldNotInheritFixedDelayWhenDefaultIsFixedDelay() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
+        runtimeProperties.setCron("0 * * * *");
+        properties.getSources().put("documents-by-status", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
+
+        assertThat(resolved.schedule().mode()).isEqualTo(MetricScheduleSettings.Mode.CRON);
+        assertThat(resolved.schedule().cron()).isEqualTo("0 * * * *");
+        assertThat(resolved.schedule().fixedDelay()).isNull();
+    }
+
+    @Test
+    void runtimeFixedDelayShouldNotInheritCronWhenDefaultIsCron() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
+        runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
+        properties.getSources().put("cron-metric", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new CronMetricSource());
+
+        assertThat(resolved.schedule().mode()).isEqualTo(MetricScheduleSettings.Mode.FIXED_DELAY);
+        assertThat(resolved.schedule().fixedDelay()).isEqualTo(Duration.ofMinutes(2));
+        assertThat(resolved.schedule().cron()).isNull();
+    }
+
     private static ReflexOtelMetricsProperties baseProperties() {
         ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
         properties.setMetricPrefix("ci054147");
@@ -118,6 +150,45 @@ class MetricConfigResolverTest {
                             MetricScheduleDefaults.Mode.FIXED_DELAY,
                             Duration.ofMinutes(5),
                             null,
+                            Duration.ofSeconds(10)
+                    ),
+                    Duration.ofSeconds(30),
+                    Duration.ofMinutes(10),
+                    Duration.ZERO,
+                    500,
+                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+            );
+        }
+
+        @Override
+        public QueryDefinition queryDefinition() {
+            return new QueryDefinition("select 1");
+        }
+
+        @Override
+        public RowMapper<MetricPoint> rowMapper() {
+            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
+        }
+    }
+
+    private static final class CronMetricSource implements JdbcMetricSource {
+
+        @Override
+        public String metricId() {
+            return "cron-metric";
+        }
+
+        @Override
+        public MetricDefinitionDefaults defaults() {
+            return new MetricDefinitionDefaults(
+                    "cron.metric",
+                    MetricKind.GAUGE,
+                    "business",
+                    "businessReplicaDataSource",
+                    new MetricScheduleDefaults(
+                            MetricScheduleDefaults.Mode.CRON,
+                            null,
+                            "0 0 * * *",
                             Duration.ofSeconds(10)
                     ),
                     Duration.ofSeconds(30),

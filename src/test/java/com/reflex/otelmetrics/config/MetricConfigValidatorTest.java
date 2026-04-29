@@ -1,9 +1,16 @@
 package com.reflex.otelmetrics.config;
 
 import java.time.Duration;
+import com.reflex.otelmetrics.api.JdbcMetricSource;
+import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
 import com.reflex.otelmetrics.api.MetricKind;
+import com.reflex.otelmetrics.api.MetricPoint;
+import com.reflex.otelmetrics.api.MetricScheduleDefaults;
+import com.reflex.otelmetrics.api.QueryDefinition;
 import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,5 +90,116 @@ class MetricConfigValidatorTest {
 
         assertThat(new MetricConfigValidator().validate(config))
                 .containsExactly("Metric 'documents-by-status' must not set cron for FIXED_DELAY mode");
+    }
+
+    @Test
+    void runtimeCronSwitchShouldValidateAgainstFixedDelayDefault() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
+        runtimeProperties.setCron("0 * * * *");
+        properties.getSources().put("documents-by-status", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new FixedDelayMetricSource());
+
+        assertThat(new MetricConfigValidator().validate(resolved)).isEmpty();
+    }
+
+    @Test
+    void runtimeFixedDelaySwitchShouldValidateAgainstCronDefault() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
+        runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
+        properties.getSources().put("cron-metric", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new CronMetricSource());
+
+        assertThat(new MetricConfigValidator().validate(resolved)).isEmpty();
+    }
+
+    private static ReflexOtelMetricsProperties baseProperties() {
+        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        properties.setMetricPrefix("ci054147");
+        properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        return properties;
+    }
+
+    private static final class FixedDelayMetricSource implements JdbcMetricSource {
+
+        @Override
+        public String metricId() {
+            return "documents-by-status";
+        }
+
+        @Override
+        public MetricDefinitionDefaults defaults() {
+            return new MetricDefinitionDefaults(
+                    "documents.by.status",
+                    MetricKind.GAUGE,
+                    "business",
+                    "businessReplicaDataSource",
+                    new MetricScheduleDefaults(
+                            MetricScheduleDefaults.Mode.FIXED_DELAY,
+                            Duration.ofMinutes(5),
+                            null,
+                            Duration.ofSeconds(10)
+                    ),
+                    Duration.ofSeconds(30),
+                    Duration.ofMinutes(10),
+                    Duration.ZERO,
+                    500,
+                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+            );
+        }
+
+        @Override
+        public QueryDefinition queryDefinition() {
+            return new QueryDefinition("select 1");
+        }
+
+        @Override
+        public RowMapper<MetricPoint> rowMapper() {
+            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
+        }
+    }
+
+    private static final class CronMetricSource implements JdbcMetricSource {
+
+        @Override
+        public String metricId() {
+            return "cron-metric";
+        }
+
+        @Override
+        public MetricDefinitionDefaults defaults() {
+            return new MetricDefinitionDefaults(
+                    "cron.metric",
+                    MetricKind.GAUGE,
+                    "business",
+                    "businessReplicaDataSource",
+                    new MetricScheduleDefaults(
+                            MetricScheduleDefaults.Mode.CRON,
+                            null,
+                            "0 0 * * *",
+                            Duration.ofSeconds(10)
+                    ),
+                    Duration.ofSeconds(30),
+                    Duration.ofMinutes(10),
+                    Duration.ZERO,
+                    500,
+                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+            );
+        }
+
+        @Override
+        public QueryDefinition queryDefinition() {
+            return new QueryDefinition("select 1");
+        }
+
+        @Override
+        public RowMapper<MetricPoint> rowMapper() {
+            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
+        }
     }
 }
