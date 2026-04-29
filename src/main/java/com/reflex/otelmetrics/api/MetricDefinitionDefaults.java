@@ -1,8 +1,17 @@
 package com.reflex.otelmetrics.api;
 
+import java.time.Duration;
+
 public record MetricDefinitionDefaults(
-        boolean enabled,
-        MetricKind kind,
-        SeriesOverflowPolicy seriesOverflowPolicy
+        String metricSuffix,
+        MetricKind metricKind,
+        String scope,
+        String dataSourceRef,
+        MetricScheduleDefaults schedule,
+        Duration timeout,
+        Duration lockAtMostFor,
+        Duration lockAtLeastFor,
+        int maxSeries,
+        SeriesOverflowPolicy overflowPolicy
 ) {
 }

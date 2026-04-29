@@ -3,9 +3,13 @@ package com.reflex.otelmetrics.api;
 import java.time.Duration;
 
 public record MetricScheduleDefaults(
-        Duration initialDelay,
+        Mode mode,
         Duration fixedDelay,
-        Duration lockAtMostFor,
-        Duration lockAtLeastFor
+        String cron,
+        Duration initialDelay
 ) {
+    public enum Mode {
+        FIXED_DELAY,
+        CRON
+    }
 }

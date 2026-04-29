@@ -1,7 +1,7 @@
 package com.reflex.otelmetrics.api;
 
 public enum SeriesOverflowPolicy {
-    DROP_OLDEST,
-    DROP_NEWEST,
-    FAIL
+    FAIL,
+    TRUNCATE,
+    AGGREGATE_TO_OTHER
 }

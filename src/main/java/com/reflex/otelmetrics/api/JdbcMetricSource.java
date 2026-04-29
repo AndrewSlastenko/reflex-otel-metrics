@@ -1,12 +1,10 @@
 package com.reflex.otelmetrics.api;
 
-import java.util.List;
+import org.springframework.jdbc.core.RowMapper;
 
-public record JdbcMetricSource(
-        String name,
-        String dataSourceBeanName,
-        MetricDefinitionDefaults definitionDefaults,
-        MetricScheduleDefaults scheduleDefaults,
-        List<QueryDefinition> queries
-) implements MetricSource {
+public interface JdbcMetricSource extends MetricSource {
+
+    QueryDefinition queryDefinition();
+
+    RowMapper<MetricPoint> rowMapper();
 }
