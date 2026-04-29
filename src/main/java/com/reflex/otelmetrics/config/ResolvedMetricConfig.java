@@ -1,16 +1,18 @@
 package com.reflex.otelmetrics.config;
 
 import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.MetricScheduleDefaults;
 import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
 import java.time.Duration;
 
 public record ResolvedMetricConfig(
-        String metricSuffix,
-        MetricKind metricKind,
+        String metricId,
+        boolean enabled,
+        String fullMetricName,
+        String suffix,
         String scope,
         String dataSourceRef,
-        MetricScheduleDefaults schedule,
+        MetricKind metricKind,
+        MetricScheduleSettings schedule,
         Duration timeout,
         Duration lockAtMostFor,
         Duration lockAtLeastFor,

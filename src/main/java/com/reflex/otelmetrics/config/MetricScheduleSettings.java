@@ -1,12 +1,20 @@
 package com.reflex.otelmetrics.config;
 
-import com.reflex.otelmetrics.api.MetricScheduleDefaults;
 import java.time.Duration;
 
 public record MetricScheduleSettings(
-        MetricScheduleDefaults.Mode mode,
+        Mode mode,
         Duration fixedDelay,
         String cron,
         Duration initialDelay
 ) {
+
+    public enum Mode {
+        FIXED_DELAY,
+        CRON
+    }
+
+    public static MetricScheduleSettings fixedDelay(Duration fixedDelay, Duration initialDelay) {
+        return new MetricScheduleSettings(Mode.FIXED_DELAY, fixedDelay, null, initialDelay);
+    }
 }
