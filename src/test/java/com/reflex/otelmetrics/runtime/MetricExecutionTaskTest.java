@@ -21,12 +21,13 @@ import static org.mockito.Mockito.when;
 class MetricExecutionTaskTest {
 
     @Test
-    void shouldRecordFailureWithoutThrowing() {
+    void shouldPublishPointsWhenExecutionSucceeds() {
         MetricExecutionCoordinator coordinator = mock(MetricExecutionCoordinator.class);
         com.reflex.otelmetrics.locking.MetricLockManager lockManager = mock(com.reflex.otelmetrics.locking.MetricLockManager.class);
         OtelMetricPublisher publisher = mock(OtelMetricPublisher.class);
         InternalTelemetryRecorder telemetryRecorder = mock(InternalTelemetryRecorder.class);
-        when(coordinator.collect()).thenThrow(new IllegalStateException("boom"));
+        SeriesLimiter seriesLimiter = new SeriesLimiter(new OverflowAggregationStrategy());
+        when(coordinator.collect()).thenReturn(List.of(new MetricPoint(10L, Map.of("status", "created"))));
         when(lockManager.executeWithLock(any(), any())).thenAnswer(invocation -> {
             Runnable runnable = invocation.getArgument(1);
             runnable.run();
@@ -38,7 +39,7 @@ class MetricExecutionTaskTest {
                 lockManager,
                 publisher,
                 telemetryRecorder,
-                new SeriesLimiter(new OverflowAggregationStrategy()),
+                seriesLimiter,
                 new ResolvedMetricConfig(
                         "documents-by-status",
                         true,
@@ -58,7 +59,8 @@ class MetricExecutionTaskTest {
 
         MetricRunOutcome outcome = task.runOnce();
 
-        assertThat(outcome).isEqualTo(MetricRunOutcome.FAILED);
-        verify(telemetryRecorder).recordFailure(any(), any());
+        assertThat(outcome).isEqualTo(MetricRunOutcome.SUCCESS);
+        verify(publisher).publish(any(), any());
+        verify(telemetryRecorder).recordSuccess(any());
     }
 }
