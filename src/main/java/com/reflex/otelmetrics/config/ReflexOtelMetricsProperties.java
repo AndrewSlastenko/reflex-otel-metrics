@@ -9,6 +9,7 @@ public class ReflexOtelMetricsProperties {
 
     private boolean enabled = true;
     private String metricPrefix = "reflex";
+    private String instrumentationScopeName = "com.reflex.otelmetrics";
     private OtlpProperties otlp = new OtlpProperties();
     private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
     private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
@@ -27,6 +28,14 @@ public class ReflexOtelMetricsProperties {
 
     public void setMetricPrefix(String metricPrefix) {
         this.metricPrefix = metricPrefix;
+    }
+
+    public String getInstrumentationScopeName() {
+        return instrumentationScopeName;
+    }
+
+    public void setInstrumentationScopeName(String instrumentationScopeName) {
+        this.instrumentationScopeName = instrumentationScopeName;
     }
 
     public OtlpProperties getOtlp() {
@@ -58,6 +67,7 @@ public class ReflexOtelMetricsProperties {
         private String metricsEndpoint = "http://localhost:4317";
         private String tracesEndpoint = "http://localhost:4317";
         private java.time.Duration exportTimeout = java.time.Duration.ofSeconds(10);
+        private java.time.Duration exportInterval = java.time.Duration.ofMinutes(1);
 
         public String getMetricsEndpoint() {
             return metricsEndpoint;
@@ -81,6 +91,14 @@ public class ReflexOtelMetricsProperties {
 
         public void setExportTimeout(java.time.Duration exportTimeout) {
             this.exportTimeout = exportTimeout;
+        }
+
+        public java.time.Duration getExportInterval() {
+            return exportInterval;
+        }
+
+        public void setExportInterval(java.time.Duration exportInterval) {
+            this.exportInterval = exportInterval;
         }
     }
 

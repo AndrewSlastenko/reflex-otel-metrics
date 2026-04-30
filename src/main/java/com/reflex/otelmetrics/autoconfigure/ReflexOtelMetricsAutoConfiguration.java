@@ -9,10 +9,14 @@ import com.reflex.otelmetrics.runtime.OverflowAggregationStrategy;
 import com.reflex.otelmetrics.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -64,18 +68,38 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean({OtlpGrpcSpanExporter.class, OpenTelemetry.class})
+    OtlpGrpcSpanExporter otlpGrpcSpanExporter(ReflexOtelMetricsProperties properties) {
+        return OtlpGrpcSpanExporter.builder()
+                .setEndpoint(properties.getOtlp().getTracesEndpoint())
+                .setTimeout(properties.getOtlp().getExportTimeout())
+                .build();
+    }
+
+    @Bean
     @ConditionalOnMissingBean({SdkMeterProvider.class, OpenTelemetry.class})
-    SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter) {
+    SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter, ReflexOtelMetricsProperties properties) {
         return SdkMeterProvider.builder()
-                .registerMetricReader(PeriodicMetricReader.builder(exporter).build())
+                .registerMetricReader(PeriodicMetricReader.builder(exporter)
+                        .setInterval(properties.getOtlp().getExportInterval())
+                        .build())
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean({SdkTracerProvider.class, OpenTelemetry.class})
+    SdkTracerProvider sdkTracerProvider(OtlpGrpcSpanExporter exporter) {
+        return SdkTracerProvider.builder()
+                .addSpanProcessor(BatchSpanProcessor.builder(exporter).build())
                 .build();
     }
 
     @Bean
     @ConditionalOnMissingBean({OpenTelemetrySdk.class, OpenTelemetry.class})
-    OpenTelemetrySdk openTelemetrySdk(SdkMeterProvider sdkMeterProvider) {
+    OpenTelemetrySdk openTelemetrySdk(SdkMeterProvider sdkMeterProvider, SdkTracerProvider sdkTracerProvider) {
         return OpenTelemetrySdk.builder()
                 .setMeterProvider(sdkMeterProvider)
+                .setTracerProvider(sdkTracerProvider)
                 .build();
     }
 
@@ -87,8 +111,14 @@ public class ReflexOtelMetricsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    Meter meter(OpenTelemetry openTelemetry) {
-        return openTelemetry.getMeter("com.reflex.otelmetrics");
+    Meter meter(OpenTelemetry openTelemetry, ReflexOtelMetricsProperties properties) {
+        return openTelemetry.getMeter(properties.getInstrumentationScopeName());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    Tracer tracer(OpenTelemetry openTelemetry, ReflexOtelMetricsProperties properties) {
+        return openTelemetry.getTracer(properties.getInstrumentationScopeName());
     }
 
     @Bean

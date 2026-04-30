@@ -13,6 +13,7 @@ import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
 import com.reflex.otelmetrics.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -41,6 +42,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
                     assertThat(context).hasSingleBean(SeriesLimiter.class);
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
                     assertThat(context).hasSingleBean(OpenTelemetrySdk.class);
+                    assertThat(context).hasSingleBean(Tracer.class);
                 });
     }
 
@@ -48,15 +50,20 @@ class ReflexOtelMetricsAutoConfigurationTest {
     void shouldBackOffSdkBeansWhenOpenTelemetryIsProvidedByTheApplication() {
         OpenTelemetry openTelemetry = mock(OpenTelemetry.class);
         Meter meter = mock(Meter.class);
-        when(openTelemetry.getMeter("com.reflex.otelmetrics")).thenReturn(meter);
+        Tracer tracer = mock(Tracer.class);
+        when(openTelemetry.getMeter("custom.scope")).thenReturn(meter);
+        when(openTelemetry.getTracer("custom.scope")).thenReturn(tracer);
 
         contextRunner
+                .withPropertyValues("reflex.otel.metrics.instrumentation-scope-name=custom.scope")
                 .withBean(OpenTelemetry.class, () -> openTelemetry)
                 .run(context -> {
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
                     assertThat(context).hasSingleBean(Meter.class);
+                    assertThat(context).hasSingleBean(Tracer.class);
                     assertThat(context).doesNotHaveBean(OpenTelemetrySdk.class);
-                    verify(openTelemetry).getMeter("com.reflex.otelmetrics");
+                    verify(openTelemetry).getMeter("custom.scope");
+                    verify(openTelemetry).getTracer("custom.scope");
                 });
     }
 
@@ -66,6 +73,8 @@ class ReflexOtelMetricsAutoConfigurationTest {
                 .withBean(JdbcMetricSource.class, TestJdbcMetricSource::new)
                 .withPropertyValues(
                         "reflex.otel.metrics.metric-prefix=ci054147",
+                        "reflex.otel.metrics.instrumentation-scope-name=com.example.metrics",
+                        "reflex.otel.metrics.otlp.export-interval=PT1M",
                         "reflex.otel.metrics.sources.documents-by-status.suffix=documents.current")
                 .run(context -> {
                     ReflexOtelMetricsProperties properties = context.getBean(ReflexOtelMetricsProperties.class);
@@ -74,6 +83,8 @@ class ReflexOtelMetricsAutoConfigurationTest {
                     ResolvedMetricConfig resolved = resolver.resolve(source);
 
                     assertThat(properties.getMetricPrefix()).isEqualTo("ci054147");
+                    assertThat(properties.getInstrumentationScopeName()).isEqualTo("com.example.metrics");
+                    assertThat(properties.getOtlp().getExportInterval()).isEqualTo(Duration.ofMinutes(1));
                     assertThat(properties.getSources())
                             .containsKey("documents-by-status");
                     assertThat(properties.getSources().get("documents-by-status").getSuffix())

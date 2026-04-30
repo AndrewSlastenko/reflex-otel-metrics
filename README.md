@@ -18,7 +18,8 @@ The starter auto-configures the shared metric infrastructure:
 
 - `ReflexOtelMetricsProperties` binding under `reflex.otel.metrics`
 - OTLP/gRPC metric exporter
-- OTel `OpenTelemetry`, `Meter`, and instrument registry beans
+- OTLP/gRPC trace exporter
+- OTel `OpenTelemetry`, `Meter`, `Tracer`, and instrument registry beans
 - config resolution and validation helpers
 - series limiting support
 - aggregate technical telemetry hooks
@@ -52,10 +53,12 @@ reflex:
     metrics:
       enabled: true
       metric-prefix: ci054147
+      instrumentation-scope-name: com.reflex.otelmetrics
       otlp:
         metrics-endpoint: http://localhost:4317
-        traces-endpoint: http://localhost:4317 # reserved for future trace support; not wired by the current starter
+        traces-endpoint: http://localhost:4317
         export-timeout: 10s
+        export-interval: 1m
       scopes:
         business:
           enabled: true
@@ -87,9 +90,11 @@ reflex:
 These keys map directly to the current `ReflexOtelMetricsProperties` and `MetricRuntimeProperties` model:
 
 - `metric-prefix`
+- `instrumentation-scope-name`
 - `otlp.metrics-endpoint`
-- `otlp.traces-endpoint` (reserved for future trace support; currently not used by starter wiring)
+- `otlp.traces-endpoint`
 - `otlp.export-timeout`
+- `otlp.export-interval`
 - `scopes.<scope>.enabled`
 - `sources.<metric-id>.enabled`
 - `sources.<metric-id>.suffix`
@@ -111,6 +116,67 @@ Runtime configuration is resolved as:
 1. starter defaults
 2. defaults returned by the metric source bean
 3. property overrides from `application.yml` or `application.properties`
+
+## Export Timing
+
+Metric collection and OTLP export are separate steps.
+
+1. the metric source query reads values from the database on its own schedule
+2. the starter writes those values into OpenTelemetry instruments
+3. the OpenTelemetry SDK exports accumulated metric data on its own periodic cycle
+
+By default, the starter exports every minute:
+
+```yaml
+reflex:
+  otel:
+    metrics:
+      otlp:
+        export-interval: 1m
+```
+
+Use this to avoid exporting too often when database polling happens more frequently than downstream consumers need.
+
+## Instrumentation Scope
+
+`instrumentation-scope-name` controls the OpenTelemetry instrumentation scope used for both `Meter` and `Tracer`.
+
+```yaml
+reflex:
+  otel:
+    metrics:
+      instrumentation-scope-name: com.example.business-metrics
+```
+
+This does not change the metric name itself. Metric names still come from `metric-prefix + suffix`. The scope name identifies which library or module emitted the telemetry.
+
+## How Metric Kinds Behave
+
+The current starter supports `GAUGE` and `UP_DOWN_COUNTER`. They behave differently between database polls and OTLP exports.
+
+### `GAUGE`
+
+Use `GAUGE` for snapshots like "how many rows exist right now".
+
+Example:
+
+- at `10:00:00` the query returns `42`
+- at `10:00:30` the query returns `45`
+- at `10:01:00` the SDK exports `45`
+
+The latest observed value wins for each attribute set.
+
+### `UP_DOWN_COUNTER`
+
+Use `UP_DOWN_COUNTER` only when each collection run produces a delta that should be added to the previous state.
+
+Example:
+
+- at `10:00:00` the query returns `+5`
+- at `10:00:30` the query returns `-2`
+- at `10:01:00` the SDK exports the accumulated change for the interval
+
+Do not use `UP_DOWN_COUNTER` for full table snapshots like `select count(*) ...`, otherwise each poll adds the whole snapshot again and the exported number will drift upward or downward incorrectly.
 
 ## Metric Source Contract
 
