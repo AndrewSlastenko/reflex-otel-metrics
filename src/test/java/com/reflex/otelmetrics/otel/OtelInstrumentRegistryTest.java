@@ -1,6 +1,8 @@
 package com.reflex.otelmetrics.otel;
 
 import com.reflex.otelmetrics.api.MetricKind;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongCounterBuilder;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongGaugeBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
@@ -16,6 +18,22 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class OtelInstrumentRegistryTest {
+
+    @Test
+    void shouldCreateCounterInstrument() {
+        Meter meter = mock(Meter.class);
+        LongCounterBuilder counterBuilder = mock(LongCounterBuilder.class);
+        LongCounter counter = mock(LongCounter.class);
+        when(meter.counterBuilder("orders.created")).thenReturn(counterBuilder);
+        when(counterBuilder.build()).thenReturn(counter);
+
+        OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
+
+        Object instrument = registry.getOrCreate("orders.created", MetricKind.COUNTER);
+
+        assertThat(instrument).isSameAs(counter);
+        verify(meter).counterBuilder("orders.created");
+    }
 
     @Test
     void shouldCacheInstrumentForTheSameMetricKind() {
