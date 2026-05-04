@@ -1,6 +1,6 @@
-# AGENTS.md — reflex-otel-metrics
+# AGENTS.md — rcln-reflex-telemetry
 
-Инструкции для агентов и людей, которые меняют этот репозиторий. Подробные примеры конфигурации и контрактов — в [README.md](README.md).
+Инструкции для агентов и людей, которые меняют этот репозиторий. Maven-координаты: `ru.sber.rcln:rcln-reflex-telemetry` (каталог репозитория может временно отличаться до переноса в `rcln-libs`). Подробные примеры конфигурации и контрактов — в [README.md](README.md).
 
 ## Что это за проект
 
@@ -8,13 +8,15 @@
 
 ## Стек и версии
 
-| Компонент | Значение |
-|-----------|----------|
-| Java | 17 (`maven.compiler.release`) |
-| Сборка | Maven; на Windows — `.\mvnw.cmd` |
-| Spring Boot | 3.5.x (см. `pom.xml`) |
-| OpenTelemetry | 1.60.x (BOM в `pom.xml`) |
-| Тесты | JUnit 5, `spring-boot-starter-test` |
+
+| Компонент     | Значение                            |
+| ------------- | ----------------------------------- |
+| Java          | 17 (`maven.compiler.release`)       |
+| Сборка        | Maven; на Windows — `.\mvnw.cmd`    |
+| Spring Boot   | 3.5.x (см. `pom.xml`)               |
+| OpenTelemetry | 1.60.x (BOM в `pom.xml`)            |
+| Тесты         | JUnit 5, `spring-boot-starter-test` |
+
 
 Точные версии всегда смотреть в `pom.xml`, не копировать из памяти.
 
@@ -25,19 +27,21 @@
 3. **Публичный `api`** — не усложнять невидимыми для пользователя библиотеки генерациями без нужды; если добавляете Lombok на тип из `api`, соблюдайте ту же модель, что у существующих типов (например builder-only там, где так уже сделано).
 4. **MapStruct** — зависимость и процессоры уже в `pom.xml` (в т.ч. `lombok-mapstruct-binding`). Имеет смысл **вводить мапперы**, когда появляется устойчивое, повторяемое преобразование между двумя слоями типов (например внутренние модели конфигурации ↔ resolved view), а не ради пары полей — иначе достаточно явного кода или фабрики. Новые `@Mapper` — компилируемые, с понятным именем и пакетом рядом с типами, которые связывают.
 
-## Структура пакетов (`com.reflex.otelmetrics`)
+## Структура пакетов (`ru.sber.rcln.reflex.telemetry`)
 
-| Пакет | Назначение |
-|-------|------------|
-| `api` | Публичные контракты: `JdbcMetricSource`, `MetricSource`, `MetricDefinition`, виды метрик, схемы атрибутов, расписание |
-| `autoconfigure` | `ReflexOtelMetricsAutoConfiguration`, регистрация бинов OTel и стартера |
-| `config` | `ReflexOtelMetricsProperties`, резолверы/валидаторы конфигурации JDBC и manual |
-| `jdbc` | Сбор JDBC-метрик (`JdbcMetricCollector` и фабрика) |
-| `manual` | `ReflexMetricFactory`, реализации counter/gauge/up-down-counter, валидация атрибутов, трекер серий |
-| `otel` | Реестр инструментов, публикация в OTel API |
-| `runtime` | Планировщик, задачи выполнения, реестр источников, лимиты серий |
-| `locking` | Абстракция блокировки и реализация на ShedLock |
-| `internal` | Вспомогательная телеметрия и логирование (не публичный API) |
+
+| Пакет           | Назначение                                                                                                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `api`           | Публичные контракты: `JdbcMetricSource`, `MetricSource`, `MetricDefinition`, виды метрик, схемы атрибутов, расписание |
+| `autoconfigure` | `ReflexOtelMetricsAutoConfiguration`, регистрация бинов OTel и стартера                                               |
+| `config`        | `ReflexOtelMetricsProperties`, резолверы/валидаторы конфигурации JDBC и manual                                        |
+| `jdbc`          | Сбор JDBC-метрик (`JdbcMetricCollector` и фабрика)                                                                    |
+| `manual`        | `ReflexMetricFactory`, реализации counter/gauge/up-down-counter, валидация атрибутов, трекер серий                    |
+| `otel`          | Реестр инструментов, публикация в OTel API                                                                            |
+| `runtime`       | Планировщик, задачи выполнения, реестр источников, лимиты серий                                                       |
+| `locking`       | Абстракция блокировки и реализация на ShedLock                                                                        |
+| `internal`      | Вспомогательная телеметрия и логирование (не публичный API)                                                           |
+
 
 Точка входа автоконфигурации: `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
@@ -59,7 +63,7 @@
 
 ## Конфигурация
 
-Префикс свойств: **`reflex.otel.metrics`**.
+Префикс свойств: `**reflex.otel.metrics**`.
 
 - JDBC-источники: `reflex.otel.metrics.sources.<metric-id>`
 - Ручные метрики: `reflex.otel.metrics.manual.<metric-id>`

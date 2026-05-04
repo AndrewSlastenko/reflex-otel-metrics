@@ -12,47 +12,47 @@
 
 ## File Structure
 
-- Modify `src/main/java/com/reflex/otelmetrics/api/MetricKind.java`: add `COUNTER`.
-- Create `src/main/java/com/reflex/otelmetrics/api/MetricDefinition.java`: Java defaults for manual metrics.
-- Create `src/main/java/com/reflex/otelmetrics/api/AttributesSchema.java`: required/optional/reject-unknown contract.
-- Create `src/main/java/com/reflex/otelmetrics/api/CounterMetric.java`: public counter interface.
-- Create `src/main/java/com/reflex/otelmetrics/api/GaugeMetric.java`: public gauge interface.
-- Create `src/main/java/com/reflex/otelmetrics/api/UpDownCounterMetric.java`: public up-down-counter interface.
-- Create `src/main/java/com/reflex/otelmetrics/config/ManualMetricRuntimeProperties.java`: YAML override model under `manual`.
-- Modify `src/main/java/com/reflex/otelmetrics/config/ReflexOtelMetricsProperties.java`: add `manual` map.
-- Create `src/main/java/com/reflex/otelmetrics/config/ResolvedManualMetricConfig.java`: immutable resolved manual config.
-- Create `src/main/java/com/reflex/otelmetrics/config/ManualMetricConfigResolver.java`: Java defaults plus YAML overrides.
-- Create `src/main/java/com/reflex/otelmetrics/manual/AttributeValidationResult.java`: validation result value object.
-- Create `src/main/java/com/reflex/otelmetrics/manual/AttributeValidator.java`: per-call schema validation.
-- Create `src/main/java/com/reflex/otelmetrics/manual/ManualSeriesTracker.java`: thread-safe cardinality guard.
-- Create `src/main/java/com/reflex/otelmetrics/manual/ReflexMetricFactory.java`: factory for manual metric beans.
-- Create `src/main/java/com/reflex/otelmetrics/manual/DefaultCounterMetric.java`: counter implementation.
-- Create `src/main/java/com/reflex/otelmetrics/manual/DefaultGaugeMetric.java`: gauge implementation.
-- Create `src/main/java/com/reflex/otelmetrics/manual/DefaultUpDownCounterMetric.java`: up-down-counter implementation.
-- Modify `src/main/java/com/reflex/otelmetrics/otel/OtelInstrumentRegistry.java`: support `LongCounter`.
-- Modify `src/main/java/com/reflex/otelmetrics/otel/OtelMetricPublisher.java`: handle `COUNTER` for existing publisher tests.
-- Modify `src/main/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`: expose `ManualMetricConfigResolver` and `ReflexMetricFactory`.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricKind.java`: add `COUNTER`.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinition.java`: Java defaults for manual metrics.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/AttributesSchema.java`: required/optional/reject-unknown contract.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/CounterMetric.java`: public counter interface.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/GaugeMetric.java`: public gauge interface.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/UpDownCounterMetric.java`: public up-down-counter interface.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricRuntimeProperties.java`: YAML override model under `manual`.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`: add `manual` map.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedManualMetricConfig.java`: immutable resolved manual config.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolver.java`: Java defaults plus YAML overrides.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/AttributeValidationResult.java`: validation result value object.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/AttributeValidator.java`: per-call schema validation.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/ManualSeriesTracker.java`: thread-safe cardinality guard.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/ReflexMetricFactory.java`: factory for manual metric beans.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultCounterMetric.java`: counter implementation.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultGaugeMetric.java`: gauge implementation.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultUpDownCounterMetric.java`: up-down-counter implementation.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistry.java`: support `LongCounter`.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMetricPublisher.java`: handle `COUNTER` for existing publisher tests.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`: expose `ManualMetricConfigResolver` and `ReflexMetricFactory`.
 - Modify `README.md`: document low-level beans and domain beans.
-- Add tests under `src/test/java/com/reflex/otelmetrics/manual`, `config`, `otel`, and `autoconfigure`.
+- Add tests under `src/test/java/ru/sber/rcln/reflex/telemetry/manual`, `config`, `otel`, and `autoconfigure`.
 
 ## Task 1: Add Manual API Value Types
 
 **Files:**
-- Modify: `src/main/java/com/reflex/otelmetrics/api/MetricKind.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/AttributesSchema.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricDefinition.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/CounterMetric.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/GaugeMetric.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/UpDownCounterMetric.java`
-- Test: `src/test/java/com/reflex/otelmetrics/api/AttributesSchemaTest.java`
-- Test: `src/test/java/com/reflex/otelmetrics/api/MetricDefinitionTest.java`
 
-- [ ] **Step 1: Write failing API tests**
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricKind.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/AttributesSchema.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinition.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/CounterMetric.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/GaugeMetric.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/UpDownCounterMetric.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/api/AttributesSchemaTest.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinitionTest.java`
+- **Step 1: Write failing API tests**
 
-Create `src/test/java/com/reflex/otelmetrics/api/AttributesSchemaTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/api/AttributesSchemaTest.java`:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import org.junit.jupiter.api.Test;
 
@@ -92,10 +92,10 @@ class AttributesSchemaTest {
 }
 ```
 
-Create `src/test/java/com/reflex/otelmetrics/api/MetricDefinitionTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinitionTest.java`:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import org.junit.jupiter.api.Test;
 
@@ -126,7 +126,7 @@ class MetricDefinitionTest {
 }
 ```
 
-- [ ] **Step 2: Run tests and verify they fail**
+- **Step 2: Run tests and verify they fail**
 
 Run:
 
@@ -136,12 +136,12 @@ Run:
 
 Expected: compilation fails because `AttributesSchema`, `MetricDefinition`, and `COUNTER` do not exist.
 
-- [ ] **Step 3: Implement API types**
+- **Step 3: Implement API types**
 
-Update `src/main/java/com/reflex/otelmetrics/api/MetricKind.java`:
+Update `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricKind.java`:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 public enum MetricKind {
     COUNTER,
@@ -150,10 +150,10 @@ public enum MetricKind {
 }
 ```
 
-Create `src/main/java/com/reflex/otelmetrics/api/AttributesSchema.java`:
+Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/AttributesSchema.java`:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.util.LinkedHashSet;
 import java.util.Objects;
@@ -228,10 +228,10 @@ public record AttributesSchema(
 }
 ```
 
-Create `src/main/java/com/reflex/otelmetrics/api/MetricDefinition.java`:
+Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinition.java`:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.util.Objects;
 
@@ -316,7 +316,7 @@ public record MetricDefinition(
 Create metric interfaces:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.util.Map;
 
@@ -338,7 +338,7 @@ public interface CounterMetric {
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.util.Map;
 
@@ -352,7 +352,7 @@ public interface GaugeMetric {
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.util.Map;
 
@@ -365,7 +365,7 @@ public interface UpDownCounterMetric {
 }
 ```
 
-- [ ] **Step 4: Run API tests**
+- **Step 4: Run API tests**
 
 Run:
 
@@ -375,32 +375,32 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
-git add src/main/java/com/reflex/otelmetrics/api src/test/java/com/reflex/otelmetrics/api
+git add src/main/java/ru/sber/rcln/reflex/telemetry/api src/test/java/ru/sber/rcln/reflex/telemetry/api
 git commit -m "feat: add manual metric API types"
 ```
 
 ## Task 2: Add Manual Configuration Resolution
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/config/ManualMetricRuntimeProperties.java`
-- Modify: `src/main/java/com/reflex/otelmetrics/config/ReflexOtelMetricsProperties.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/ResolvedManualMetricConfig.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/ManualMetricConfigResolver.java`
-- Test: `src/test/java/com/reflex/otelmetrics/config/ManualMetricConfigResolverTest.java`
 
-- [ ] **Step 1: Write failing resolver tests**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricRuntimeProperties.java`
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedManualMetricConfig.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolver.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolverTest.java`
+- **Step 1: Write failing resolver tests**
 
-Create `src/test/java/com/reflex/otelmetrics/config/ManualMetricConfigResolverTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolverTest.java`:
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.MetricDefinition;
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -474,7 +474,7 @@ class ManualMetricConfigResolverTest {
 }
 ```
 
-- [ ] **Step 2: Run resolver tests and verify they fail**
+- **Step 2: Run resolver tests and verify they fail**
 
 Run:
 
@@ -484,18 +484,18 @@ Run:
 
 Expected: compilation fails because manual config classes do not exist.
 
-- [ ] **Step 3: Implement manual config classes**
+- **Step 3: Implement manual config classes**
 
 Create `ManualMetricRuntimeProperties` with getters/setters for `enabled`, `suffix`, `scope`, `maxSeries`, and `overflowPolicy`.
 
 Create `ResolvedManualMetricConfig`:
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.AttributesSchema;
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 
 public record ResolvedManualMetricConfig(
         String metricId,
@@ -530,10 +530,10 @@ public void setManual(Map<String, ManualMetricRuntimeProperties> manual) {
 Create `ManualMetricConfigResolver`:
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.MetricDefinition;
-import com.reflex.otelmetrics.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import java.util.Objects;
 
 public class ManualMetricConfigResolver {
@@ -581,7 +581,7 @@ public class ManualMetricConfigResolver {
 }
 ```
 
-- [ ] **Step 4: Run resolver tests**
+- **Step 4: Run resolver tests**
 
 Run:
 
@@ -591,22 +591,22 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
-git add src/main/java/com/reflex/otelmetrics/config src/test/java/com/reflex/otelmetrics/config/ManualMetricConfigResolverTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/config src/test/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolverTest.java
 git commit -m "feat: resolve manual metric configuration"
 ```
 
 ## Task 3: Add OTEL Counter Instrument Support
 
 **Files:**
-- Modify: `src/main/java/com/reflex/otelmetrics/otel/OtelInstrumentRegistry.java`
-- Modify: `src/main/java/com/reflex/otelmetrics/otel/OtelMetricPublisher.java`
-- Modify: `src/test/java/com/reflex/otelmetrics/otel/OtelInstrumentRegistryTest.java`
-- Modify or add: `src/test/java/com/reflex/otelmetrics/otel/OtelMetricPublisherTest.java`
 
-- [ ] **Step 1: Add failing registry test for counter**
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistry.java`
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMetricPublisher.java`
+- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistryTest.java`
+- Modify or add: `src/test/java/ru/sber/rcln/reflex/telemetry/otel/OtelMetricPublisherTest.java`
+- **Step 1: Add failing registry test for counter**
 
 In `OtelInstrumentRegistryTest`, add:
 
@@ -628,7 +628,7 @@ void shouldCreateLongCounterInstrument() {
 }
 ```
 
-- [ ] **Step 2: Run registry test and verify it fails**
+- **Step 2: Run registry test and verify it fails**
 
 Run:
 
@@ -638,7 +638,7 @@ Run:
 
 Expected: fails because `COUNTER` is not handled in `OtelInstrumentRegistry`.
 
-- [ ] **Step 3: Implement counter support**
+- **Step 3: Implement counter support**
 
 Update `OtelInstrumentRegistry` imports and switch:
 
@@ -664,7 +664,7 @@ Update `OtelMetricPublisher` to handle `LongCounter`:
 }
 ```
 
-- [ ] **Step 4: Run OTEL tests**
+- **Step 4: Run OTEL tests**
 
 Run:
 
@@ -674,30 +674,30 @@ Run:
 
 Expected: tests pass. If `OtelMetricPublisherTest` does not exist, run `OtelInstrumentRegistryTest` now and add publisher coverage in Task 6 through manual metric implementation tests.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
-git add src/main/java/com/reflex/otelmetrics/otel src/test/java/com/reflex/otelmetrics/otel
+git add src/main/java/ru/sber/rcln/reflex/telemetry/otel src/test/java/ru/sber/rcln/reflex/telemetry/otel
 git commit -m "feat: support otel counter instruments"
 ```
 
 ## Task 4: Add Attribute Validation And Series Tracking
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/manual/AttributeValidationResult.java`
-- Create: `src/main/java/com/reflex/otelmetrics/manual/AttributeValidator.java`
-- Create: `src/main/java/com/reflex/otelmetrics/manual/ManualSeriesTracker.java`
-- Test: `src/test/java/com/reflex/otelmetrics/manual/AttributeValidatorTest.java`
-- Test: `src/test/java/com/reflex/otelmetrics/manual/ManualSeriesTrackerTest.java`
 
-- [ ] **Step 1: Write failing validation tests**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/AttributeValidationResult.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/AttributeValidator.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/ManualSeriesTracker.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/manual/AttributeValidatorTest.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/manual/ManualSeriesTrackerTest.java`
+- **Step 1: Write failing validation tests**
 
 Create `AttributeValidatorTest` covering valid attributes, missing required, unknown, blank value, and defensive copy:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
-import com.reflex.otelmetrics.api.AttributesSchema;
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -764,9 +764,9 @@ class AttributeValidatorTest {
 Create `ManualSeriesTrackerTest`:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -795,7 +795,7 @@ class ManualSeriesTrackerTest {
 }
 ```
 
-- [ ] **Step 2: Run tests and verify they fail**
+- **Step 2: Run tests and verify they fail**
 
 Run:
 
@@ -805,12 +805,12 @@ Run:
 
 Expected: compilation fails because manual validation classes do not exist.
 
-- [ ] **Step 3: Implement validation and tracker**
+- **Step 3: Implement validation and tracker**
 
 Create `AttributeValidationResult`:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
 import java.util.Map;
 
@@ -828,9 +828,9 @@ public record AttributeValidationResult(boolean valid, Map<String, String> attri
 Create `AttributeValidator`:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
-import com.reflex.otelmetrics.api.AttributesSchema;
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -871,9 +871,9 @@ public class AttributeValidator {
 Create `ManualSeriesTracker`:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -919,7 +919,7 @@ public class ManualSeriesTracker {
 
 Note: keep `AGGREGATE_TO_OTHER` as future-compatible but implement `FAIL` as log-and-skip first. Add explicit tests for aggregation only when the implementation can define a stable manual overflow attribute contract.
 
-- [ ] **Step 4: Run validation tests**
+- **Step 4: Run validation tests**
 
 Run:
 
@@ -929,35 +929,35 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
-git add src/main/java/com/reflex/otelmetrics/manual src/test/java/com/reflex/otelmetrics/manual
+git add src/main/java/ru/sber/rcln/reflex/telemetry/manual src/test/java/ru/sber/rcln/reflex/telemetry/manual
 git commit -m "feat: validate manual metric attributes"
 ```
 
 ## Task 5: Implement Manual Metric Beans And Factory
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/manual/ReflexMetricFactory.java`
-- Create: `src/main/java/com/reflex/otelmetrics/manual/DefaultCounterMetric.java`
-- Create: `src/main/java/com/reflex/otelmetrics/manual/DefaultGaugeMetric.java`
-- Create: `src/main/java/com/reflex/otelmetrics/manual/DefaultUpDownCounterMetric.java`
-- Test: `src/test/java/com/reflex/otelmetrics/manual/ReflexMetricFactoryTest.java`
-- Test: `src/test/java/com/reflex/otelmetrics/manual/DefaultCounterMetricTest.java`
 
-- [ ] **Step 1: Write failing factory and counter tests**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/ReflexMetricFactory.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultCounterMetric.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultGaugeMetric.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultUpDownCounterMetric.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/manual/ReflexMetricFactoryTest.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/manual/DefaultCounterMetricTest.java`
+- **Step 1: Write failing factory and counter tests**
 
 Create `ReflexMetricFactoryTest`:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
-import com.reflex.otelmetrics.api.CounterMetric;
-import com.reflex.otelmetrics.api.MetricDefinition;
-import com.reflex.otelmetrics.config.ManualMetricConfigResolver;
-import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
-import com.reflex.otelmetrics.otel.OtelInstrumentRegistry;
+import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.Meter;
 import org.junit.jupiter.api.Test;
 
@@ -983,13 +983,13 @@ class ReflexMetricFactoryTest {
 Create `DefaultCounterMetricTest`:
 
 ```java
-package com.reflex.otelmetrics.manual;
+package ru.sber.rcln.reflex.telemetry.manual;
 
-import com.reflex.otelmetrics.api.MetricDefinition;
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.config.ManualMetricConfigResolver;
-import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
-import com.reflex.otelmetrics.otel.OtelInstrumentRegistry;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
 import io.opentelemetry.api.metrics.Meter;
@@ -1042,7 +1042,7 @@ class DefaultCounterMetricTest {
 }
 ```
 
-- [ ] **Step 2: Run manual metric tests and verify they fail**
+- **Step 2: Run manual metric tests and verify they fail**
 
 Run:
 
@@ -1052,7 +1052,7 @@ Run:
 
 Expected: compilation fails because factory and implementations do not exist.
 
-- [ ] **Step 3: Implement factory and metric classes**
+- **Step 3: Implement factory and metric classes**
 
 Implement `ReflexMetricFactory` with constructor dependencies:
 
@@ -1110,7 +1110,7 @@ upDownCounter.add(value, toAttributes(series.attributes()));
 
 Catch `RuntimeException` around validation/tracking/publish and log a warning without rethrowing.
 
-- [ ] **Step 4: Run manual metric tests**
+- **Step 4: Run manual metric tests**
 
 Run:
 
@@ -1120,20 +1120,20 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
-git add src/main/java/com/reflex/otelmetrics/manual src/test/java/com/reflex/otelmetrics/manual
+git add src/main/java/ru/sber/rcln/reflex/telemetry/manual src/test/java/ru/sber/rcln/reflex/telemetry/manual
 git commit -m "feat: add reflex manual metric factory"
 ```
 
 ## Task 6: Wire Auto-Configuration And Spring Context Coverage
 
 **Files:**
-- Modify: `src/main/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
-- Test: `src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
 
-- [ ] **Step 1: Add failing autoconfiguration test**
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- **Step 1: Add failing autoconfiguration test**
 
 Add to `ReflexOtelMetricsAutoConfigurationTest`:
 
@@ -1141,8 +1141,8 @@ Add to `ReflexOtelMetricsAutoConfigurationTest`:
 @Test
 void shouldCreateManualMetricFactory() {
     contextRunner.run(context -> {
-        assertThat(context).hasSingleBean(com.reflex.otelmetrics.config.ManualMetricConfigResolver.class);
-        assertThat(context).hasSingleBean(com.reflex.otelmetrics.manual.ReflexMetricFactory.class);
+        assertThat(context).hasSingleBean(ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver.class);
+        assertThat(context).hasSingleBean(ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory.class);
     });
 }
 
@@ -1153,25 +1153,25 @@ void shouldAllowMultipleManualCounterBeansWithQualifiers() {
             .run(context -> {
                 assertThat(context).hasBean("ordersCreatedMetric");
                 assertThat(context).hasBean("ordersFailedMetric");
-                assertThat(context.getBean("ordersCreatedMetric")).isInstanceOf(com.reflex.otelmetrics.api.CounterMetric.class);
-                assertThat(context.getBean("ordersFailedMetric")).isInstanceOf(com.reflex.otelmetrics.api.CounterMetric.class);
+                assertThat(context.getBean("ordersCreatedMetric")).isInstanceOf(ru.sber.rcln.reflex.telemetry.api.CounterMetric.class);
+                assertThat(context.getBean("ordersFailedMetric")).isInstanceOf(ru.sber.rcln.reflex.telemetry.api.CounterMetric.class);
             });
 }
 
 static class ManualMetricBeansConfiguration {
     @org.springframework.context.annotation.Bean
-    com.reflex.otelmetrics.api.CounterMetric ordersCreatedMetric(com.reflex.otelmetrics.manual.ReflexMetricFactory factory) {
-        return factory.counter("orders-created", com.reflex.otelmetrics.api.MetricDefinition.of("orders.created").build());
+    ru.sber.rcln.reflex.telemetry.api.CounterMetric ordersCreatedMetric(ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory factory) {
+        return factory.counter("orders-created", ru.sber.rcln.reflex.telemetry.api.MetricDefinition.of("orders.created").build());
     }
 
     @org.springframework.context.annotation.Bean
-    com.reflex.otelmetrics.api.CounterMetric ordersFailedMetric(com.reflex.otelmetrics.manual.ReflexMetricFactory factory) {
-        return factory.counter("orders-failed", com.reflex.otelmetrics.api.MetricDefinition.of("orders.failed").build());
+    ru.sber.rcln.reflex.telemetry.api.CounterMetric ordersFailedMetric(ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory factory) {
+        return factory.counter("orders-failed", ru.sber.rcln.reflex.telemetry.api.MetricDefinition.of("orders.failed").build());
     }
 }
 ```
 
-- [ ] **Step 2: Run autoconfiguration tests and verify they fail**
+- **Step 2: Run autoconfiguration tests and verify they fail**
 
 Run:
 
@@ -1181,7 +1181,7 @@ Run:
 
 Expected: fails because resolver/factory beans are not auto-configured.
 
-- [ ] **Step 3: Add auto-configuration beans**
+- **Step 3: Add auto-configuration beans**
 
 Add imports and beans:
 
@@ -1208,7 +1208,7 @@ ReflexMetricFactory reflexMetricFactory(
 }
 ```
 
-- [ ] **Step 4: Run autoconfiguration tests**
+- **Step 4: Run autoconfiguration tests**
 
 Run:
 
@@ -1218,19 +1218,19 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
-git add src/main/java/com/reflex/otelmetrics/autoconfigure src/test/java/com/reflex/otelmetrics/autoconfigure
+git add src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure
 git commit -m "feat: auto-configure manual metric factory"
 ```
 
 ## Task 7: Document Manual Metric Use Cases
 
 **Files:**
-- Modify: `README.md`
 
-- [ ] **Step 1: Add README section**
+- Modify: `README.md`
+- **Step 1: Add README section**
 
 Add a section after the existing metric source contract:
 
@@ -1339,6 +1339,7 @@ reflex:
 ```
 
 Manual metric calls are fail-safe. Invalid attributes, disabled metrics, cardinality overflow, or OpenTelemetry publication errors are logged and skipped; they do not fail business code.
+
 ```
 
 - [ ] **Step 2: Review README snippets for compile-compatible API**
@@ -1355,9 +1356,9 @@ git commit -m "docs: document manual metric beans"
 ## Task 8: Full Verification
 
 **Files:**
-- All modified files
 
-- [ ] **Step 1: Run full test suite**
+- All modified files
+- **Step 1: Run full test suite**
 
 Run:
 
@@ -1367,7 +1368,7 @@ Run:
 
 Expected: build succeeds and all tests pass.
 
-- [ ] **Step 2: Inspect git status**
+- **Step 2: Inspect git status**
 
 Run:
 
@@ -1377,7 +1378,7 @@ git status --short
 
 Expected: no unstaged implementation changes unless intentionally left for review.
 
-- [ ] **Step 3: Final commit if needed**
+- **Step 3: Final commit if needed**
 
 If Task 8 surfaced small fixes, commit them:
 
@@ -1391,3 +1392,4 @@ git commit -m "test: verify manual metric beans"
 - Spec coverage: plan covers `ReflexMetricFactory`, typed metric beans, Java-primary/YAML-optional config, attributes validation, log-and-skip behavior, scope override, descriptions/units, cardinality, thread-safe tracker, README low-level and domain use cases, and tests.
 - Placeholder scan: no `TODO`, `TBD`, or open placeholders are intentionally left in executable steps.
 - Type consistency: plan uses `SeriesOverflowPolicy.FAIL` as the current enum's reject/log/skip policy instead of introducing a new `REJECT` enum value.
+

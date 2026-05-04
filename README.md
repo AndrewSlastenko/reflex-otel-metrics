@@ -1,6 +1,6 @@
-# reflex-otel-metrics
+# rcln-reflex-telemetry
 
-`reflex-otel-metrics` is a Spring Boot starter for JDBC-backed OpenTelemetry metric export.
+`ru.sber.rcln:rcln-reflex-telemetry` is a Spring Boot starter for JDBC-backed OpenTelemetry metric export.
 
 The current starter targets:
 
@@ -53,7 +53,7 @@ reflex:
     metrics:
       enabled: true
       metric-prefix: ci054147
-      instrumentation-scope-name: com.reflex.otelmetrics
+      instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
       otlp:
         metrics-endpoint: http://localhost:4317
         traces-endpoint: http://localhost:4317
@@ -187,13 +187,13 @@ For JDBC-backed metrics, implement `JdbcMetricSource`:
 ```java
 package com.example.metrics;
 
-import com.reflex.otelmetrics.api.JdbcMetricSource;
-import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.api.MetricScheduleDefaults;
-import com.reflex.otelmetrics.api.QueryDefinition;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
+import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.jdbc.core.RowMapper;
@@ -265,11 +265,11 @@ Low-level metric beans work well when a service only needs a single instrument:
 ```java
 package com.example.metrics;
 
-import com.reflex.otelmetrics.api.AttributesSchema;
-import com.reflex.otelmetrics.api.CounterMetric;
-import com.reflex.otelmetrics.api.MetricDefinition;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
-import com.reflex.otelmetrics.manual.ReflexMetricFactory;
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
+import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -320,12 +320,12 @@ For larger flows, prefer a domain metric bean that groups the low-level instrume
 ```java
 package com.example.metrics;
 
-import com.reflex.otelmetrics.api.AttributesSchema;
-import com.reflex.otelmetrics.api.CounterMetric;
-import com.reflex.otelmetrics.api.GaugeMetric;
-import com.reflex.otelmetrics.api.MetricDefinition;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
-import com.reflex.otelmetrics.manual.ReflexMetricFactory;
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
+import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
+import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;

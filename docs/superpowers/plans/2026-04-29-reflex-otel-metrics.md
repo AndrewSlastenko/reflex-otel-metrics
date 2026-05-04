@@ -20,60 +20,60 @@
 
 ### Main Sources
 
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricSource.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/JdbcMetricSource.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricKind.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricPoint.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricDefinitionDefaults.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricScheduleDefaults.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/SeriesOverflowPolicy.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/QueryDefinition.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/ReflexOtelMetricsProperties.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/MetricRuntimeProperties.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/MetricConfigResolver.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/ResolvedMetricConfig.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/MetricConfigValidator.java`
-- Create: `src/main/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollector.java`
-- Create: `src/main/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollectorFactory.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricExecutionCoordinator.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricExecutionTask.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricSourceRegistry.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricSchedulerRegistrar.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricRunOutcome.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/SeriesLimiter.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/OverflowAggregationStrategy.java`
-- Create: `src/main/java/com/reflex/otelmetrics/locking/MetricLockManager.java`
-- Create: `src/main/java/com/reflex/otelmetrics/locking/ShedLockMetricLockManager.java`
-- Create: `src/main/java/com/reflex/otelmetrics/otel/OtelMeterFactory.java`
-- Create: `src/main/java/com/reflex/otelmetrics/otel/OtelMetricPublisher.java`
-- Create: `src/main/java/com/reflex/otelmetrics/otel/OtelInstrumentRegistry.java`
-- Create: `src/main/java/com/reflex/otelmetrics/internal/InternalTelemetryRecorder.java`
-- Create: `src/main/java/com/reflex/otelmetrics/internal/LoggingSupport.java`
-- Create: `src/main/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricSource.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/JdbcMetricSource.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricKind.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricPoint.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinitionDefaults.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricScheduleDefaults.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/SeriesOverflowPolicy.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/QueryDefinition.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricRuntimeProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolver.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedMetricConfig.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigValidator.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollector.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorFactory.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionCoordinator.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTask.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricSourceRegistry.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricSchedulerRegistrar.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricRunOutcome.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiter.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/OverflowAggregationStrategy.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/locking/MetricLockManager.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/locking/ShedLockMetricLockManager.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMeterFactory.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMetricPublisher.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistry.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/internal/InternalTelemetryRecorder.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/internal/LoggingSupport.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
 - Create: `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
 
 ### Tests
 
-- Create: `src/test/java/com/reflex/otelmetrics/config/MetricConfigResolverTest.java`
-- Create: `src/test/java/com/reflex/otelmetrics/config/MetricConfigValidatorTest.java`
-- Create: `src/test/java/com/reflex/otelmetrics/runtime/SeriesLimiterTest.java`
-- Create: `src/test/java/com/reflex/otelmetrics/runtime/MetricExecutionTaskTest.java`
-- Create: `src/test/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollectorTest.java`
-- Create: `src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolverTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigValidatorTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiterTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTaskTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
 
 ## Task 1: Bootstrap the Maven Starter
 
 **Files:**
+
 - Create: `pom.xml`
 - Create: `.gitignore`
 - Create: `README.md`
-
-- [ ] **Step 1: Write the failing build skeleton expectation**
+- **Step 1: Write the failing build skeleton expectation**
 
 Create `README.md` with the initial contract for the repository so the build has an explicit target:
 
 ```md
-# reflex-otel-metrics
+# rcln-reflex-telemetry
 
 Spring Boot starter for JDBC-backed OpenTelemetry metrics export.
 
@@ -86,7 +86,7 @@ Spring Boot starter for JDBC-backed OpenTelemetry metrics export.
 - Fail-safe execution
 ```
 
-- [ ] **Step 2: Add the initial Maven build**
+- **Step 2: Add the initial Maven build**
 
 Create `pom.xml`:
 
@@ -96,8 +96,8 @@ Create `pom.xml`:
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.reflex</groupId>
-    <artifactId>reflex-otel-metrics</artifactId>
+    <groupId>ru.sber.rcln</groupId>
+    <artifactId>rcln-reflex-telemetry</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -193,7 +193,7 @@ Create `pom.xml`:
 </project>
 ```
 
-- [ ] **Step 3: Add basic ignore rules**
+- **Step 3: Add basic ignore rules**
 
 Create `.gitignore`:
 
@@ -206,7 +206,7 @@ target/
 .settings/
 ```
 
-- [ ] **Step 4: Run the build to verify the skeleton passes**
+- **Step 4: Run the build to verify the skeleton passes**
 
 Run:
 
@@ -216,7 +216,7 @@ mvn test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
 git add pom.xml .gitignore README.md
@@ -226,26 +226,26 @@ git commit -m "chore: bootstrap otel metrics starter"
 ## Task 2: Define the Public API Contracts
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricSource.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/JdbcMetricSource.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricKind.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricPoint.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricDefinitionDefaults.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/MetricScheduleDefaults.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/SeriesOverflowPolicy.java`
-- Create: `src/main/java/com/reflex/otelmetrics/api/QueryDefinition.java`
 
-- [ ] **Step 1: Write the failing API contract test**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricSource.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/JdbcMetricSource.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricKind.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricPoint.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricDefinitionDefaults.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricScheduleDefaults.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/SeriesOverflowPolicy.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/QueryDefinition.java`
+- **Step 1: Write the failing API contract test**
 
-Create `src/test/java/com/reflex/otelmetrics/config/MetricConfigResolverTest.java` with the first contract assertion:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolverTest.java` with the first contract assertion:
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.MetricScheduleDefaults;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -278,7 +278,7 @@ class MetricConfigResolverTest {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- **Step 2: Run the test to verify it fails**
 
 Run:
 
@@ -288,12 +288,12 @@ mvn -Dtest=MetricConfigResolverTest test
 
 Expected: compilation failure because API types do not exist yet
 
-- [ ] **Step 3: Implement the API records and interfaces**
+- **Step 3: Implement the API records and interfaces**
 
 Create the API files with these contents:
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 public enum MetricKind {
     GAUGE,
@@ -302,7 +302,7 @@ public enum MetricKind {
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 public enum SeriesOverflowPolicy {
     FAIL,
@@ -312,7 +312,7 @@ public enum SeriesOverflowPolicy {
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.util.Map;
 
@@ -321,14 +321,14 @@ public record MetricPoint(long value, Map<String, String> attributes) {
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 public record QueryDefinition(String sql) {
 }
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.time.Duration;
 
@@ -346,7 +346,7 @@ public record MetricScheduleDefaults(
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import java.time.Duration;
 
@@ -366,7 +366,7 @@ public record MetricDefinitionDefaults(
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 public interface MetricSource {
 
@@ -377,7 +377,7 @@ public interface MetricSource {
 ```
 
 ```java
-package com.reflex.otelmetrics.api;
+package ru.sber.rcln.reflex.telemetry.api;
 
 import org.springframework.jdbc.core.RowMapper;
 
@@ -389,7 +389,7 @@ public interface JdbcMetricSource extends MetricSource {
 }
 ```
 
-- [ ] **Step 4: Re-run the API contract test**
+- **Step 4: Re-run the API contract test**
 
 Run:
 
@@ -399,25 +399,25 @@ mvn -Dtest=MetricConfigResolverTest test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/api src/test/java/com/reflex/otelmetrics/config/MetricConfigResolverTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/api src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolverTest.java
 git commit -m "feat: add metric source api contracts"
 ```
 
 ## Task 3: Implement Configuration Properties, Merge, and Validation
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/config/ReflexOtelMetricsProperties.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/MetricRuntimeProperties.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/MetricConfigResolver.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/ResolvedMetricConfig.java`
-- Create: `src/main/java/com/reflex/otelmetrics/config/MetricConfigValidator.java`
-- Modify: `src/test/java/com/reflex/otelmetrics/config/MetricConfigResolverTest.java`
-- Create: `src/test/java/com/reflex/otelmetrics/config/MetricConfigValidatorTest.java`
 
-- [ ] **Step 1: Write the failing merge and validation tests**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricRuntimeProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolver.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedMetricConfig.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigValidator.java`
+- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolverTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigValidatorTest.java`
+- **Step 1: Write the failing merge and validation tests**
 
 Expand `MetricConfigResolverTest`:
 
@@ -446,7 +446,7 @@ void propertiesShouldOverrideBeanDefaults() {
 Create `MetricConfigValidatorTest`:
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
 import org.junit.jupiter.api.Test;
 
@@ -465,13 +465,13 @@ class MetricConfigValidatorTest {
                 "documents.current",
                 "business",
                 null,
-                com.reflex.otelmetrics.api.MetricKind.UP_DOWN_COUNTER,
+                ru.sber.rcln.reflex.telemetry.api.MetricKind.UP_DOWN_COUNTER,
                 MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(5)),
                 Duration.ofSeconds(30),
                 Duration.ofMinutes(10),
                 Duration.ZERO,
                 500,
-                com.reflex.otelmetrics.api.SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+                ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy.AGGREGATE_TO_OTHER
         );
 
         assertThat(new MetricConfigValidator().validate(config))
@@ -480,7 +480,7 @@ class MetricConfigValidatorTest {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- **Step 2: Run the tests to verify they fail**
 
 Run:
 
@@ -490,15 +490,15 @@ mvn -Dtest=MetricConfigResolverTest,MetricConfigValidatorTest test
 
 Expected: compilation failure because config types do not exist yet
 
-- [ ] **Step 3: Implement configuration models and resolver**
+- **Step 3: Implement configuration models and resolver**
 
 Create the config types:
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
@@ -545,10 +545,10 @@ public class ReflexOtelMetricsProperties {
 ```
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 
 import java.time.Duration;
 
@@ -601,7 +601,7 @@ public class MetricRuntimeProperties {
 ```
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
 import java.time.Duration;
 
@@ -623,10 +623,10 @@ public record MetricScheduleSettings(
 ```
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.MetricKind;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 
 import java.time.Duration;
 
@@ -649,11 +649,11 @@ public record ResolvedMetricConfig(
 ```
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
-import com.reflex.otelmetrics.api.JdbcMetricSource;
-import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
-import com.reflex.otelmetrics.api.MetricSource;
+import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
+import ru.sber.rcln.reflex.telemetry.api.MetricSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -703,7 +703,7 @@ public class MetricConfigResolver {
 ```
 
 ```java
-package com.reflex.otelmetrics.config;
+package ru.sber.rcln.reflex.telemetry.config;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -729,26 +729,26 @@ public class MetricConfigValidator {
 }
 ```
 
-- [ ] **Step 4: Add the test fixture source and make tests pass**
+- **Step 4: Add the test fixture source and make tests pass**
 
 Append to `MetricConfigResolverTest`:
 
 ```java
-private static final class TestJdbcMetricSource implements com.reflex.otelmetrics.api.JdbcMetricSource {
+private static final class TestJdbcMetricSource implements ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource {
     @Override
     public String metricId() {
         return "documents-by-status";
     }
 
     @Override
-    public com.reflex.otelmetrics.api.MetricDefinitionDefaults defaults() {
-        return new com.reflex.otelmetrics.api.MetricDefinitionDefaults(
+    public ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults defaults() {
+        return new ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults(
                 "documents.by.status",
-                com.reflex.otelmetrics.api.MetricKind.UP_DOWN_COUNTER,
+                ru.sber.rcln.reflex.telemetry.api.MetricKind.UP_DOWN_COUNTER,
                 "business",
                 "businessReplicaDataSource",
-                new com.reflex.otelmetrics.api.MetricScheduleDefaults(
-                        com.reflex.otelmetrics.api.MetricScheduleDefaults.Mode.FIXED_DELAY,
+                new ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults(
+                        ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults.Mode.FIXED_DELAY,
                         java.time.Duration.ofMinutes(5),
                         null,
                         java.time.Duration.ofSeconds(10)
@@ -757,18 +757,18 @@ private static final class TestJdbcMetricSource implements com.reflex.otelmetric
                 java.time.Duration.ofMinutes(10),
                 java.time.Duration.ZERO,
                 500,
-                com.reflex.otelmetrics.api.SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+                ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy.AGGREGATE_TO_OTHER
         );
     }
 
     @Override
-    public com.reflex.otelmetrics.api.QueryDefinition queryDefinition() {
-        return new com.reflex.otelmetrics.api.QueryDefinition("select 1");
+    public ru.sber.rcln.reflex.telemetry.api.QueryDefinition queryDefinition() {
+        return new ru.sber.rcln.reflex.telemetry.api.QueryDefinition("select 1");
     }
 
     @Override
-    public org.springframework.jdbc.core.RowMapper<com.reflex.otelmetrics.api.MetricPoint> rowMapper() {
-        return (rs, rowNum) -> new com.reflex.otelmetrics.api.MetricPoint(1L, java.util.Map.of());
+    public org.springframework.jdbc.core.RowMapper<ru.sber.rcln.reflex.telemetry.api.MetricPoint> rowMapper() {
+        return (rs, rowNum) -> new ru.sber.rcln.reflex.telemetry.api.MetricPoint(1L, java.util.Map.of());
     }
 }
 ```
@@ -781,29 +781,29 @@ mvn -Dtest=MetricConfigResolverTest,MetricConfigValidatorTest test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/config src/test/java/com/reflex/otelmetrics/config
+git add src/main/java/ru/sber/rcln/reflex/telemetry/config src/test/java/ru/sber/rcln/reflex/telemetry/config
 git commit -m "feat: add metric configuration resolution and validation"
 ```
 
 ## Task 4: Implement Series Limiting and Overflow Handling
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/SeriesLimiter.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/OverflowAggregationStrategy.java`
-- Create: `src/test/java/com/reflex/otelmetrics/runtime/SeriesLimiterTest.java`
 
-- [ ] **Step 1: Write the failing series limiter tests**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiter.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/OverflowAggregationStrategy.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiterTest.java`
+- **Step 1: Write the failing series limiter tests**
 
-Create `src/test/java/com/reflex/otelmetrics/runtime/SeriesLimiterTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiterTest.java`:
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -849,7 +849,7 @@ class SeriesLimiterTest {
 }
 ```
 
-- [ ] **Step 2: Run the series tests to verify they fail**
+- **Step 2: Run the series tests to verify they fail**
 
 Run:
 
@@ -859,14 +859,14 @@ mvn -Dtest=SeriesLimiterTest test
 
 Expected: compilation failure because limiter types do not exist yet
 
-- [ ] **Step 3: Implement the overflow strategy and limiter**
+- **Step 3: Implement the overflow strategy and limiter**
 
 Create:
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 
 import java.util.HashMap;
 import java.util.List;
@@ -884,10 +884,10 @@ public class OverflowAggregationStrategy {
 ```
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -917,7 +917,7 @@ public class SeriesLimiter {
 }
 ```
 
-- [ ] **Step 4: Re-run the series limiter tests**
+- **Step 4: Re-run the series limiter tests**
 
 Run:
 
@@ -927,29 +927,29 @@ mvn -Dtest=SeriesLimiterTest test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/runtime/SeriesLimiter.java src/main/java/com/reflex/otelmetrics/runtime/OverflowAggregationStrategy.java src/test/java/com/reflex/otelmetrics/runtime/SeriesLimiterTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiter.java src/main/java/ru/sber/rcln/reflex/telemetry/runtime/OverflowAggregationStrategy.java src/test/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiterTest.java
 git commit -m "feat: add series limiting and overflow handling"
 ```
 
 ## Task 5: Implement JDBC Collection
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollector.java`
-- Create: `src/main/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollectorFactory.java`
-- Create: `src/test/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollectorTest.java`
 
-- [ ] **Step 1: Write the failing JDBC collector test**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollector.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorFactory.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorTest.java`
+- **Step 1: Write the failing JDBC collector test**
 
-Create `src/test/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollectorTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorTest.java`:
 
 ```java
-package com.reflex.otelmetrics.jdbc;
+package ru.sber.rcln.reflex.telemetry.jdbc;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.api.QueryDefinition;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -980,7 +980,7 @@ class JdbcMetricCollectorTest {
 }
 ```
 
-- [ ] **Step 2: Run the JDBC test to verify it fails**
+- **Step 2: Run the JDBC test to verify it fails**
 
 Run:
 
@@ -990,15 +990,15 @@ mvn -Dtest=JdbcMetricCollectorTest test
 
 Expected: compilation failure because JDBC collector types do not exist yet
 
-- [ ] **Step 3: Implement the JDBC collector**
+- **Step 3: Implement the JDBC collector**
 
 Create:
 
 ```java
-package com.reflex.otelmetrics.jdbc;
+package ru.sber.rcln.reflex.telemetry.jdbc;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.api.QueryDefinition;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -1019,7 +1019,7 @@ public class JdbcMetricCollector {
 ```
 
 ```java
-package com.reflex.otelmetrics.jdbc;
+package ru.sber.rcln.reflex.telemetry.jdbc;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -1033,7 +1033,7 @@ public class JdbcMetricCollectorFactory {
 }
 ```
 
-- [ ] **Step 4: Re-run the JDBC collector test**
+- **Step 4: Re-run the JDBC collector test**
 
 Run:
 
@@ -1043,37 +1043,37 @@ mvn -Dtest=JdbcMetricCollectorTest test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/jdbc src/test/java/com/reflex/otelmetrics/jdbc/JdbcMetricCollectorTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/jdbc src/test/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorTest.java
 git commit -m "feat: add jdbc metric collector"
 ```
 
 ## Task 6: Implement Locking, OTEL Publishing, and Internal Telemetry Interfaces
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/locking/MetricLockManager.java`
-- Create: `src/main/java/com/reflex/otelmetrics/locking/ShedLockMetricLockManager.java`
-- Create: `src/main/java/com/reflex/otelmetrics/otel/OtelMeterFactory.java`
-- Create: `src/main/java/com/reflex/otelmetrics/otel/OtelMetricPublisher.java`
-- Create: `src/main/java/com/reflex/otelmetrics/otel/OtelInstrumentRegistry.java`
-- Create: `src/main/java/com/reflex/otelmetrics/internal/InternalTelemetryRecorder.java`
-- Create: `src/main/java/com/reflex/otelmetrics/internal/LoggingSupport.java`
 
-- [ ] **Step 1: Write the failing execution outcome test**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/locking/MetricLockManager.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/locking/ShedLockMetricLockManager.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMeterFactory.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMetricPublisher.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistry.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/internal/InternalTelemetryRecorder.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/internal/LoggingSupport.java`
+- **Step 1: Write the failing execution outcome test**
 
-Create `src/test/java/com/reflex/otelmetrics/runtime/MetricExecutionTaskTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTaskTest.java`:
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
-import com.reflex.otelmetrics.config.MetricScheduleSettings;
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
-import com.reflex.otelmetrics.internal.InternalTelemetryRecorder;
-import com.reflex.otelmetrics.otel.OtelMetricPublisher;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.config.MetricScheduleSettings;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
+import ru.sber.rcln.reflex.telemetry.otel.OtelMetricPublisher;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -1091,7 +1091,7 @@ class MetricExecutionTaskTest {
     @Test
     void shouldPublishPointsWhenExecutionSucceeds() {
         MetricExecutionCoordinator coordinator = mock(MetricExecutionCoordinator.class);
-        com.reflex.otelmetrics.locking.MetricLockManager lockManager = mock(com.reflex.otelmetrics.locking.MetricLockManager.class);
+        ru.sber.rcln.reflex.telemetry.locking.MetricLockManager lockManager = mock(ru.sber.rcln.reflex.telemetry.locking.MetricLockManager.class);
         OtelMetricPublisher publisher = mock(OtelMetricPublisher.class);
         InternalTelemetryRecorder telemetryRecorder = mock(InternalTelemetryRecorder.class);
         SeriesLimiter seriesLimiter = new SeriesLimiter(new OverflowAggregationStrategy());
@@ -1115,7 +1115,7 @@ class MetricExecutionTaskTest {
                         "documents.current",
                         "business",
                         "businessReplicaDataSource",
-                        com.reflex.otelmetrics.api.MetricKind.UP_DOWN_COUNTER,
+                        ru.sber.rcln.reflex.telemetry.api.MetricKind.UP_DOWN_COUNTER,
                         MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(5)),
                         Duration.ofSeconds(30),
                         Duration.ofMinutes(10),
@@ -1134,7 +1134,7 @@ class MetricExecutionTaskTest {
 }
 ```
 
-- [ ] **Step 2: Run the execution test to verify it fails**
+- **Step 2: Run the execution test to verify it fails**
 
 Run:
 
@@ -1144,12 +1144,12 @@ mvn -Dtest=MetricExecutionTaskTest test
 
 Expected: compilation failure because runtime and publisher types do not exist yet
 
-- [ ] **Step 3: Implement the runtime interfaces**
+- **Step 3: Implement the runtime interfaces**
 
 Create:
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
 public enum MetricRunOutcome {
     SUCCESS,
@@ -1159,9 +1159,9 @@ public enum MetricRunOutcome {
 ```
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 
 import java.util.List;
 
@@ -1172,10 +1172,10 @@ public interface MetricExecutionCoordinator {
 ```
 
 ```java
-package com.reflex.otelmetrics.internal;
+package ru.sber.rcln.reflex.telemetry.internal;
 
-import com.reflex.otelmetrics.runtime.MetricRunOutcome;
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.runtime.MetricRunOutcome;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 
 public interface InternalTelemetryRecorder {
 
@@ -1188,9 +1188,9 @@ public interface InternalTelemetryRecorder {
 ```
 
 ```java
-package com.reflex.otelmetrics.internal;
+package ru.sber.rcln.reflex.telemetry.internal;
 
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1209,7 +1209,7 @@ public class LoggingSupport {
 ```
 
 ```java
-package com.reflex.otelmetrics.otel;
+package ru.sber.rcln.reflex.telemetry.otel;
 
 import io.opentelemetry.api.metrics.Meter;
 
@@ -1220,9 +1220,9 @@ public interface OtelMeterFactory {
 ```
 
 ```java
-package com.reflex.otelmetrics.otel;
+package ru.sber.rcln.reflex.telemetry.otel;
 
-import com.reflex.otelmetrics.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -1249,10 +1249,10 @@ public class OtelInstrumentRegistry {
 ```
 
 ```java
-package com.reflex.otelmetrics.otel;
+package ru.sber.rcln.reflex.telemetry.otel;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongGauge;
@@ -1287,9 +1287,9 @@ public class OtelMetricPublisher {
 ```
 
 ```java
-package com.reflex.otelmetrics.locking;
+package ru.sber.rcln.reflex.telemetry.locking;
 
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 
 public interface MetricLockManager {
 
@@ -1298,9 +1298,9 @@ public interface MetricLockManager {
 ```
 
 ```java
-package com.reflex.otelmetrics.locking;
+package ru.sber.rcln.reflex.telemetry.locking;
 
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
@@ -1337,7 +1337,7 @@ public class ShedLockMetricLockManager implements MetricLockManager {
 }
 ```
 
-- [ ] **Step 4: Re-run the execution test**
+- **Step 4: Re-run the execution test**
 
 Run:
 
@@ -1347,22 +1347,22 @@ mvn -Dtest=MetricExecutionTaskTest test
 
 Expected: compilation still fails because `MetricExecutionTask` is not implemented yet
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/locking src/main/java/com/reflex/otelmetrics/otel src/main/java/com/reflex/otelmetrics/internal src/main/java/com/reflex/otelmetrics/runtime/MetricExecutionCoordinator.java src/main/java/com/reflex/otelmetrics/runtime/MetricRunOutcome.java src/test/java/com/reflex/otelmetrics/runtime/MetricExecutionTaskTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/locking src/main/java/ru/sber/rcln/reflex/telemetry/otel src/main/java/ru/sber/rcln/reflex/telemetry/internal src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionCoordinator.java src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricRunOutcome.java src/test/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTaskTest.java
 git commit -m "feat: add locking and publishing interfaces"
 ```
 
 ## Task 7: Implement Metric Execution Flow
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricExecutionTask.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricSourceRegistry.java`
-- Create: `src/main/java/com/reflex/otelmetrics/runtime/MetricSchedulerRegistrar.java`
-- Modify: `src/test/java/com/reflex/otelmetrics/runtime/MetricExecutionTaskTest.java`
 
-- [ ] **Step 1: Extend the failing execution test for failure behavior**
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTask.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricSourceRegistry.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/runtime/MetricSchedulerRegistrar.java`
+- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTaskTest.java`
+- **Step 1: Extend the failing execution test for failure behavior**
 
 Append to `MetricExecutionTaskTest`:
 
@@ -1370,7 +1370,7 @@ Append to `MetricExecutionTaskTest`:
 @Test
 void shouldRecordFailureWithoutThrowing() {
     MetricExecutionCoordinator coordinator = mock(MetricExecutionCoordinator.class);
-    com.reflex.otelmetrics.locking.MetricLockManager lockManager = mock(com.reflex.otelmetrics.locking.MetricLockManager.class);
+    ru.sber.rcln.reflex.telemetry.locking.MetricLockManager lockManager = mock(ru.sber.rcln.reflex.telemetry.locking.MetricLockManager.class);
     OtelMetricPublisher publisher = mock(OtelMetricPublisher.class);
     InternalTelemetryRecorder telemetryRecorder = mock(InternalTelemetryRecorder.class);
     when(coordinator.collect()).thenThrow(new IllegalStateException("boom"));
@@ -1393,7 +1393,7 @@ void shouldRecordFailureWithoutThrowing() {
                     "documents.current",
                     "business",
                     "businessReplicaDataSource",
-                    com.reflex.otelmetrics.api.MetricKind.UP_DOWN_COUNTER,
+                    ru.sber.rcln.reflex.telemetry.api.MetricKind.UP_DOWN_COUNTER,
                     MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(5)),
                     Duration.ofSeconds(30),
                     Duration.ofMinutes(10),
@@ -1410,7 +1410,7 @@ void shouldRecordFailureWithoutThrowing() {
 }
 ```
 
-- [ ] **Step 2: Run the execution test to verify it fails on missing implementation**
+- **Step 2: Run the execution test to verify it fails on missing implementation**
 
 Run:
 
@@ -1420,24 +1420,24 @@ mvn -Dtest=MetricExecutionTaskTest test
 
 Expected: compilation failure because `MetricExecutionTask` does not exist
 
-- [ ] **Step 3: Implement the execution task, registry, and scheduler registrar**
+- **Step 3: Implement the execution task, registry, and scheduler registrar**
 
 Create:
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricPoint;
-import com.reflex.otelmetrics.config.ResolvedMetricConfig;
-import com.reflex.otelmetrics.internal.InternalTelemetryRecorder;
-import com.reflex.otelmetrics.otel.OtelMetricPublisher;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
+import ru.sber.rcln.reflex.telemetry.otel.OtelMetricPublisher;
 
 import java.util.List;
 
 public class MetricExecutionTask {
 
     private final MetricExecutionCoordinator coordinator;
-    private final com.reflex.otelmetrics.locking.MetricLockManager lockManager;
+    private final ru.sber.rcln.reflex.telemetry.locking.MetricLockManager lockManager;
     private final OtelMetricPublisher publisher;
     private final InternalTelemetryRecorder telemetryRecorder;
     private final SeriesLimiter seriesLimiter;
@@ -1445,7 +1445,7 @@ public class MetricExecutionTask {
 
     public MetricExecutionTask(
             MetricExecutionCoordinator coordinator,
-            com.reflex.otelmetrics.locking.MetricLockManager lockManager,
+            ru.sber.rcln.reflex.telemetry.locking.MetricLockManager lockManager,
             OtelMetricPublisher publisher,
             InternalTelemetryRecorder telemetryRecorder,
             SeriesLimiter seriesLimiter,
@@ -1485,9 +1485,9 @@ public class MetricExecutionTask {
 ```
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.api.MetricSource;
+import ru.sber.rcln.reflex.telemetry.api.MetricSource;
 
 import java.util.List;
 
@@ -1496,9 +1496,9 @@ public record MetricSourceRegistry(List<MetricSource> sources) {
 ```
 
 ```java
-package com.reflex.otelmetrics.runtime;
+package ru.sber.rcln.reflex.telemetry.runtime;
 
-import com.reflex.otelmetrics.config.MetricScheduleSettings;
+import ru.sber.rcln.reflex.telemetry.config.MetricScheduleSettings;
 
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
@@ -1526,7 +1526,7 @@ public class MetricSchedulerRegistrar {
 }
 ```
 
-- [ ] **Step 4: Re-run the execution flow test**
+- **Step 4: Re-run the execution flow test**
 
 Run:
 
@@ -1536,29 +1536,29 @@ mvn -Dtest=MetricExecutionTaskTest test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/runtime src/test/java/com/reflex/otelmetrics/runtime/MetricExecutionTaskTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/runtime src/test/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTaskTest.java
 git commit -m "feat: add metric execution runtime"
 ```
 
 ## Task 8: Implement Spring Boot Auto-Configuration
 
 **Files:**
-- Create: `src/main/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
+
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
 - Create: `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
-- Create: `src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- **Step 1: Write the failing auto-configuration test**
 
-- [ ] **Step 1: Write the failing auto-configuration test**
-
-Create `src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`:
 
 ```java
-package com.reflex.otelmetrics.autoconfigure;
+package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
-import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
-import com.reflex.otelmetrics.runtime.SeriesLimiter;
+import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.junit.jupiter.api.Test;
@@ -1586,7 +1586,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
 }
 ```
 
-- [ ] **Step 2: Run the auto-configuration test to verify it fails**
+- **Step 2: Run the auto-configuration test to verify it fails**
 
 Run:
 
@@ -1596,20 +1596,20 @@ mvn -Dtest=ReflexOtelMetricsAutoConfigurationTest test
 
 Expected: compilation failure because auto-configuration does not exist yet
 
-- [ ] **Step 3: Implement the auto-configuration**
+- **Step 3: Implement the auto-configuration**
 
-Create `src/main/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`:
+Create `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`:
 
 ```java
-package com.reflex.otelmetrics.autoconfigure;
+package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
-import com.reflex.otelmetrics.config.MetricConfigResolver;
-import com.reflex.otelmetrics.config.MetricConfigValidator;
-import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
-import com.reflex.otelmetrics.internal.LoggingSupport;
-import com.reflex.otelmetrics.otel.OtelInstrumentRegistry;
-import com.reflex.otelmetrics.runtime.OverflowAggregationStrategy;
-import com.reflex.otelmetrics.runtime.SeriesLimiter;
+import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
+import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
+import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
+import ru.sber.rcln.reflex.telemetry.runtime.OverflowAggregationStrategy;
+import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
@@ -1691,7 +1691,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     Meter meter(OpenTelemetry openTelemetry) {
-        return openTelemetry.getMeter("com.reflex.otelmetrics");
+        return openTelemetry.getMeter("ru.sber.rcln.reflex.telemetry");
     }
 
     @Bean
@@ -1705,10 +1705,10 @@ public class ReflexOtelMetricsAutoConfiguration {
 Create `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`:
 
 ```text
-com.reflex.otelmetrics.autoconfigure.ReflexOtelMetricsAutoConfiguration
+ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexOtelMetricsAutoConfiguration
 ```
 
-- [ ] **Step 4: Re-run the auto-configuration test**
+- **Step 4: Re-run the auto-configuration test**
 
 Run:
 
@@ -1718,20 +1718,20 @@ mvn -Dtest=ReflexOtelMetricsAutoConfigurationTest test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add src/main/java/com/reflex/otelmetrics/autoconfigure src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
 git commit -m "feat: add spring boot auto-configuration"
 ```
 
 ## Task 9: Add End-to-End Wiring Tests and Usage Documentation
 
 **Files:**
-- Modify: `README.md`
-- Modify: `src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
 
-- [ ] **Step 1: Write the failing integration-style auto-configuration test**
+- Modify: `README.md`
+- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- **Step 1: Write the failing integration-style auto-configuration test**
 
 Append to `ReflexOtelMetricsAutoConfigurationTest`:
 
@@ -1751,7 +1751,7 @@ void shouldBindMetricPropertiesOverrides() {
 }
 ```
 
-- [ ] **Step 2: Run the focused test to verify it fails if binding is incomplete**
+- **Step 2: Run the focused test to verify it fails if binding is incomplete**
 
 Run:
 
@@ -1761,12 +1761,12 @@ mvn -Dtest=ReflexOtelMetricsAutoConfigurationTest test
 
 Expected: failing assertion if configuration binding is incomplete
 
-- [ ] **Step 3: Update README with the supported integration contract**
+- **Step 3: Update README with the supported integration contract**
 
 Replace `README.md` with:
 
 ```md
-# reflex-otel-metrics
+# rcln-reflex-telemetry
 
 Spring Boot starter for JDBC-backed OpenTelemetry metrics export.
 
@@ -1822,6 +1822,7 @@ reflex:
           max-series: 500
           overflow-policy: AGGREGATE_TO_OTHER
 ```
+
 ```
 
 - [ ] **Step 4: Run the full test suite**
@@ -1834,10 +1835,10 @@ mvn test
 
 Expected: `BUILD SUCCESS`
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```bash
-git add README.md src/test/java/com/reflex/otelmetrics/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
+git add README.md src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
 git commit -m "docs: add starter usage documentation"
 ```
 
@@ -1868,3 +1869,4 @@ The initial draft missed concrete OTEL exporter initialization and lock executio
 
 - `MetricSource`, `JdbcMetricSource`, `MetricDefinitionDefaults`, `ResolvedMetricConfig`, and `MetricScheduleSettings` use consistent names across tasks.
 - `MetricExecutionTask` and `SeriesLimiter` are referenced consistently.
+

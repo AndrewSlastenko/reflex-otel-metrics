@@ -1,1 +1,1 @@
-com.reflex.otelmetrics.autoconfigure.ReflexOtelMetricsAutoConfiguration
+ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexOtelMetricsAutoConfiguration
