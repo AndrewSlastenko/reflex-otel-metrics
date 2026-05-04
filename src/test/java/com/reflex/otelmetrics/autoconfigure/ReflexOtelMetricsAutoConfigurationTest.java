@@ -15,6 +15,7 @@ import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
 import com.reflex.otelmetrics.config.ManualMetricConfigResolver;
 import com.reflex.otelmetrics.manual.AttributeValidator;
 import com.reflex.otelmetrics.manual.ReflexMetricFactory;
+import com.reflex.otelmetrics.otel.OtelInstrumentRegistry;
 import com.reflex.otelmetrics.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
@@ -129,6 +130,22 @@ class ReflexOtelMetricsAutoConfigurationTest {
                             .isSameAs(context.getBean("ordersCreatedMetric", CounterMetric.class));
                     assertThat(context.getBean(ManualCounterMetricConsumer.class).ordersFailedMetric())
                             .isSameAs(context.getBean("ordersFailedMetric", CounterMetric.class));
+                });
+    }
+
+    @Test
+    void shouldKeepManualMetricBeansAvailableWhenMetricsAreDisabled() {
+        contextRunner
+                .withPropertyValues("reflex.otel.metrics.enabled=false")
+                .withUserConfiguration(ManualCounterMetricConfiguration.class)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(ReflexMetricFactory.class);
+                    assertThat(context).hasBean("ordersCreatedMetric");
+                    assertThat(context).hasBean("ordersFailedMetric");
+                    assertThat(context.getBeansOfType(CounterMetric.class))
+                            .containsOnlyKeys("ordersCreatedMetric", "ordersFailedMetric");
+                    assertThat(context).doesNotHaveBean(OpenTelemetry.class);
+                    assertThat(context).doesNotHaveBean(OtelInstrumentRegistry.class);
                 });
     }
 

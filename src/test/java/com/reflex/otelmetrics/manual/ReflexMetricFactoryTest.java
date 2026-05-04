@@ -90,6 +90,29 @@ class ReflexMetricFactoryTest {
                 .hasMessageContaining("AGGREGATE_TO_OTHER is not supported for manual metrics");
     }
 
+    @Test
+    void disabledMetricsDoNotRequireInstrumentRegistry() {
+        ReflexMetricFactory factory = new ReflexMetricFactory(
+                configResolver,
+                () -> null,
+                attributeValidator);
+
+        configResolver.nextConfig = disabled(MetricKind.COUNTER);
+        CounterMetric counter = factory.counter("orders-created", MetricDefinition.of("orders.created").build());
+        counter.add(1);
+        counter.increment();
+
+        configResolver.nextConfig = disabled(MetricKind.GAUGE);
+        GaugeMetric gauge = factory.gauge("queue-depth", MetricDefinition.of("queue.depth").build());
+        gauge.set(12);
+
+        configResolver.nextConfig = disabled(MetricKind.UP_DOWN_COUNTER);
+        UpDownCounterMetric upDownCounter = factory.upDownCounter(
+                "workers-active",
+                MetricDefinition.of("workers.active").build());
+        upDownCounter.add(-1);
+    }
+
     private static ResolvedManualMetricConfig resolved(MetricKind kind, SeriesOverflowPolicy overflowPolicy) {
         return resolved(kind, null, null, overflowPolicy);
     }
@@ -111,6 +134,21 @@ class ReflexMetricFactoryTest {
                 MetricDefinition.of("orders.created").build().attributes(),
                 500,
                 overflowPolicy);
+    }
+
+    private static ResolvedManualMetricConfig disabled(MetricKind kind) {
+        return new ResolvedManualMetricConfig(
+                "orders-created",
+                false,
+                "reflex.orders.created",
+                "orders.created",
+                "default",
+                kind,
+                null,
+                null,
+                MetricDefinition.of("orders.created").build().attributes(),
+                500,
+                SeriesOverflowPolicy.FAIL);
     }
 
     private static final class RecordingConfigResolver extends ManualMetricConfigResolver {

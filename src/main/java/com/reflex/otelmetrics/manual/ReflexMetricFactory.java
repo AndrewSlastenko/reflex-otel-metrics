@@ -12,25 +12,40 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class ReflexMetricFactory {
 
     private final ManualMetricConfigResolver configResolver;
-    private final OtelInstrumentRegistry instrumentRegistry;
+    private final Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier;
     private final AttributeValidator attributeValidator;
 
     public ReflexMetricFactory(
             ManualMetricConfigResolver configResolver,
             OtelInstrumentRegistry instrumentRegistry,
             AttributeValidator attributeValidator) {
+        this(configResolver, instrumentRegistrySupplier(instrumentRegistry), attributeValidator);
+    }
+
+    public ReflexMetricFactory(
+            ManualMetricConfigResolver configResolver,
+            Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier,
+            AttributeValidator attributeValidator) {
         this.configResolver = Objects.requireNonNull(configResolver, "configResolver must not be null");
-        this.instrumentRegistry = Objects.requireNonNull(instrumentRegistry, "instrumentRegistry must not be null");
+        this.instrumentRegistrySupplier = Objects.requireNonNull(
+                instrumentRegistrySupplier,
+                "instrumentRegistrySupplier must not be null");
         this.attributeValidator = Objects.requireNonNull(attributeValidator, "attributeValidator must not be null");
     }
 
     public CounterMetric counter(String metricId, MetricDefinition definition) {
         ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.COUNTER, definition);
-        LongCounter instrument = (LongCounter) instrumentRegistry.getOrCreate(
+        if (!config.enabled()) {
+            return (value, attributes) -> {
+            };
+        }
+
+        LongCounter instrument = (LongCounter) requireInstrumentRegistry().getOrCreate(
                 config.fullMetricName(),
                 MetricKind.COUNTER,
                 config.description(),
@@ -40,7 +55,12 @@ public class ReflexMetricFactory {
 
     public GaugeMetric gauge(String metricId, MetricDefinition definition) {
         ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.GAUGE, definition);
-        LongGauge instrument = (LongGauge) instrumentRegistry.getOrCreate(
+        if (!config.enabled()) {
+            return (value, attributes) -> {
+            };
+        }
+
+        LongGauge instrument = (LongGauge) requireInstrumentRegistry().getOrCreate(
                 config.fullMetricName(),
                 MetricKind.GAUGE,
                 config.description(),
@@ -50,11 +70,32 @@ public class ReflexMetricFactory {
 
     public UpDownCounterMetric upDownCounter(String metricId, MetricDefinition definition) {
         ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.UP_DOWN_COUNTER, definition);
-        LongUpDownCounter instrument = (LongUpDownCounter) instrumentRegistry.getOrCreate(
+        if (!config.enabled()) {
+            return (value, attributes) -> {
+            };
+        }
+
+        LongUpDownCounter instrument = (LongUpDownCounter) requireInstrumentRegistry().getOrCreate(
                 config.fullMetricName(),
                 MetricKind.UP_DOWN_COUNTER,
                 config.description(),
                 config.unit());
         return new DefaultUpDownCounterMetric(config, instrument, attributeValidator);
+    }
+
+    private OtelInstrumentRegistry requireInstrumentRegistry() {
+        OtelInstrumentRegistry instrumentRegistry = instrumentRegistrySupplier.get();
+        if (instrumentRegistry == null) {
+            throw new IllegalStateException(
+                    "OtelInstrumentRegistry is required to create enabled manual metrics. "
+                            + "Enable reflex.otel.metrics.enabled or provide an OtelInstrumentRegistry bean.");
+        }
+        return instrumentRegistry;
+    }
+
+    private static Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier(
+            OtelInstrumentRegistry instrumentRegistry) {
+        Objects.requireNonNull(instrumentRegistry, "instrumentRegistry must not be null");
+        return () -> instrumentRegistry;
     }
 }
