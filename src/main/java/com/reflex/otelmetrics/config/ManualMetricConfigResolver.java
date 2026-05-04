@@ -2,22 +2,21 @@ package com.reflex.otelmetrics.config;
 
 import com.reflex.otelmetrics.api.MetricDefinition;
 import com.reflex.otelmetrics.api.MetricKind;
-import java.util.Objects;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class ManualMetricConfigResolver {
 
-    private final ReflexOtelMetricsProperties properties;
+    private final @NonNull ReflexOtelMetricsProperties properties;
 
-    public ManualMetricConfigResolver(ReflexOtelMetricsProperties properties) {
-        this.properties = Objects.requireNonNull(properties, "properties must not be null");
-    }
-
-    public ResolvedManualMetricConfig resolve(String metricId, MetricKind kind, MetricDefinition definition) {
+    public ResolvedManualMetricConfig resolve(
+            String metricId,
+            @NonNull MetricKind kind,
+            @NonNull MetricDefinition definition) {
         if (metricId == null || metricId.isBlank()) {
             throw new IllegalArgumentException("metricId must not be blank");
         }
-        Objects.requireNonNull(kind, "kind must not be null");
-        Objects.requireNonNull(definition, "definition must not be null");
 
         ManualMetricRuntimeProperties runtime = properties.getManual()
                 .getOrDefault(metricId, new ManualMetricRuntimeProperties());

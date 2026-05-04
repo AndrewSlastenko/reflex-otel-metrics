@@ -13,6 +13,6 @@ public class LoggingSupport {
     }
 
     public void runtimeFailure(ResolvedMetricConfig config, Exception exception) {
-        log.error("Metric {} failed during collection", config.metricId(), exception);
+        HandledExceptionLogging.errorCollectionFailure(log, config.metricId(), exception);
     }
 }

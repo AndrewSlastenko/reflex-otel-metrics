@@ -2,11 +2,12 @@ package com.reflex.otelmetrics.manual;
 
 import com.reflex.otelmetrics.api.CounterMetric;
 import com.reflex.otelmetrics.config.ResolvedManualMetricConfig;
+import com.reflex.otelmetrics.internal.HandledExceptionLogging;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import java.util.Map;
-import java.util.Objects;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +21,12 @@ public class DefaultCounterMetric implements CounterMetric {
     private final ManualSeriesTracker seriesTracker;
 
     public DefaultCounterMetric(
-            ResolvedManualMetricConfig config,
-            LongCounter instrument,
-            AttributeValidator attributeValidator) {
-        this.config = Objects.requireNonNull(config, "config must not be null");
-        this.instrument = Objects.requireNonNull(instrument, "instrument must not be null");
-        this.attributeValidator = Objects.requireNonNull(attributeValidator, "attributeValidator must not be null");
+            @NonNull ResolvedManualMetricConfig config,
+            @NonNull LongCounter instrument,
+            @NonNull AttributeValidator attributeValidator) {
+        this.config = config;
+        this.instrument = instrument;
+        this.attributeValidator = attributeValidator;
         this.seriesTracker = new ManualSeriesTracker(config.maxSeries(), config.overflowPolicy());
     }
 
@@ -54,7 +55,7 @@ public class DefaultCounterMetric implements CounterMetric {
 
             instrument.add(value, toAttributes(tracked.attributes()));
         } catch (RuntimeException exception) {
-            log.warn("Metric {} skipped counter publish", config.metricId(), exception);
+            HandledExceptionLogging.warnSkippedManualPublish(log, config.metricId(), "counter", exception);
         }
     }
 

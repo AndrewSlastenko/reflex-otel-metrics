@@ -3,15 +3,14 @@ package com.reflex.otelmetrics.manual;
 import com.reflex.otelmetrics.api.AttributesSchema;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import lombok.NonNull;
 
 public class AttributeValidator {
 
-    public AttributeValidationResult validate(AttributesSchema schema, Map<String, String> attributes) {
-        Objects.requireNonNull(schema, "schema must not be null");
-        Objects.requireNonNull(attributes, "attributes must not be null");
-
+    public AttributeValidationResult validate(
+            @NonNull AttributesSchema schema,
+            @NonNull Map<String, String> attributes) {
         Set<String> allowed = schema.allowed();
         LinkedHashMap<String, String> copy = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : attributes.entrySet()) {

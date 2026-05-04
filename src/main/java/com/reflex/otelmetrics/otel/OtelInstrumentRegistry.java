@@ -10,26 +10,21 @@ import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.Meter;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class OtelInstrumentRegistry {
 
-    private final Meter meter;
+    private final @NonNull Meter meter;
     private final Map<String, RegisteredInstrument> instruments = new ConcurrentHashMap<>();
-
-    public OtelInstrumentRegistry(Meter meter) {
-        this.meter = Objects.requireNonNull(meter, "meter must not be null");
-    }
 
     public Object getOrCreate(String name, MetricKind kind) {
         return getOrCreate(name, kind, null, null);
     }
 
-    public Object getOrCreate(String name, MetricKind kind, String description, String unit) {
-        Objects.requireNonNull(name, "name must not be null");
-        Objects.requireNonNull(kind, "kind must not be null");
-
+    public Object getOrCreate(@NonNull String name, @NonNull MetricKind kind, String description, String unit) {
         return instruments.compute(name, (key, existing) -> {
             if (existing != null) {
                 if (existing.kind() != kind) {

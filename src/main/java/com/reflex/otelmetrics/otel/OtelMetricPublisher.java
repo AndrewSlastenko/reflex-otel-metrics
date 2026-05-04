@@ -9,19 +9,15 @@ import io.opentelemetry.api.metrics.LongUpDownCounter;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class OtelMetricPublisher {
 
-    private final OtelInstrumentRegistry registry;
+    private final @NonNull OtelInstrumentRegistry registry;
 
-    public OtelMetricPublisher(OtelInstrumentRegistry registry) {
-        this.registry = Objects.requireNonNull(registry, "registry must not be null");
-    }
-
-    public void publish(ResolvedMetricConfig config, List<MetricPoint> points) {
-        Objects.requireNonNull(config, "config must not be null");
-        Objects.requireNonNull(points, "points must not be null");
+    public void publish(@NonNull ResolvedMetricConfig config, @NonNull List<MetricPoint> points) {
 
         Object instrument = registry.getOrCreate(config.fullMetricName(), config.metricKind());
         for (MetricPoint point : points) {

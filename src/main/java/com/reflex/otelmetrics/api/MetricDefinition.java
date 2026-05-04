@@ -1,5 +1,8 @@
 package com.reflex.otelmetrics.api;
 
+import lombok.Builder;
+
+@Builder(builderClassName = "Builder", builderMethodName = "")
 public record MetricDefinition(
         String metricSuffix,
         String scope,
@@ -31,62 +34,11 @@ public record MetricDefinition(
     }
 
     public static Builder of(String metricSuffix) {
-        return new Builder(metricSuffix);
-    }
-
-    public static final class Builder {
-        private final String metricSuffix;
-        private String scope = DEFAULT_SCOPE;
-        private String description;
-        private String unit;
-        private AttributesSchema attributes = AttributesSchema.empty();
-        private int maxSeries = DEFAULT_MAX_SERIES;
-        private SeriesOverflowPolicy overflowPolicy = SeriesOverflowPolicy.FAIL;
-
-        private Builder(String metricSuffix) {
-            this.metricSuffix = metricSuffix;
-        }
-
-        public Builder scope(String scope) {
-            this.scope = scope;
-            return this;
-        }
-
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public Builder unit(String unit) {
-            this.unit = unit;
-            return this;
-        }
-
-        public Builder attributes(AttributesSchema attributes) {
-            this.attributes = attributes;
-            return this;
-        }
-
-        public Builder maxSeries(int maxSeries) {
-            this.maxSeries = maxSeries;
-            return this;
-        }
-
-        public Builder overflowPolicy(SeriesOverflowPolicy overflowPolicy) {
-            this.overflowPolicy = overflowPolicy;
-            return this;
-        }
-
-        public MetricDefinition build() {
-            return new MetricDefinition(
-                    metricSuffix,
-                    scope,
-                    description,
-                    unit,
-                    attributes,
-                    maxSeries,
-                    overflowPolicy
-            );
-        }
+        return new Builder()
+                .metricSuffix(metricSuffix)
+                .scope(DEFAULT_SCOPE)
+                .attributes(AttributesSchema.empty())
+                .maxSeries(DEFAULT_MAX_SERIES)
+                .overflowPolicy(SeriesOverflowPolicy.FAIL);
     }
 }

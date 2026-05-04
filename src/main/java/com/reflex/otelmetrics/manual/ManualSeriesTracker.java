@@ -4,9 +4,9 @@ import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.NonNull;
 
 public class ManualSeriesTracker {
 
@@ -14,19 +14,19 @@ public class ManualSeriesTracker {
     private final SeriesOverflowPolicy overflowPolicy;
     private final Set<Map<String, String>> observedSeries = ConcurrentHashMap.newKeySet();
 
-    public ManualSeriesTracker(int maxSeries, SeriesOverflowPolicy overflowPolicy) {
+    public ManualSeriesTracker(int maxSeries, @NonNull SeriesOverflowPolicy overflowPolicy) {
         if (maxSeries <= 0) {
             throw new IllegalArgumentException("maxSeries must be greater than 0");
         }
         this.maxSeries = maxSeries;
-        this.overflowPolicy = Objects.requireNonNull(overflowPolicy, "overflowPolicy must not be null");
+        this.overflowPolicy = overflowPolicy;
         if (this.overflowPolicy == SeriesOverflowPolicy.AGGREGATE_TO_OTHER) {
             throw new IllegalArgumentException("AGGREGATE_TO_OTHER is not supported for manual metrics");
         }
     }
 
-    public synchronized Result apply(Map<String, String> attributes) {
-        Map<String, String> series = immutableCopy(Objects.requireNonNull(attributes, "attributes must not be null"));
+    public synchronized Result apply(@NonNull Map<String, String> attributes) {
+        Map<String, String> series = immutableCopy(attributes);
         if (observedSeries.contains(series)) {
             return Result.accepted(series);
         }

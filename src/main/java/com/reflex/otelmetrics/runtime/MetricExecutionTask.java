@@ -5,34 +5,19 @@ import com.reflex.otelmetrics.config.ResolvedMetricConfig;
 import com.reflex.otelmetrics.internal.InternalTelemetryRecorder;
 import com.reflex.otelmetrics.locking.MetricLockManager;
 import com.reflex.otelmetrics.otel.OtelMetricPublisher;
-
 import java.util.List;
-import java.util.Objects;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class MetricExecutionTask {
 
-    private final MetricExecutionCoordinator coordinator;
-    private final MetricLockManager lockManager;
-    private final OtelMetricPublisher publisher;
-    private final InternalTelemetryRecorder telemetryRecorder;
-    private final SeriesLimiter seriesLimiter;
-    private final ResolvedMetricConfig config;
-
-    public MetricExecutionTask(
-            MetricExecutionCoordinator coordinator,
-            MetricLockManager lockManager,
-            OtelMetricPublisher publisher,
-            InternalTelemetryRecorder telemetryRecorder,
-            SeriesLimiter seriesLimiter,
-            ResolvedMetricConfig config
-    ) {
-        this.coordinator = Objects.requireNonNull(coordinator, "coordinator must not be null");
-        this.lockManager = Objects.requireNonNull(lockManager, "lockManager must not be null");
-        this.publisher = Objects.requireNonNull(publisher, "publisher must not be null");
-        this.telemetryRecorder = Objects.requireNonNull(telemetryRecorder, "telemetryRecorder must not be null");
-        this.seriesLimiter = Objects.requireNonNull(seriesLimiter, "seriesLimiter must not be null");
-        this.config = Objects.requireNonNull(config, "config must not be null");
-    }
+    private final @NonNull MetricExecutionCoordinator coordinator;
+    private final @NonNull MetricLockManager lockManager;
+    private final @NonNull OtelMetricPublisher publisher;
+    private final @NonNull InternalTelemetryRecorder telemetryRecorder;
+    private final @NonNull SeriesLimiter seriesLimiter;
+    private final @NonNull ResolvedMetricConfig config;
 
     public MetricRunOutcome runOnce() {
         if (!config.enabled()) {

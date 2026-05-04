@@ -3,18 +3,15 @@ package com.reflex.otelmetrics.config;
 import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
 import com.reflex.otelmetrics.api.MetricScheduleDefaults;
 import com.reflex.otelmetrics.api.MetricSource;
-import java.util.Objects;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class MetricConfigResolver {
 
-    private final ReflexOtelMetricsProperties properties;
+    private final @NonNull ReflexOtelMetricsProperties properties;
 
-    public MetricConfigResolver(ReflexOtelMetricsProperties properties) {
-        this.properties = Objects.requireNonNull(properties, "properties must not be null");
-    }
-
-    public ResolvedMetricConfig resolve(MetricSource source) {
-        Objects.requireNonNull(source, "source must not be null");
+    public ResolvedMetricConfig resolve(@NonNull MetricSource source) {
 
         MetricDefinitionDefaults defaults = source.defaults();
         MetricRuntimeProperties runtime = properties.getSources().getOrDefault(source.metricId(), new MetricRuntimeProperties());

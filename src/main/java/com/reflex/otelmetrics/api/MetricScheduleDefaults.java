@@ -1,17 +1,15 @@
 package com.reflex.otelmetrics.api;
 
 import java.time.Duration;
-import java.util.Objects;
+import lombok.NonNull;
 
 public record MetricScheduleDefaults(
-        Mode mode,
+        @NonNull Mode mode,
         Duration fixedDelay,
         String cron,
         Duration initialDelay
 ) {
     public MetricScheduleDefaults {
-        Objects.requireNonNull(mode, "mode must not be null");
-
         if (mode == Mode.FIXED_DELAY) {
             if (fixedDelay == null) {
                 throw new IllegalArgumentException("fixedDelay must not be null when mode is FIXED_DELAY");

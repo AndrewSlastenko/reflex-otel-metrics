@@ -7,21 +7,17 @@ import org.springframework.scheduling.support.CronExpression;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class MetricSchedulerRegistrar {
 
-    private final ScheduledExecutorService scheduledExecutorService;
+    private final @NonNull ScheduledExecutorService scheduledExecutorService;
 
-    public MetricSchedulerRegistrar(ScheduledExecutorService scheduledExecutorService) {
-        this.scheduledExecutorService = Objects.requireNonNull(scheduledExecutorService, "scheduledExecutorService must not be null");
-    }
-
-    public void register(ResolvedMetricConfig config, Runnable runnable) {
-        Objects.requireNonNull(config, "config must not be null");
-        Objects.requireNonNull(runnable, "runnable must not be null");
+    public void register(@NonNull ResolvedMetricConfig config, @NonNull Runnable runnable) {
 
         if (config.schedule().mode() == MetricScheduleSettings.Mode.FIXED_DELAY) {
             scheduleWithFixedDelay(config, runnable);

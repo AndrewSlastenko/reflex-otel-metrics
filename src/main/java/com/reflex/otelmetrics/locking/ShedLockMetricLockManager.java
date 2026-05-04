@@ -5,20 +5,16 @@ import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
 
 import java.time.Instant;
-import java.util.Objects;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class ShedLockMetricLockManager implements MetricLockManager {
 
-    private final LockProvider lockProvider;
-
-    public ShedLockMetricLockManager(LockProvider lockProvider) {
-        this.lockProvider = Objects.requireNonNull(lockProvider, "lockProvider must not be null");
-    }
+    private final @NonNull LockProvider lockProvider;
 
     @Override
-    public boolean executeWithLock(ResolvedMetricConfig config, Runnable runnable) {
-        Objects.requireNonNull(config, "config must not be null");
-        Objects.requireNonNull(runnable, "runnable must not be null");
+    public boolean executeWithLock(@NonNull ResolvedMetricConfig config, @NonNull Runnable runnable) {
 
         LockConfiguration lockConfiguration = new LockConfiguration(
                 Instant.now(),

@@ -1,13 +1,12 @@
 package com.reflex.otelmetrics.runtime;
 
 import com.reflex.otelmetrics.api.MetricSource;
-
 import java.util.List;
-import java.util.Objects;
+import lombok.NonNull;
 
-public record MetricSourceRegistry(List<MetricSource> sources) {
+public record MetricSourceRegistry(@NonNull List<MetricSource> sources) {
 
     public MetricSourceRegistry {
-        sources = List.copyOf(Objects.requireNonNull(sources, "sources must not be null"));
+        sources = List.copyOf(sources);
     }
 }

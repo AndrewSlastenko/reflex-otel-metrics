@@ -11,8 +11,8 @@ import com.reflex.otelmetrics.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
-import java.util.Objects;
 import java.util.function.Supplier;
+import lombok.NonNull;
 
 public class ReflexMetricFactory {
 
@@ -21,21 +21,19 @@ public class ReflexMetricFactory {
     private final AttributeValidator attributeValidator;
 
     public ReflexMetricFactory(
-            ManualMetricConfigResolver configResolver,
-            OtelInstrumentRegistry instrumentRegistry,
-            AttributeValidator attributeValidator) {
+            @NonNull ManualMetricConfigResolver configResolver,
+            @NonNull OtelInstrumentRegistry instrumentRegistry,
+            @NonNull AttributeValidator attributeValidator) {
         this(configResolver, instrumentRegistrySupplier(instrumentRegistry), attributeValidator);
     }
 
     public ReflexMetricFactory(
-            ManualMetricConfigResolver configResolver,
-            Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier,
-            AttributeValidator attributeValidator) {
-        this.configResolver = Objects.requireNonNull(configResolver, "configResolver must not be null");
-        this.instrumentRegistrySupplier = Objects.requireNonNull(
-                instrumentRegistrySupplier,
-                "instrumentRegistrySupplier must not be null");
-        this.attributeValidator = Objects.requireNonNull(attributeValidator, "attributeValidator must not be null");
+            @NonNull ManualMetricConfigResolver configResolver,
+            @NonNull Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier,
+            @NonNull AttributeValidator attributeValidator) {
+        this.configResolver = configResolver;
+        this.instrumentRegistrySupplier = instrumentRegistrySupplier;
+        this.attributeValidator = attributeValidator;
     }
 
     public CounterMetric counter(String metricId, MetricDefinition definition) {
@@ -94,8 +92,7 @@ public class ReflexMetricFactory {
     }
 
     private static Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier(
-            OtelInstrumentRegistry instrumentRegistry) {
-        Objects.requireNonNull(instrumentRegistry, "instrumentRegistry must not be null");
+            @NonNull OtelInstrumentRegistry instrumentRegistry) {
         return () -> instrumentRegistry;
     }
 }

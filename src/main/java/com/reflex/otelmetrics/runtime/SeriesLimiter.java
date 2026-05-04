@@ -4,14 +4,13 @@ import com.reflex.otelmetrics.api.MetricPoint;
 import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class SeriesLimiter {
 
-    private final OverflowAggregationStrategy overflowAggregationStrategy;
-
-    public SeriesLimiter(OverflowAggregationStrategy overflowAggregationStrategy) {
-        this.overflowAggregationStrategy = overflowAggregationStrategy;
-    }
+    private final @NonNull OverflowAggregationStrategy overflowAggregationStrategy;
 
     public List<MetricPoint> apply(List<MetricPoint> points, int maxSeries, SeriesOverflowPolicy policy) {
         if (maxSeries <= 0) {
