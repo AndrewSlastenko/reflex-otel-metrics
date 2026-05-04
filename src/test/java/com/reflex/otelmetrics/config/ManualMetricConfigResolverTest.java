@@ -5,6 +5,9 @@ import com.reflex.otelmetrics.api.MetricDefinition;
 import com.reflex.otelmetrics.api.MetricKind;
 import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,6 +42,17 @@ class ManualMetricConfigResolverTest {
         assertThat(resolved.attributes()).isSameAs(attributes);
         assertThat(resolved.maxSeries()).isEqualTo(250);
         assertThat(resolved.overflowPolicy()).isEqualTo(SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
+    }
+
+    @Test
+    void nullManualMapStillResolvesFromJavaDefinition() {
+        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        properties.setManual(null);
+
+        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+                .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build());
+
+        assertThat(resolved.suffix()).isEqualTo("documents.by.status");
     }
 
     @Test
@@ -108,5 +122,66 @@ class ManualMetricConfigResolverTest {
         assertThatThrownBy(() -> resolver.resolve(" ", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("metricId must not be blank");
+    }
+
+    @Test
+    void blankRuntimeSuffixIsRejected() {
+        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
+        runtime.setSuffix(" ");
+        properties.getManual().put("documents-by-status", runtime);
+
+        assertThatThrownBy(() -> new ManualMetricConfigResolver(properties)
+                .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("suffix must not be blank");
+    }
+
+    @Test
+    void blankRuntimeScopeIsRejected() {
+        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
+        runtime.setScope(" ");
+        properties.getManual().put("documents-by-status", runtime);
+
+        assertThatThrownBy(() -> new ManualMetricConfigResolver(properties)
+                .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("scope must not be blank");
+    }
+
+    @Test
+    void zeroRuntimeMaxSeriesIsRejected() {
+        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
+        runtime.setMaxSeries(0);
+        properties.getManual().put("documents-by-status", runtime);
+
+        assertThatThrownBy(() -> new ManualMetricConfigResolver(properties)
+                .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxSeries must be greater than zero");
+    }
+
+    @Test
+    void springBootBindingBindsManualMetricRuntimeProperties() {
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty("reflex.otel.metrics.manual.orders-created.suffix", "orders.created")
+                .withProperty("reflex.otel.metrics.manual.orders-created.scope", "orders")
+                .withProperty("reflex.otel.metrics.manual.orders-created.max-series", "12")
+                .withProperty("reflex.otel.metrics.manual.orders-created.overflow-policy", "TRUNCATE")
+                .withProperty("reflex.otel.metrics.manual.orders-created.enabled", "false");
+
+        ReflexOtelMetricsProperties properties = Binder.get(environment)
+                .bind("reflex.otel.metrics", Bindable.of(ReflexOtelMetricsProperties.class))
+                .orElseThrow(() -> new AssertionError("Expected reflex.otel.metrics properties to bind"));
+
+        ManualMetricRuntimeProperties runtime = properties.getManual().get("orders-created");
+        assertThat(runtime).isNotNull();
+        assertThat(runtime.getSuffix()).isEqualTo("orders.created");
+        assertThat(runtime.getScope()).isEqualTo("orders");
+        assertThat(runtime.getMaxSeries()).isEqualTo(12);
+        assertThat(runtime.getOverflowPolicy()).isEqualTo(SeriesOverflowPolicy.TRUNCATE);
+        assertThat(runtime.getEnabled()).isFalse();
     }
 }

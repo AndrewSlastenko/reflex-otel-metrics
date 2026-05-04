@@ -68,7 +68,7 @@ public class ReflexOtelMetricsProperties {
     }
 
     public void setManual(Map<String, ManualMetricRuntimeProperties> manual) {
-        this.manual = manual;
+        this.manual = manual != null ? manual : new LinkedHashMap<>();
     }
 
     public static class OtlpProperties {

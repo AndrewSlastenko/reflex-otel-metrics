@@ -25,6 +25,7 @@ public class ManualMetricConfigResolver {
         String suffix = runtime.getSuffix() != null ? runtime.getSuffix() : definition.metricSuffix();
         String scope = runtime.getScope() != null ? runtime.getScope() : definition.scope();
         int maxSeries = runtime.getMaxSeries() != null ? runtime.getMaxSeries() : definition.maxSeries();
+        validateResolvedConfig(suffix, scope, maxSeries);
         var overflowPolicy = runtime.getOverflowPolicy() != null
                 ? runtime.getOverflowPolicy()
                 : definition.overflowPolicy();
@@ -50,5 +51,17 @@ public class ManualMetricConfigResolver {
     private boolean resolveScopeEnabled(String scope) {
         ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getScopes().get(scope);
         return scopeProperties == null || scopeProperties.isEnabled();
+    }
+
+    private void validateResolvedConfig(String suffix, String scope, int maxSeries) {
+        if (suffix == null || suffix.isBlank()) {
+            throw new IllegalArgumentException("suffix must not be blank");
+        }
+        if (scope == null || scope.isBlank()) {
+            throw new IllegalArgumentException("scope must not be blank");
+        }
+        if (maxSeries < 1) {
+            throw new IllegalArgumentException("maxSeries must be greater than zero");
+        }
     }
 }
