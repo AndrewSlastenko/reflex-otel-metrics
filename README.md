@@ -253,3 +253,183 @@ reflex.otel.metrics.metric-prefix=ci054147
 reflex.otel.metrics.sources.documents-by-status.suffix=documents.current
 reflex.otel.metrics.sources.documents-by-status.fixed-delay=PT2M
 ```
+
+## Manual Metric Beans
+
+JDBC metrics are collected on a starter-managed schedule: the starter runs the source query, maps rows to points, and publishes them to OpenTelemetry. Manual metrics are emitted directly by application code at the point where the business event or state change happens.
+
+For manual metrics, the Java bean declaration is the primary contract. The bean defines the metric id, kind, suffix, scope, description, unit, attribute schema, cardinality limit, and overflow policy. YAML is an optional runtime override layer for deploy-time values such as enabling a metric, changing its suffix or scope, and adjusting cardinality handling.
+
+Low-level metric beans work well when a service only needs a single instrument:
+
+```java
+package com.example.metrics;
+
+import com.reflex.otelmetrics.api.AttributesSchema;
+import com.reflex.otelmetrics.api.CounterMetric;
+import com.reflex.otelmetrics.api.MetricDefinition;
+import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import com.reflex.otelmetrics.manual.ReflexMetricFactory;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
+
+@Configuration
+class OrderMetricConfiguration {
+
+    @Bean
+    CounterMetric ordersCreatedMetric(ReflexMetricFactory factory) {
+        return factory.counter(
+                "orders-created",
+                MetricDefinition.of("orders.created")
+                        .scope("business")
+                        .description("Orders created by client and channel")
+                        .unit("{order}")
+                        .attributes(AttributesSchema.builder()
+                                .required("client")
+                                .required("channel")
+                                .build())
+                        .maxSeries(500)
+                        .overflowPolicy(SeriesOverflowPolicy.FAIL)
+                        .build());
+    }
+}
+
+@Service
+class OrderService {
+
+    private final CounterMetric ordersCreatedMetric;
+
+    public OrderService(@Qualifier("ordersCreatedMetric") CounterMetric ordersCreatedMetric) {
+        this.ordersCreatedMetric = ordersCreatedMetric;
+    }
+
+    public void createOrder(String client, String channel) {
+        // business code omitted
+        ordersCreatedMetric.increment(Map.of(
+                "client", client,
+                "channel", channel));
+    }
+}
+```
+
+For larger flows, prefer a domain metric bean that groups the low-level instruments and exposes business-specific methods:
+
+```java
+package com.example.metrics;
+
+import com.reflex.otelmetrics.api.AttributesSchema;
+import com.reflex.otelmetrics.api.CounterMetric;
+import com.reflex.otelmetrics.api.GaugeMetric;
+import com.reflex.otelmetrics.api.MetricDefinition;
+import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
+import com.reflex.otelmetrics.manual.ReflexMetricFactory;
+import java.util.Map;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+@Component
+class OrderMetrics {
+
+    private final CounterMetric created;
+    private final CounterMetric failed;
+    private final GaugeMetric queueSize;
+
+    public OrderMetrics(ReflexMetricFactory factory) {
+        AttributesSchema clientChannelAttributes = AttributesSchema.builder()
+                .required("client")
+                .required("channel")
+                .build();
+
+        this.created = factory.counter(
+                "orders-created",
+                MetricDefinition.of("orders.created")
+                        .scope("business")
+                        .description("Orders created by client and channel")
+                        .unit("{order}")
+                        .attributes(clientChannelAttributes)
+                        .maxSeries(500)
+                        .overflowPolicy(SeriesOverflowPolicy.FAIL)
+                        .build());
+        this.failed = factory.counter(
+                "orders-failed",
+                MetricDefinition.of("orders.failed")
+                        .scope("business")
+                        .description("Orders failed by client and channel")
+                        .unit("{order}")
+                        .attributes(clientChannelAttributes)
+                        .maxSeries(500)
+                        .overflowPolicy(SeriesOverflowPolicy.FAIL)
+                        .build());
+        this.queueSize = factory.gauge(
+                "orders-queue-size",
+                MetricDefinition.of("orders.queue.size")
+                        .scope("business")
+                        .description("Current order queue size by channel")
+                        .unit("{order}")
+                        .attributes(AttributesSchema.builder()
+                                .required("channel")
+                                .build())
+                        .maxSeries(100)
+                        .overflowPolicy(SeriesOverflowPolicy.FAIL)
+                        .build());
+    }
+
+    public void created(String client, String channel) {
+        created.increment(Map.of("client", client, "channel", channel));
+    }
+
+    public void failed(String client, String channel) {
+        failed.increment(Map.of("client", client, "channel", channel));
+    }
+
+    public void queueSize(String channel, long value) {
+        queueSize.set(value, Map.of("channel", channel));
+    }
+}
+
+@Service
+class OrderService {
+
+    private final OrderMetrics orderMetrics;
+
+    public OrderService(OrderMetrics orderMetrics) {
+        this.orderMetrics = orderMetrics;
+    }
+
+    public void createOrder(String client, String channel) {
+        try {
+            // business code omitted
+            orderMetrics.created(client, channel);
+        } catch (RuntimeException exception) {
+            orderMetrics.failed(client, channel);
+            throw exception;
+        }
+    }
+
+    public void updateQueueSize(String channel, long size) {
+        orderMetrics.queueSize(channel, size);
+    }
+}
+```
+
+Manual metric runtime overrides live under `reflex.otel.metrics.manual.<metric-id>`:
+
+```yaml
+reflex:
+  otel:
+    metrics:
+      manual:
+        orders-created:
+          enabled: true
+          suffix: orders.created
+          scope: business
+          max-series: 500
+          overflow-policy: FAIL
+```
+
+Manual metric calls are fail-safe for business code. Disabled metrics return without publishing. Invalid attributes, cardinality overflow, and OpenTelemetry runtime errors are logged and skipped by the metric implementation instead of failing the application flow.
+
+`AGGREGATE_TO_OTHER` is not supported for manual metrics in v1 because manual emission does not have a batch of overflow points to aggregate. Use `FAIL` to skip new series over the limit, or `TRUNCATE` to stop accepting additional series after the limit is reached.
