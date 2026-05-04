@@ -11,12 +11,14 @@ class AttributesSchemaTest {
     void buildsRequiredAndOptionalAttributesWithRejectUnknownByDefault() {
         AttributesSchema schema = AttributesSchema.builder()
                 .required("tenant")
+                .required("region")
                 .optional("status")
+                .optional("type")
                 .build();
 
-        assertThat(schema.required()).containsExactly("tenant");
-        assertThat(schema.optional()).containsExactly("status");
-        assertThat(schema.allowed()).containsExactlyInAnyOrder("tenant", "status");
+        assertThat(schema.required()).containsExactly("tenant", "region");
+        assertThat(schema.optional()).containsExactly("status", "type");
+        assertThat(schema.allowed()).containsExactly("tenant", "region", "status", "type");
         assertThat(schema.rejectUnknown()).isTrue();
     }
 

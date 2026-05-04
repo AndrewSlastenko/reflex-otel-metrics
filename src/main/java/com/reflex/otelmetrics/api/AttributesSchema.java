@@ -1,5 +1,6 @@
 package com.reflex.otelmetrics.api;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -30,7 +31,7 @@ public record AttributesSchema(
     public Set<String> allowed() {
         LinkedHashSet<String> allowed = new LinkedHashSet<>(required);
         allowed.addAll(optional);
-        return Set.copyOf(allowed);
+        return immutableCopy(allowed);
     }
 
     private static Set<String> immutableValidatedSet(Set<String> names, String group) {
@@ -41,7 +42,7 @@ public record AttributesSchema(
         for (String name : names) {
             copy.add(validateName(name));
         }
-        return Set.copyOf(copy);
+        return immutableCopy(copy);
     }
 
     private static String validateName(String name) {
@@ -49,6 +50,10 @@ public record AttributesSchema(
             throw new IllegalArgumentException("attribute name cannot be null or blank");
         }
         return name;
+    }
+
+    private static Set<String> immutableCopy(Set<String> names) {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(names));
     }
 
     public static final class Builder {

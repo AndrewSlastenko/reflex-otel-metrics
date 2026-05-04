@@ -3,6 +3,7 @@ package com.reflex.otelmetrics.otel;
 import com.reflex.otelmetrics.api.MetricPoint;
 import com.reflex.otelmetrics.config.ResolvedMetricConfig;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 
@@ -25,7 +26,9 @@ public class OtelMetricPublisher {
         Object instrument = registry.getOrCreate(config.fullMetricName(), config.metricKind());
         for (MetricPoint point : points) {
             Attributes attributes = toAttributes(point.attributes());
-            if (instrument instanceof LongGauge gauge) {
+            if (instrument instanceof LongCounter counter) {
+                counter.add(point.value(), attributes);
+            } else if (instrument instanceof LongGauge gauge) {
                 gauge.set(point.value(), attributes);
             } else if (instrument instanceof LongUpDownCounter counter) {
                 counter.add(point.value(), attributes);
