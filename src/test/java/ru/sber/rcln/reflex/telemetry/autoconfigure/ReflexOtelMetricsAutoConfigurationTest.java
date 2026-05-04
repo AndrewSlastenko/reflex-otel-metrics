@@ -9,6 +9,7 @@ import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
 import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
@@ -17,6 +18,7 @@ import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
+import ru.sber.rcln.reflex.telemetry.tracing.NoopTraceOperations;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -112,6 +114,32 @@ class ReflexOtelMetricsAutoConfigurationTest {
                     assertThat(context).hasSingleBean(AttributeValidator.class);
                     assertThat(context).hasSingleBean(ReflexMetricFactory.class);
                 });
+    }
+
+    @Test
+    void shouldCreateTraceOperationsWhenEnabled() {
+        contextRunner
+                .withBean(OpenTelemetry.class, OpenTelemetry::noop)
+                .run(context -> assertThat(context).hasSingleBean(TraceOperations.class));
+    }
+
+    @Test
+    void shouldCreateNoopTraceOperationsWhenTracesAreDisabled() {
+        contextRunner
+                .withPropertyValues("reflex.otel.metrics.traces.enabled=false")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(TraceOperations.class);
+                    assertThat(context.getBean(TraceOperations.class)).isInstanceOf(NoopTraceOperations.class);
+                });
+    }
+
+    @Test
+    void shouldBackOffWhenTraceOperationsProvidedByApplication() {
+        TraceOperations custom = mock(TraceOperations.class);
+
+        contextRunner
+                .withBean(TraceOperations.class, () -> custom)
+                .run(context -> assertThat(context.getBean(TraceOperations.class)).isSameAs(custom));
     }
 
     @Test

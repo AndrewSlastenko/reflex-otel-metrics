@@ -1,5 +1,6 @@
 package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
+import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
@@ -10,6 +11,8 @@ import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import ru.sber.rcln.reflex.telemetry.runtime.OverflowAggregationStrategy;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
+import ru.sber.rcln.reflex.telemetry.tracing.DefaultTraceOperations;
+import ru.sber.rcln.reflex.telemetry.tracing.NoopTraceOperations;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -142,6 +145,17 @@ public class ReflexOtelMetricsAutoConfiguration {
     @ConditionalOnMissingBean
     Tracer tracer(OpenTelemetry openTelemetry, ReflexOtelMetricsProperties properties) {
         return openTelemetry.getTracer(properties.getInstrumentationScopeName());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    TraceOperations traceOperations(ObjectProvider<Tracer> tracerProvider, ReflexOtelMetricsProperties properties) {
+        if (!properties.getTraces().isEnabled()) {
+            return new NoopTraceOperations();
+        }
+
+        Tracer tracer = tracerProvider.getIfAvailable();
+        return tracer != null ? new DefaultTraceOperations(tracer) : new NoopTraceOperations();
     }
 
     @Bean
