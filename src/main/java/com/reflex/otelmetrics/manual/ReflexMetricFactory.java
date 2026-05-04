@@ -30,13 +30,21 @@ public class ReflexMetricFactory {
 
     public CounterMetric counter(String metricId, MetricDefinition definition) {
         ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.COUNTER, definition);
-        LongCounter instrument = (LongCounter) instrumentRegistry.getOrCreate(config.fullMetricName(), MetricKind.COUNTER);
+        LongCounter instrument = (LongCounter) instrumentRegistry.getOrCreate(
+                config.fullMetricName(),
+                MetricKind.COUNTER,
+                config.description(),
+                config.unit());
         return new DefaultCounterMetric(config, instrument, attributeValidator);
     }
 
     public GaugeMetric gauge(String metricId, MetricDefinition definition) {
         ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.GAUGE, definition);
-        LongGauge instrument = (LongGauge) instrumentRegistry.getOrCreate(config.fullMetricName(), MetricKind.GAUGE);
+        LongGauge instrument = (LongGauge) instrumentRegistry.getOrCreate(
+                config.fullMetricName(),
+                MetricKind.GAUGE,
+                config.description(),
+                config.unit());
         return new DefaultGaugeMetric(config, instrument, attributeValidator);
     }
 
@@ -44,7 +52,9 @@ public class ReflexMetricFactory {
         ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.UP_DOWN_COUNTER, definition);
         LongUpDownCounter instrument = (LongUpDownCounter) instrumentRegistry.getOrCreate(
                 config.fullMetricName(),
-                MetricKind.UP_DOWN_COUNTER);
+                MetricKind.UP_DOWN_COUNTER,
+                config.description(),
+                config.unit());
         return new DefaultUpDownCounterMetric(config, instrument, attributeValidator);
     }
 }

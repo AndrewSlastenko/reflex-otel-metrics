@@ -34,7 +34,7 @@ class ReflexMetricFactoryTest {
     @Test
     void createsCounterMetricFromResolvedConfigAndRegistryInstrument() {
         MetricDefinition definition = MetricDefinition.of("orders.created").build();
-        configResolver.nextConfig = resolved(MetricKind.COUNTER, SeriesOverflowPolicy.FAIL);
+        configResolver.nextConfig = resolved(MetricKind.COUNTER, "Created orders", "1", SeriesOverflowPolicy.FAIL);
 
         CounterMetric metric = factory.counter("orders-created", definition);
 
@@ -44,12 +44,14 @@ class ReflexMetricFactoryTest {
         assertThat(configResolver.definition).isSameAs(definition);
         assertThat(instrumentRegistry.name).isEqualTo("reflex.orders.created");
         assertThat(instrumentRegistry.kind).isEqualTo(MetricKind.COUNTER);
+        assertThat(instrumentRegistry.description).isEqualTo("Created orders");
+        assertThat(instrumentRegistry.unit).isEqualTo("1");
     }
 
     @Test
     void createsGaugeMetricFromResolvedConfigAndRegistryInstrument() {
         MetricDefinition definition = MetricDefinition.of("queue.depth").build();
-        configResolver.nextConfig = resolved(MetricKind.GAUGE, SeriesOverflowPolicy.FAIL);
+        configResolver.nextConfig = resolved(MetricKind.GAUGE, null, null, SeriesOverflowPolicy.FAIL);
 
         GaugeMetric metric = factory.gauge("queue-depth", definition);
 
@@ -64,7 +66,7 @@ class ReflexMetricFactoryTest {
     @Test
     void createsUpDownCounterMetricFromResolvedConfigAndRegistryInstrument() {
         MetricDefinition definition = MetricDefinition.of("workers.active").build();
-        configResolver.nextConfig = resolved(MetricKind.UP_DOWN_COUNTER, SeriesOverflowPolicy.FAIL);
+        configResolver.nextConfig = resolved(MetricKind.UP_DOWN_COUNTER, null, null, SeriesOverflowPolicy.FAIL);
 
         UpDownCounterMetric metric = factory.upDownCounter("workers-active", definition);
 
@@ -81,7 +83,7 @@ class ReflexMetricFactoryTest {
         MetricDefinition definition = MetricDefinition.of("orders.created")
                 .overflowPolicy(SeriesOverflowPolicy.AGGREGATE_TO_OTHER)
                 .build();
-        configResolver.nextConfig = resolved(MetricKind.COUNTER, SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
+        configResolver.nextConfig = resolved(MetricKind.COUNTER, null, null, SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
 
         assertThatThrownBy(() -> factory.counter("orders-created", definition))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -89,6 +91,14 @@ class ReflexMetricFactoryTest {
     }
 
     private static ResolvedManualMetricConfig resolved(MetricKind kind, SeriesOverflowPolicy overflowPolicy) {
+        return resolved(kind, null, null, overflowPolicy);
+    }
+
+    private static ResolvedManualMetricConfig resolved(
+            MetricKind kind,
+            String description,
+            String unit,
+            SeriesOverflowPolicy overflowPolicy) {
         return new ResolvedManualMetricConfig(
                 "orders-created",
                 true,
@@ -96,8 +106,8 @@ class ReflexMetricFactoryTest {
                 "orders.created",
                 "default",
                 kind,
-                null,
-                null,
+                description,
+                unit,
                 MetricDefinition.of("orders.created").build().attributes(),
                 500,
                 overflowPolicy);
@@ -125,15 +135,19 @@ class ReflexMetricFactoryTest {
     private static final class RecordingInstrumentRegistry extends OtelInstrumentRegistry {
         private String name;
         private MetricKind kind;
+        private String description;
+        private String unit;
 
         private RecordingInstrumentRegistry() {
             super(OpenTelemetry.noop().getMeter("test"));
         }
 
         @Override
-        public Object getOrCreate(String name, MetricKind kind) {
+        public Object getOrCreate(String name, MetricKind kind, String description, String unit) {
             this.name = name;
             this.kind = kind;
+            this.description = description;
+            this.unit = unit;
             return switch (kind) {
                 case COUNTER -> new NoopLongCounter();
                 case GAUGE -> new NoopLongGauge();

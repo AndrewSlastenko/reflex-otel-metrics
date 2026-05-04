@@ -2,8 +2,11 @@ package com.reflex.otelmetrics.otel;
 
 import com.reflex.otelmetrics.api.MetricKind;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongCounterBuilder;
+import io.opentelemetry.api.metrics.DoubleGaugeBuilder;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.Meter;
 
 import java.util.Map;
@@ -20,6 +23,10 @@ public class OtelInstrumentRegistry {
     }
 
     public Object getOrCreate(String name, MetricKind kind) {
+        return getOrCreate(name, kind, null, null);
+    }
+
+    public Object getOrCreate(String name, MetricKind kind, String description, String unit) {
         Objects.requireNonNull(name, "name must not be null");
         Objects.requireNonNull(kind, "kind must not be null");
 
@@ -35,11 +42,48 @@ public class OtelInstrumentRegistry {
             }
 
             return new RegisteredInstrument(kind, switch (kind) {
-                case COUNTER -> (LongCounter) meter.counterBuilder(name).build();
-                case GAUGE -> (LongGauge) meter.gaugeBuilder(name).ofLongs().build();
-                case UP_DOWN_COUNTER -> (LongUpDownCounter) meter.upDownCounterBuilder(name).build();
+                case COUNTER -> createCounter(name, description, unit);
+                case GAUGE -> createGauge(name, description, unit);
+                case UP_DOWN_COUNTER -> createUpDownCounter(name, description, unit);
             });
         }).instrument();
+    }
+
+    private LongCounter createCounter(String name, String description, String unit) {
+        LongCounterBuilder builder = meter.counterBuilder(name);
+        if (hasText(description)) {
+            builder = builder.setDescription(description);
+        }
+        if (hasText(unit)) {
+            builder = builder.setUnit(unit);
+        }
+        return builder.build();
+    }
+
+    private LongGauge createGauge(String name, String description, String unit) {
+        DoubleGaugeBuilder builder = meter.gaugeBuilder(name);
+        if (hasText(description)) {
+            builder = builder.setDescription(description);
+        }
+        if (hasText(unit)) {
+            builder = builder.setUnit(unit);
+        }
+        return builder.ofLongs().build();
+    }
+
+    private LongUpDownCounter createUpDownCounter(String name, String description, String unit) {
+        LongUpDownCounterBuilder builder = meter.upDownCounterBuilder(name);
+        if (hasText(description)) {
+            builder = builder.setDescription(description);
+        }
+        if (hasText(unit)) {
+            builder = builder.setUnit(unit);
+        }
+        return builder.build();
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private record RegisteredInstrument(MetricKind kind, Object instrument) {
