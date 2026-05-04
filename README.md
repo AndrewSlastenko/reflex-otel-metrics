@@ -19,6 +19,7 @@ The starter auto-configures the shared metric infrastructure:
 - `ReflexOtelMetricsProperties` binding under `reflex.otel.metrics`
 - OTLP/gRPC metric exporter
 - OTLP/gRPC trace exporter
+- `TraceOperations` for generic span lifecycle and W3C propagation helpers (no-op when `reflex.otel.metrics.traces.enabled` is false or when no `Tracer` bean is available)
 - OTel `OpenTelemetry`, `Meter`, `Tracer`, and instrument registry beans
 - config resolution and validation helpers
 - series limiting support
@@ -54,6 +55,8 @@ reflex:
       enabled: true
       metric-prefix: ci054147
       instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
+      traces:
+        enabled: true
       otlp:
         metrics-endpoint: http://localhost:4317
         traces-endpoint: http://localhost:4317
@@ -91,6 +94,7 @@ These keys map directly to the current `ReflexOtelMetricsProperties` and `Metric
 
 - `metric-prefix`
 - `instrumentation-scope-name`
+- `traces.enabled`
 - `otlp.metrics-endpoint`
 - `otlp.traces-endpoint`
 - `otlp.export-timeout`
@@ -149,6 +153,57 @@ reflex:
 ```
 
 This does not change the metric name itself. Metric names still come from `metric-prefix + suffix`. The scope name identifies which library or module emitted the telemetry.
+
+## Trace operations
+
+Inject `TraceOperations` like any other starter bean. Use `SpanSpec` for the span name, an optional parent `TraceCarrier`, and string attributes. Spans are exported when tracing is enabled and an OTLP traces endpoint is configured (see global `otlp.traces-endpoint` above).
+
+The names in the following sketch are placeholders for your application types and workflow layer:
+
+```java
+import ru.sber.rcln.reflex.telemetry.api.SpanSpec;
+import ru.sber.rcln.reflex.telemetry.api.TraceCarrier;
+import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
+import java.util.Map;
+
+// TraceCarrier parent = read from incoming context (opaque traceparent/tracestate strings)
+TraceCarrier parent = new TraceCarrier(traceparent, tracestate);
+
+traces.inSpan(
+        new SpanSpec(
+                "workflow.action.GetContractAction",
+                parent,
+                Map.of(
+                        "workflow.process.name", processName,
+                        "workflow.action.name", "GetContractAction",
+                        "workflow.action.class", GetContractAction.class.getName(),
+                        "workflow.business_service_id", businessServiceId)),
+        () -> action.execute(context));
+```
+
+### Propagation rules
+
+- Store `traceparent` and `tracestate` as opaque strings.
+- Do not store spans in the database.
+- Do not parse `tracestate` in application code.
+- Call `captureCurrent()` only inside an active `inSpan(...)`.
+- Put the captured carrier into the next process context, queue headers, HTTP headers, or another transport.
+- Use span attributes for business identifiers and workflow names; use `traceparent` (via the carrier) for trace linkage.
+
+### Multi-step workflows
+
+A typical pattern maps execution contexts as follows:
+
+- **inParams** — initial trace carrier from the previous process.
+- **params** — current runtime trace carrier updated between actions.
+- **outParams** — trace carrier passed to the next process.
+
+When fanning out to another process, write the strings from `captureCurrent()` into that context. Suggested keys:
+
+```text
+_otel.traceparent
+_otel.tracestate
+```
 
 ## How Metric Kinds Behave
 
