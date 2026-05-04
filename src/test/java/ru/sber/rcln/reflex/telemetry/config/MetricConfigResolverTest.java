@@ -46,14 +46,14 @@ class MetricConfigResolverTest {
     @Test
     void propertiesShouldOverrideBeanDefaults() {
         ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
-        properties.setMetricPrefix("ci054147");
-        properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setEnabled(Boolean.FALSE);
         runtimeProperties.setSuffix("documents.current");
         runtimeProperties.setDataSourceRef("overrideDataSource");
-        properties.getSources().put("documents-by-status", runtimeProperties);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
 
         MetricConfigResolver resolver = new MetricConfigResolver(properties);
         ResolvedMetricConfig resolved = resolver.resolve(new TestJdbcMetricSource());
@@ -69,7 +69,7 @@ class MetricConfigResolverTest {
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
-        properties.getSources().put("documents-by-status", runtimeProperties);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
 
@@ -79,12 +79,22 @@ class MetricConfigResolverTest {
     }
 
     @Test
+    void metricsDisabledShouldDisableJdbcMetric() {
+        ReflexOtelMetricsProperties properties = baseProperties();
+        properties.getMetrics().setEnabled(false);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
+
+        assertThat(resolved.enabled()).isFalse();
+    }
+
+    @Test
     void partialInitialDelayOverrideShouldBeHonoredWithoutRuntimeScheduleMode() {
         ReflexOtelMetricsProperties properties = baseProperties();
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setInitialDelay(Duration.ofSeconds(45));
-        properties.getSources().put("documents-by-status", runtimeProperties);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
 
@@ -100,7 +110,7 @@ class MetricConfigResolverTest {
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
         runtimeProperties.setCron("0 * * * *");
-        properties.getSources().put("documents-by-status", runtimeProperties);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
 
@@ -116,7 +126,7 @@ class MetricConfigResolverTest {
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
         runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
-        properties.getSources().put("cron-metric", runtimeProperties);
+        properties.getMetrics().getSources().put("cron-metric", runtimeProperties);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new CronMetricSource());
 
@@ -127,8 +137,8 @@ class MetricConfigResolverTest {
 
     private static ReflexOtelMetricsProperties baseProperties() {
         ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
-        properties.setMetricPrefix("ci054147");
-        properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
         return properties;
     }
 

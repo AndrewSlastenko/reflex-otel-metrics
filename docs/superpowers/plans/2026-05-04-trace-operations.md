@@ -616,7 +616,7 @@ void shouldCreateTraceOperationsWhenEnabled() {
 @Test
 void shouldCreateNoopTraceOperationsWhenTracesAreDisabled() {
     contextRunner
-            .withPropertyValues("reflex.otel.metrics.traces.enabled=false")
+            .withPropertyValues("reflex.otel.traces.enabled=false")
             .run(context -> {
                 assertThat(context).hasSingleBean(TraceOperations.class);
                 assertThat(context.getBean(TraceOperations.class)).isInstanceOf(NoopTraceOperations.class);
@@ -726,11 +726,10 @@ Add under configuration:
 ```yaml
 reflex:
   otel:
-    metrics:
-      traces:
-        enabled: true
-      otlp:
-        traces-endpoint: http://localhost:4317
+    otlp:
+      traces-endpoint: http://localhost:4317
+    traces:
+      enabled: true
 ```
 
 - **Step 2: Add generic API docs**
@@ -839,4 +838,3 @@ git commit -m "feat: add generic trace operations"
 - `CurrentTrace.attribute(...)` and `CurrentTrace.event(...)` facade.
 - Span links for fan-out/fan-in workflows.
 - Automatic database or queue instrumentation.
-

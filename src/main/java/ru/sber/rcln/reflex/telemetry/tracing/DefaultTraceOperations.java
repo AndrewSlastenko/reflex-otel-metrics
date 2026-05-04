@@ -3,13 +3,13 @@ package ru.sber.rcln.reflex.telemetry.tracing;
 import ru.sber.rcln.reflex.telemetry.api.SpanSpec;
 import ru.sber.rcln.reflex.telemetry.api.TraceCarrier;
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
@@ -40,7 +40,7 @@ public class DefaultTraceOperations implements TraceOperations {
     private final ContextPropagators propagators;
 
     public DefaultTraceOperations(Tracer tracer) {
-        this(tracer, GlobalOpenTelemetry.getPropagators());
+        this(tracer, ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
     }
 
     public DefaultTraceOperations(Tracer tracer, ContextPropagators propagators) {

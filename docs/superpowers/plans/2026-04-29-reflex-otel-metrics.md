@@ -505,22 +505,29 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@ConfigurationProperties(prefix = "reflex.otel.metrics")
+@ConfigurationProperties(prefix = "reflex.otel")
 public class ReflexOtelMetricsProperties {
 
     private boolean enabled = true;
-    private String metricPrefix = "reflex";
+    private MetricsProperties metrics = new MetricsProperties();
     private OtlpProperties otlp = new OtlpProperties();
-    private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
-    private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
-    public String getMetricPrefix() { return metricPrefix; }
-    public void setMetricPrefix(String metricPrefix) { this.metricPrefix = metricPrefix; }
     public OtlpProperties getOtlp() { return otlp; }
-    public Map<String, ScopeProperties> getScopes() { return scopes; }
-    public Map<String, MetricRuntimeProperties> getSources() { return sources; }
+    public MetricsProperties getMetrics() { return metrics; }
+
+    public static class MetricsProperties {
+        private boolean enabled = true;
+        private String metricPrefix = "reflex";
+        private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
+        private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
+
+        public boolean isEnabled() { return enabled; }
+        public String getMetricPrefix() { return metricPrefix; }
+        public Map<String, ScopeProperties> getScopes() { return scopes; }
+        public Map<String, MetricRuntimeProperties> getSources() { return sources; }
+    }
 
     public static class OtlpProperties {
         private String metricsEndpoint = "http://localhost:4317";
@@ -1797,12 +1804,12 @@ Properties can override the operational settings:
 ```yaml
 reflex:
   otel:
+    otlp:
+      metrics-endpoint: http://otel-collector:4317
+      traces-endpoint: http://otel-collector:4317
     metrics:
       enabled: true
       metric-prefix: ci054147
-      otlp:
-        metrics-endpoint: http://otel-collector:4317
-        traces-endpoint: http://otel-collector:4317
       scopes:
         business:
           enabled: true
@@ -1869,4 +1876,3 @@ The initial draft missed concrete OTEL exporter initialization and lock executio
 
 - `MetricSource`, `JdbcMetricSource`, `MetricDefinitionDefaults`, `ResolvedMetricConfig`, and `MetricScheduleSettings` use consistent names across tasks.
 - `MetricExecutionTask` and `SeriesLimiter` are referenced consistently.
-

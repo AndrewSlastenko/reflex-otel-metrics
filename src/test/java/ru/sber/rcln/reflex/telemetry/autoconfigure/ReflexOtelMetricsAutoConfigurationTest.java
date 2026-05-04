@@ -8,6 +8,8 @@ import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
 import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
+import ru.sber.rcln.reflex.telemetry.api.SpanSpec;
+import ru.sber.rcln.reflex.telemetry.api.TraceCarrier;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
@@ -22,7 +24,13 @@ import ru.sber.rcln.reflex.telemetry.tracing.NoopTraceOperations;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -47,7 +55,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
     @Test
     void shouldCreateCoreBeansWhenEnabled() {
         contextRunner
-                .withPropertyValues("reflex.otel.metrics.enabled=true")
+                .withPropertyValues("reflex.otel.enabled=true")
                 .run(context -> {
                     assertThat(context).hasSingleBean(ReflexOtelMetricsProperties.class);
                     assertThat(context).hasSingleBean(SeriesLimiter.class);
@@ -66,7 +74,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
         when(openTelemetry.getTracer("custom.scope")).thenReturn(tracer);
 
         contextRunner
-                .withPropertyValues("reflex.otel.metrics.instrumentation-scope-name=custom.scope")
+                .withPropertyValues("reflex.otel.instrumentation-scope-name=custom.scope")
                 .withBean(OpenTelemetry.class, () -> openTelemetry)
                 .run(context -> {
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
@@ -84,8 +92,8 @@ class ReflexOtelMetricsAutoConfigurationTest {
                 .withBean(JdbcMetricSource.class, TestJdbcMetricSource::new)
                 .withPropertyValues(
                         "reflex.otel.metrics.metric-prefix=ci054147",
-                        "reflex.otel.metrics.instrumentation-scope-name=com.example.metrics",
-                        "reflex.otel.metrics.otlp.export-interval=PT1M",
+                        "reflex.otel.instrumentation-scope-name=com.example.metrics",
+                        "reflex.otel.otlp.export-interval=PT1M",
                         "reflex.otel.metrics.sources.documents-by-status.suffix=documents.current")
                 .run(context -> {
                     ReflexOtelMetricsProperties properties = context.getBean(ReflexOtelMetricsProperties.class);
@@ -93,12 +101,12 @@ class ReflexOtelMetricsAutoConfigurationTest {
                     JdbcMetricSource source = context.getBean(JdbcMetricSource.class);
                     ResolvedMetricConfig resolved = resolver.resolve(source);
 
-                    assertThat(properties.getMetricPrefix()).isEqualTo("ci054147");
+                    assertThat(properties.getMetrics().getMetricPrefix()).isEqualTo("ci054147");
                     assertThat(properties.getInstrumentationScopeName()).isEqualTo("com.example.metrics");
                     assertThat(properties.getOtlp().getExportInterval()).isEqualTo(Duration.ofMinutes(1));
-                    assertThat(properties.getSources())
+                    assertThat(properties.getMetrics().getSources())
                             .containsKey("documents-by-status");
-                    assertThat(properties.getSources().get("documents-by-status").getSuffix())
+                    assertThat(properties.getMetrics().getSources().get("documents-by-status").getSuffix())
                             .isEqualTo("documents.current");
                     assertThat(resolved.suffix()).isEqualTo("documents.current");
                     assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
@@ -126,11 +134,46 @@ class ReflexOtelMetricsAutoConfigurationTest {
     @Test
     void shouldCreateNoopTraceOperationsWhenTracesAreDisabled() {
         contextRunner
-                .withPropertyValues("reflex.otel.metrics.traces.enabled=false")
+                .withPropertyValues("reflex.otel.traces.enabled=false")
                 .run(context -> {
                     assertThat(context).hasSingleBean(TraceOperations.class);
                     assertThat(context.getBean(TraceOperations.class)).isInstanceOf(NoopTraceOperations.class);
+                    assertThat(context).doesNotHaveBean(OtlpGrpcSpanExporter.class);
+                    assertThat(context).doesNotHaveBean(SdkTracerProvider.class);
+                    assertThat(context).doesNotHaveBean(Tracer.class);
                 });
+    }
+
+    @Test
+    void shouldCaptureW3cTraceparentWithAutoConfiguredTraceOperations() {
+        OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
+                .setTracerProvider(SdkTracerProvider.builder().build())
+                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .build();
+
+        contextRunner
+                .withBean(OpenTelemetry.class, () -> openTelemetry)
+                .run(context -> {
+                    TraceOperations traces = context.getBean(TraceOperations.class);
+
+                    TraceCarrier carrier = traces.inSpan(
+                            new SpanSpec("test.span", TraceCarrier.empty(), Map.of()),
+                            traces::captureCurrent);
+
+                    assertThat(carrier.traceparent())
+                            .isNotBlank()
+                            .matches("00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}");
+                });
+    }
+
+    @Test
+    void shouldConfigureW3cPropagatorOnStarterOpenTelemetry() {
+        contextRunner
+                .run(context -> assertThat(context.getBean(OpenTelemetry.class)
+                        .getPropagators()
+                        .getTextMapPropagator()
+                        .fields())
+                        .contains("traceparent", "tracestate"));
     }
 
     @Test
@@ -165,14 +208,11 @@ class ReflexOtelMetricsAutoConfigurationTest {
     void shouldKeepManualMetricBeansAvailableWhenMetricsAreDisabled() {
         contextRunner
                 .withPropertyValues("reflex.otel.metrics.enabled=false")
-                .withUserConfiguration(ManualCounterMetricConfiguration.class)
                 .run(context -> {
                     assertThat(context).hasSingleBean(ReflexMetricFactory.class);
-                    assertThat(context).hasBean("ordersCreatedMetric");
-                    assertThat(context).hasBean("ordersFailedMetric");
-                    assertThat(context.getBeansOfType(CounterMetric.class))
-                            .containsOnlyKeys("ordersCreatedMetric", "ordersFailedMetric");
-                    assertThat(context).doesNotHaveBean(OpenTelemetry.class);
+                    assertThat(context).doesNotHaveBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).doesNotHaveBean(SdkMeterProvider.class);
+                    assertThat(context).doesNotHaveBean(Meter.class);
                     assertThat(context).doesNotHaveBean(OtelInstrumentRegistry.class);
                 });
     }

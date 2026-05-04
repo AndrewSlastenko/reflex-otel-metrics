@@ -18,7 +18,8 @@ public class ManualMetricConfigResolver {
             throw new IllegalArgumentException("metricId must not be blank");
         }
 
-        ManualMetricRuntimeProperties runtime = properties.getManual()
+        ManualMetricRuntimeProperties runtime = properties.getMetrics()
+                .getManual()
                 .getOrDefault(metricId, new ManualMetricRuntimeProperties());
 
         String suffix = runtime.getSuffix() != null ? runtime.getSuffix() : definition.metricSuffix();
@@ -29,13 +30,14 @@ public class ManualMetricConfigResolver {
                 ? runtime.getOverflowPolicy()
                 : definition.overflowPolicy();
         boolean enabled = properties.isEnabled()
+                && properties.getMetrics().isEnabled()
                 && resolveScopeEnabled(scope)
                 && !Boolean.FALSE.equals(runtime.getEnabled());
 
         return new ResolvedManualMetricConfig(
                 metricId,
                 enabled,
-                properties.getMetricPrefix() + "." + suffix,
+                properties.getMetrics().getMetricPrefix() + "." + suffix,
                 suffix,
                 scope,
                 kind,
@@ -48,7 +50,7 @@ public class ManualMetricConfigResolver {
     }
 
     private boolean resolveScopeEnabled(String scope) {
-        ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getScopes().get(scope);
+        ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getMetrics().getScopes().get(scope);
         return scopeProperties == null || scopeProperties.isEnabled();
     }
 

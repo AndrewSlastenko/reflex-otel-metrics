@@ -130,7 +130,7 @@ class MetricConfigValidatorTest {
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
         runtimeProperties.setCron("0 * * * *");
-        properties.getSources().put("documents-by-status", runtimeProperties);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new FixedDelayMetricSource());
 
@@ -143,7 +143,7 @@ class MetricConfigValidatorTest {
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
         runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
-        properties.getSources().put("cron-metric", runtimeProperties);
+        properties.getMetrics().getSources().put("cron-metric", runtimeProperties);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new CronMetricSource());
 
@@ -170,8 +170,8 @@ class MetricConfigValidatorTest {
 
     private static ReflexOtelMetricsProperties baseProperties() {
         ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
-        properties.setMetricPrefix("ci054147");
-        properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
         return properties;
     }
 

@@ -14,7 +14,9 @@ public class MetricConfigResolver {
     public ResolvedMetricConfig resolve(@NonNull MetricSource source) {
 
         MetricDefinitionDefaults defaults = source.defaults();
-        MetricRuntimeProperties runtime = properties.getSources().getOrDefault(source.metricId(), new MetricRuntimeProperties());
+        MetricRuntimeProperties runtime = properties.getMetrics()
+                .getSources()
+                .getOrDefault(source.metricId(), new MetricRuntimeProperties());
 
         String suffix = runtime.getSuffix() != null ? runtime.getSuffix() : defaults.metricSuffix();
         String scope = runtime.getScope() != null ? runtime.getScope() : defaults.scope();
@@ -30,13 +32,14 @@ public class MetricConfigResolver {
         var overflowPolicy = runtime.getOverflowPolicy() != null ? runtime.getOverflowPolicy() : defaults.overflowPolicy();
 
         boolean enabled = properties.isEnabled()
+                && properties.getMetrics().isEnabled()
                 && resolveScopeEnabled(scope)
                 && !Boolean.FALSE.equals(runtime.getEnabled());
 
         return new ResolvedMetricConfig(
                 source.metricId(),
                 enabled,
-                properties.getMetricPrefix() + "." + suffix,
+                properties.getMetrics().getMetricPrefix() + "." + suffix,
                 suffix,
                 scope,
                 dataSourceRef,
@@ -51,7 +54,7 @@ public class MetricConfigResolver {
     }
 
     private boolean resolveScopeEnabled(String scope) {
-        ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getScopes().get(scope);
+        ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getMetrics().getScopes().get(scope);
         return scopeProperties == null || scopeProperties.isEnabled();
     }
 

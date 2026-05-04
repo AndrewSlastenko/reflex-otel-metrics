@@ -1,5 +1,6 @@
 package ru.sber.rcln.reflex.telemetry.config;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.AccessLevel;
@@ -11,20 +12,24 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Getter
 @Setter
-@ConfigurationProperties(prefix = "reflex.otel.metrics")
+@ConfigurationProperties(prefix = "reflex.otel")
 public class ReflexOtelMetricsProperties {
 
     private boolean enabled = true;
-    private String metricPrefix = "reflex";
     private String instrumentationScopeName = "ru.sber.rcln.reflex.telemetry";
     private OtlpProperties otlp = new OtlpProperties();
+    private MetricsProperties metrics = new MetricsProperties();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private TraceProperties traces = new TraceProperties();
-    private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
-    private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
-    @Setter(AccessLevel.NONE)
-    private Map<String, ManualMetricRuntimeProperties> manual = new LinkedHashMap<>();
+
+    public void setMetrics(MetricsProperties metrics) {
+        this.metrics = metrics != null ? metrics : new MetricsProperties();
+    }
+
+    public void setOtlp(OtlpProperties otlp) {
+        this.otlp = otlp != null ? otlp : new OtlpProperties();
+    }
 
     public TraceProperties getTraces() {
         return traces;
@@ -34,8 +39,28 @@ public class ReflexOtelMetricsProperties {
         this.traces = traces != null ? traces : new TraceProperties();
     }
 
-    public void setManual(Map<String, ManualMetricRuntimeProperties> manual) {
-        this.manual = manual != null ? manual : new LinkedHashMap<>();
+    @Getter
+    @Setter
+    public static class MetricsProperties {
+
+        private boolean enabled = true;
+        private String metricPrefix = "reflex";
+        private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
+        private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
+        @Setter(AccessLevel.NONE)
+        private Map<String, ManualMetricRuntimeProperties> manual = new LinkedHashMap<>();
+
+        public void setScopes(Map<String, ScopeProperties> scopes) {
+            this.scopes = scopes != null ? scopes : new LinkedHashMap<>();
+        }
+
+        public void setSources(Map<String, MetricRuntimeProperties> sources) {
+            this.sources = sources != null ? sources : new LinkedHashMap<>();
+        }
+
+        public void setManual(Map<String, ManualMetricRuntimeProperties> manual) {
+            this.manual = manual != null ? manual : new LinkedHashMap<>();
+        }
     }
 
     @Getter
@@ -44,8 +69,8 @@ public class ReflexOtelMetricsProperties {
 
         private String metricsEndpoint = "http://localhost:4317";
         private String tracesEndpoint = "http://localhost:4317";
-        private java.time.Duration exportTimeout = java.time.Duration.ofSeconds(10);
-        private java.time.Duration exportInterval = java.time.Duration.ofMinutes(1);
+        private Duration exportTimeout = Duration.ofSeconds(10);
+        private Duration exportInterval = Duration.ofMinutes(1);
     }
 
     @Getter

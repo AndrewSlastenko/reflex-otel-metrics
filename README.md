@@ -14,12 +14,12 @@ The current starter targets:
 
 ## What The Starter Owns
 
-The starter auto-configures the shared metric infrastructure:
+The starter auto-configures the shared telemetry infrastructure:
 
-- `ReflexOtelMetricsProperties` binding under `reflex.otel.metrics`
+- `ReflexOtelMetricsProperties` binding under `reflex.otel`
 - OTLP/gRPC metric exporter
 - OTLP/gRPC trace exporter
-- `TraceOperations` for generic span lifecycle and W3C propagation helpers (no-op when `reflex.otel.metrics.traces.enabled` is false or when no `Tracer` bean is available)
+- `TraceOperations` for generic span lifecycle and W3C propagation helpers (no-op when `reflex.otel.enabled` or `reflex.otel.traces.enabled` is false, or when no `Tracer` bean is available)
 - OTel `OpenTelemetry`, `Meter`, `Tracer`, and instrument registry beans
 - config resolution and validation helpers
 - series limiting support
@@ -44,24 +44,25 @@ Run only the starter auto-configuration tests with:
 
 ## Configuration Contract
 
-The starter binds properties from `reflex.otel.metrics`.
+The starter binds properties from `reflex.otel`.
 
 Global properties:
 
 ```yaml
 reflex:
   otel:
+    enabled: true
+    instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
+    otlp:
+      metrics-endpoint: http://localhost:4317
+      traces-endpoint: http://localhost:4317
+      export-timeout: 10s
+      export-interval: 1m
+    traces:
+      enabled: true
     metrics:
       enabled: true
       metric-prefix: ci054147
-      instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
-      traces:
-        enabled: true
-      otlp:
-        metrics-endpoint: http://localhost:4317
-        traces-endpoint: http://localhost:4317
-        export-timeout: 10s
-        export-interval: 1m
       scopes:
         business:
           enabled: true
@@ -92,13 +93,15 @@ reflex:
 
 These keys map directly to the current `ReflexOtelMetricsProperties` and `MetricRuntimeProperties` model:
 
-- `metric-prefix`
+- `reflex.otel.enabled`
 - `instrumentation-scope-name`
-- `traces.enabled`
 - `otlp.metrics-endpoint`
 - `otlp.traces-endpoint`
 - `otlp.export-timeout`
 - `otlp.export-interval`
+- `reflex.otel.traces.enabled`
+- `metrics.enabled`
+- `metric-prefix`
 - `scopes.<scope>.enabled`
 - `sources.<metric-id>.enabled`
 - `sources.<metric-id>.suffix`
@@ -134,9 +137,8 @@ By default, the starter exports every minute:
 ```yaml
 reflex:
   otel:
-    metrics:
-      otlp:
-        export-interval: 1m
+    otlp:
+      export-interval: 1m
 ```
 
 Use this to avoid exporting too often when database polling happens more frequently than downstream consumers need.
@@ -148,15 +150,14 @@ Use this to avoid exporting too often when database polling happens more frequen
 ```yaml
 reflex:
   otel:
-    metrics:
-      instrumentation-scope-name: com.example.business-metrics
+    instrumentation-scope-name: com.example.business-metrics
 ```
 
 This does not change the metric name itself. Metric names still come from `metric-prefix + suffix`. The scope name identifies which library or module emitted the telemetry.
 
 ## Trace operations
 
-Inject `TraceOperations` like any other starter bean. Use `SpanSpec` for the span name, an optional parent `TraceCarrier`, and string attributes. Spans are exported when tracing is enabled and an OTLP traces endpoint is configured (see global `otlp.traces-endpoint` above).
+Inject `TraceOperations` like any other starter bean. Use `SpanSpec` for the span name, an optional parent `TraceCarrier`, and string attributes. Spans are exported when global telemetry and tracing are enabled and an OTLP traces endpoint is configured (see `reflex.otel.otlp.traces-endpoint` above).
 
 The names in the following sketch are placeholders for your application types and workflow layer:
 
