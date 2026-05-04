@@ -13,6 +13,7 @@ public class ReflexOtelMetricsProperties {
     private OtlpProperties otlp = new OtlpProperties();
     private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
     private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
+    private Map<String, ManualMetricRuntimeProperties> manual = new LinkedHashMap<>();
 
     public boolean isEnabled() {
         return enabled;
@@ -60,6 +61,14 @@ public class ReflexOtelMetricsProperties {
 
     public void setSources(Map<String, MetricRuntimeProperties> sources) {
         this.sources = sources;
+    }
+
+    public Map<String, ManualMetricRuntimeProperties> getManual() {
+        return manual;
+    }
+
+    public void setManual(Map<String, ManualMetricRuntimeProperties> manual) {
+        this.manual = manual;
     }
 
     public static class OtlpProperties {
