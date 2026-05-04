@@ -66,12 +66,12 @@ When an action creates a child process, the application writes `traces.captureCu
 ### Task 1: Public Trace API
 
 **Files:**
+
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceCarrier.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/SpanSpec.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceOperations.java`
 - Test: `src/test/java/ru/sber/rcln/reflex/telemetry/api/TraceCarrierTest.java`
-
-- [ ] **Step 1: Write tests for empty and non-empty carriers**
+- **Step 1: Write tests for empty and non-empty carriers**
 
 Create `src/test/java/ru/sber/rcln/reflex/telemetry/api/TraceCarrierTest.java`:
 
@@ -102,7 +102,7 @@ class TraceCarrierTest {
 }
 ```
 
-- [ ] **Step 2: Run the new test and verify it fails**
+- **Step 2: Run the new test and verify it fails**
 
 Run:
 
@@ -112,7 +112,7 @@ Run:
 
 Expected: compilation fails because `TraceCarrier` does not exist.
 
-- [ ] **Step 3: Add `TraceCarrier`**
+- **Step 3: Add `TraceCarrier`**
 
 Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceCarrier.java`:
 
@@ -131,7 +131,7 @@ public record TraceCarrier(String traceparent, String tracestate) {
 }
 ```
 
-- [ ] **Step 4: Add `SpanSpec`**
+- **Step 4: Add `SpanSpec`**
 
 Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/SpanSpec.java`:
 
@@ -158,7 +158,7 @@ public record SpanSpec(String name, TraceCarrier parent, Map<String, String> att
 }
 ```
 
-- [ ] **Step 5: Add `TraceOperations`**
+- **Step 5: Add `TraceOperations`**
 
 Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceOperations.java`:
 
@@ -177,7 +177,7 @@ public interface TraceOperations {
 }
 ```
 
-- [ ] **Step 6: Run API tests**
+- **Step 6: Run API tests**
 
 Run:
 
@@ -187,7 +187,7 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 7: Commit**
+- **Step 7: Commit**
 
 ```powershell
 git add src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceCarrier.java src/main/java/ru/sber/rcln/reflex/telemetry/api/SpanSpec.java src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceOperations.java src/test/java/ru/sber/rcln/reflex/telemetry/api/TraceCarrierTest.java
@@ -199,10 +199,10 @@ git commit -m "feat: add trace operations API"
 ### Task 2: No-Op Trace Operations
 
 **Files:**
+
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperations.java`
 - Create: `src/test/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperationsTest.java`
-
-- [ ] **Step 1: Write no-op tests**
+- **Step 1: Write no-op tests**
 
 Create `src/test/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperationsTest.java`:
 
@@ -245,7 +245,7 @@ class NoopTraceOperationsTest {
 }
 ```
 
-- [ ] **Step 2: Run no-op tests and verify they fail**
+- **Step 2: Run no-op tests and verify they fail**
 
 Run:
 
@@ -255,7 +255,7 @@ Run:
 
 Expected: compilation fails because `NoopTraceOperations` does not exist.
 
-- [ ] **Step 3: Add no-op implementation**
+- **Step 3: Add no-op implementation**
 
 Create `src/main/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperations.java`:
 
@@ -287,7 +287,7 @@ public class NoopTraceOperations implements TraceOperations {
 }
 ```
 
-- [ ] **Step 4: Run no-op tests**
+- **Step 4: Run no-op tests**
 
 Run:
 
@@ -297,7 +297,7 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
 git add src/main/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperations.java src/test/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperationsTest.java
@@ -309,11 +309,11 @@ git commit -m "feat: add no-op trace operations"
 ### Task 3: OpenTelemetry Trace Operations
 
 **Files:**
+
 - Modify: `pom.xml`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperations.java`
 - Create: `src/test/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperationsTest.java`
-
-- [ ] **Step 1: Add test dependency**
+- **Step 1: Add test dependency**
 
 Modify `pom.xml` dependencies:
 
@@ -325,7 +325,7 @@ Modify `pom.xml` dependencies:
 </dependency>
 ```
 
-- [ ] **Step 2: Write span lifecycle tests**
+- **Step 2: Write span lifecycle tests**
 
 Create `src/test/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperationsTest.java`:
 
@@ -439,7 +439,7 @@ class DefaultTraceOperationsTest {
 }
 ```
 
-- [ ] **Step 3: Run tests and verify they fail**
+- **Step 3: Run tests and verify they fail**
 
 Run:
 
@@ -449,7 +449,7 @@ Run:
 
 Expected: compilation fails because `DefaultTraceOperations` does not exist.
 
-- [ ] **Step 4: Add OpenTelemetry implementation**
+- **Step 4: Add OpenTelemetry implementation**
 
 Create `src/main/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperations.java`:
 
@@ -568,7 +568,7 @@ public class DefaultTraceOperations implements TraceOperations {
 }
 ```
 
-- [ ] **Step 5: Run tracing tests**
+- **Step 5: Run tracing tests**
 
 Run:
 
@@ -578,7 +578,7 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit**
+- **Step 6: Commit**
 
 ```powershell
 git add pom.xml src/main/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperations.java src/test/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperationsTest.java
@@ -590,11 +590,11 @@ git commit -m "feat: implement trace operations"
 ### Task 4: Trace Auto-Configuration
 
 **Files:**
+
 - Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
 - Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
 - Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
-
-- [ ] **Step 1: Write auto-configuration tests**
+- **Step 1: Write auto-configuration tests**
 
 Add imports to `ReflexOtelMetricsAutoConfigurationTest`:
 
@@ -633,7 +633,7 @@ void shouldBackOffWhenTraceOperationsProvidedByApplication() {
 }
 ```
 
-- [ ] **Step 2: Run auto-configuration tests and verify they fail**
+- **Step 2: Run auto-configuration tests and verify they fail**
 
 Run:
 
@@ -643,7 +643,7 @@ Run:
 
 Expected: compilation fails or assertions fail because `TraceOperations` is not auto-configured.
 
-- [ ] **Step 3: Add trace properties**
+- **Step 3: Add trace properties**
 
 Modify `ReflexOtelMetricsProperties`:
 
@@ -672,7 +672,7 @@ public static class TraceProperties {
 }
 ```
 
-- [ ] **Step 4: Configure `TraceOperations` bean**
+- **Step 4: Configure `TraceOperations` bean**
 
 Modify `ReflexOtelMetricsAutoConfiguration` imports:
 
@@ -695,7 +695,7 @@ TraceOperations traceOperations(Tracer tracer, ReflexOtelMetricsProperties prope
 }
 ```
 
-- [ ] **Step 5: Run auto-configuration tests**
+- **Step 5: Run auto-configuration tests**
 
 Run:
 
@@ -705,7 +705,7 @@ Run:
 
 Expected: tests pass.
 
-- [ ] **Step 6: Commit**
+- **Step 6: Commit**
 
 ```powershell
 git add src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
@@ -717,9 +717,9 @@ git commit -m "feat: auto-configure trace operations"
 ### Task 5: Documentation
 
 **Files:**
-- Modify: `README.md`
 
-- [ ] **Step 1: Add tracing configuration docs**
+- Modify: `README.md`
+- **Step 1: Add tracing configuration docs**
 
 Add under configuration:
 
@@ -733,7 +733,7 @@ reflex:
         traces-endpoint: http://localhost:4317
 ```
 
-- [ ] **Step 2: Add generic API docs**
+- **Step 2: Add generic API docs**
 
 Document:
 
@@ -752,7 +752,7 @@ traces.inSpan(
         () -> action.execute(context));
 ```
 
-- [ ] **Step 3: Add propagation docs**
+- **Step 3: Add propagation docs**
 
 Document these rules:
 
@@ -762,8 +762,7 @@ Document these rules:
 - Call `captureCurrent()` inside an active `inSpan(...)`.
 - Put the captured carrier into the next process context, queue headers, HTTP headers, or another transport.
 - Use attributes for business IDs and workflow names; use `traceparent` for trace linkage.
-
-- [ ] **Step 4: Add `ProcessContext` example**
+- **Step 4: Add `ProcessContext` example**
 
 Document the application-side pattern:
 
@@ -780,7 +779,7 @@ _otel.traceparent
 _otel.tracestate
 ```
 
-- [ ] **Step 5: Commit**
+- **Step 5: Commit**
 
 ```powershell
 git add README.md
@@ -792,9 +791,9 @@ git commit -m "docs: describe trace operations usage"
 ### Task 6: Full Verification
 
 **Files:**
-- No source changes expected.
 
-- [ ] **Step 1: Run all tests**
+- No source changes expected.
+- **Step 1: Run all tests**
 
 Run:
 
@@ -804,7 +803,7 @@ Run:
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Inspect changed files**
+- **Step 2: Inspect changed files**
 
 Run:
 
@@ -815,7 +814,7 @@ git diff --stat HEAD
 
 Expected: working tree only contains intended changes if commits were skipped; otherwise clean.
 
-- [ ] **Step 3: Final commit if tasks were batched**
+- **Step 3: Final commit if tasks were batched**
 
 If previous tasks were not committed individually:
 
@@ -840,3 +839,4 @@ git commit -m "feat: add generic trace operations"
 - `CurrentTrace.attribute(...)` and `CurrentTrace.event(...)` facade.
 - Span links for fan-out/fan-in workflows.
 - Automatic database or queue instrumentation.
+
