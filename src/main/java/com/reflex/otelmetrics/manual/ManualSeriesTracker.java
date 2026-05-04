@@ -20,6 +20,9 @@ public class ManualSeriesTracker {
         }
         this.maxSeries = maxSeries;
         this.overflowPolicy = Objects.requireNonNull(overflowPolicy, "overflowPolicy must not be null");
+        if (this.overflowPolicy == SeriesOverflowPolicy.AGGREGATE_TO_OTHER) {
+            throw new IllegalArgumentException("AGGREGATE_TO_OTHER is not supported for manual metrics");
+        }
     }
 
     public synchronized Result apply(Map<String, String> attributes) {
@@ -38,7 +41,8 @@ public class ManualSeriesTracker {
 
     private Result rejectOverflow() {
         return switch (overflowPolicy) {
-            case FAIL, TRUNCATE, AGGREGATE_TO_OTHER -> Result.rejected("max series limit " + maxSeries + " exceeded");
+            case FAIL, TRUNCATE -> Result.rejected("max series limit " + maxSeries + " exceeded");
+            case AGGREGATE_TO_OTHER -> throw new IllegalStateException("Unsupported overflow policy " + overflowPolicy);
         };
     }
 

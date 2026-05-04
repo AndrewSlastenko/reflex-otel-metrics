@@ -48,14 +48,10 @@ class ManualSeriesTrackerTest {
     }
 
     @Test
-    void rejectsNewSeriesAfterLimitIsReachedForAggregateToOtherPolicy() {
-        ManualSeriesTracker tracker = new ManualSeriesTracker(1, SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
-
-        tracker.apply(Map.of("client", "A"));
-        ManualSeriesTracker.Result result = tracker.apply(Map.of("client", "B"));
-
-        assertThat(result.accepted()).isFalse();
-        assertThat(result.message()).contains("max series limit 1 exceeded");
+    void rejectsAggregateToOtherPolicy() {
+        assertThatThrownBy(() -> new ManualSeriesTracker(1, SeriesOverflowPolicy.AGGREGATE_TO_OTHER))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("AGGREGATE_TO_OTHER is not supported for manual metrics");
     }
 
     @Test
