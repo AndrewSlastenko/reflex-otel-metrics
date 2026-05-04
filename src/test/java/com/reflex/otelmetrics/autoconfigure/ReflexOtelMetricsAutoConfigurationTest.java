@@ -1,6 +1,8 @@
 package com.reflex.otelmetrics.autoconfigure;
 
+import com.reflex.otelmetrics.api.CounterMetric;
 import com.reflex.otelmetrics.api.JdbcMetricSource;
+import com.reflex.otelmetrics.api.MetricDefinition;
 import com.reflex.otelmetrics.api.MetricDefinitionDefaults;
 import com.reflex.otelmetrics.api.MetricKind;
 import com.reflex.otelmetrics.api.MetricPoint;
@@ -10,14 +12,20 @@ import com.reflex.otelmetrics.api.SeriesOverflowPolicy;
 import com.reflex.otelmetrics.config.MetricConfigResolver;
 import com.reflex.otelmetrics.config.ResolvedMetricConfig;
 import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
+import com.reflex.otelmetrics.config.ManualMetricConfigResolver;
+import com.reflex.otelmetrics.manual.AttributeValidator;
+import com.reflex.otelmetrics.manual.ReflexMetricFactory;
 import com.reflex.otelmetrics.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.time.Duration;
@@ -94,6 +102,36 @@ class ReflexOtelMetricsAutoConfigurationTest {
                 });
     }
 
+    @Test
+    void shouldCreateManualMetricFactory() {
+        contextRunner
+                .withBean(OpenTelemetry.class, OpenTelemetry::noop)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(ManualMetricConfigResolver.class);
+                    assertThat(context).hasSingleBean(AttributeValidator.class);
+                    assertThat(context).hasSingleBean(ReflexMetricFactory.class);
+                });
+    }
+
+    @Test
+    void shouldAllowMultipleManualCounterMetricBeansWithNamesAndQualifiers() {
+        contextRunner
+                .withBean(OpenTelemetry.class, OpenTelemetry::noop)
+                .withUserConfiguration(ManualCounterMetricConfiguration.class)
+                .run(context -> {
+                    assertThat(context).hasBean("ordersCreatedMetric");
+                    assertThat(context).hasBean("ordersFailedMetric");
+                    assertThat(context.getBean("ordersCreatedMetric", CounterMetric.class))
+                            .isNotSameAs(context.getBean("ordersFailedMetric", CounterMetric.class));
+                    assertThat(context.getBeansOfType(CounterMetric.class))
+                            .containsOnlyKeys("ordersCreatedMetric", "ordersFailedMetric");
+                    assertThat(context.getBean(ManualCounterMetricConsumer.class).ordersCreatedMetric())
+                            .isSameAs(context.getBean("ordersCreatedMetric", CounterMetric.class));
+                    assertThat(context.getBean(ManualCounterMetricConsumer.class).ordersFailedMetric())
+                            .isSameAs(context.getBean("ordersFailedMetric", CounterMetric.class));
+                });
+    }
+
     private static final class TestJdbcMetricSource implements JdbcMetricSource {
 
         @Override
@@ -129,5 +167,35 @@ class ReflexOtelMetricsAutoConfigurationTest {
         public RowMapper<MetricPoint> rowMapper() {
             return (rs, rowNum) -> new MetricPoint(1L, Map.of());
         }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class ManualCounterMetricConfiguration {
+
+        @Bean
+        CounterMetric ordersCreatedMetric(ReflexMetricFactory metricFactory) {
+            return metricFactory.counter(
+                    "orders-created",
+                    MetricDefinition.of("orders.created").description("Orders created").unit("1").build());
+        }
+
+        @Bean
+        CounterMetric ordersFailedMetric(ReflexMetricFactory metricFactory) {
+            return metricFactory.counter(
+                    "orders-failed",
+                    MetricDefinition.of("orders.failed").description("Orders failed").unit("1").build());
+        }
+
+        @Bean
+        ManualCounterMetricConsumer manualCounterMetricConsumer(
+                @Qualifier("ordersCreatedMetric") CounterMetric ordersCreatedMetric,
+                @Qualifier("ordersFailedMetric") CounterMetric ordersFailedMetric) {
+            return new ManualCounterMetricConsumer(ordersCreatedMetric, ordersFailedMetric);
+        }
+    }
+
+    private record ManualCounterMetricConsumer(
+            CounterMetric ordersCreatedMetric,
+            CounterMetric ordersFailedMetric) {
     }
 }

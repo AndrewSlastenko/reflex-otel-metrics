@@ -1,9 +1,12 @@
 package com.reflex.otelmetrics.autoconfigure;
 
+import com.reflex.otelmetrics.config.ManualMetricConfigResolver;
 import com.reflex.otelmetrics.config.MetricConfigResolver;
 import com.reflex.otelmetrics.config.MetricConfigValidator;
 import com.reflex.otelmetrics.config.ReflexOtelMetricsProperties;
 import com.reflex.otelmetrics.internal.LoggingSupport;
+import com.reflex.otelmetrics.manual.AttributeValidator;
+import com.reflex.otelmetrics.manual.ReflexMetricFactory;
 import com.reflex.otelmetrics.otel.OtelInstrumentRegistry;
 import com.reflex.otelmetrics.runtime.OverflowAggregationStrategy;
 import com.reflex.otelmetrics.runtime.SeriesLimiter;
@@ -36,8 +39,20 @@ public class ReflexOtelMetricsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    ManualMetricConfigResolver manualMetricConfigResolver(ReflexOtelMetricsProperties properties) {
+        return new ManualMetricConfigResolver(properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     MetricConfigValidator metricConfigValidator() {
         return new MetricConfigValidator();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    AttributeValidator attributeValidator() {
+        return new AttributeValidator();
     }
 
     @Bean
@@ -125,5 +140,14 @@ public class ReflexOtelMetricsAutoConfiguration {
     @ConditionalOnMissingBean
     OtelInstrumentRegistry otelInstrumentRegistry(Meter meter) {
         return new OtelInstrumentRegistry(meter);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    ReflexMetricFactory reflexMetricFactory(
+            ManualMetricConfigResolver manualMetricConfigResolver,
+            OtelInstrumentRegistry otelInstrumentRegistry,
+            AttributeValidator attributeValidator) {
+        return new ReflexMetricFactory(manualMetricConfigResolver, otelInstrumentRegistry, attributeValidator);
     }
 }
