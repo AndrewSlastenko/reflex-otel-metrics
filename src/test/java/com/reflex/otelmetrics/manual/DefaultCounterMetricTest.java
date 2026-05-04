@@ -109,6 +109,18 @@ class DefaultCounterMetricTest {
         assertThatCode(() -> metric.add(1, Map.of())).doesNotThrowAnyException();
     }
 
+    @Test
+    void validatorExceptionDoesNotEscapeAndSkipsPublish() {
+        DefaultCounterMetric metric = new DefaultCounterMetric(
+                resolved(true, AttributesSchema.builder().required("client").build(), 500),
+                instrument,
+                new ThrowingAttributeValidator());
+
+        assertThatCode(() -> metric.add(1, Map.of("client", "A"))).doesNotThrowAnyException();
+
+        assertThat(instrument.callCount).isZero();
+    }
+
     private static ResolvedManualMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
         return new ResolvedManualMetricConfig(
                 "orders-created",
@@ -162,6 +174,14 @@ class DefaultCounterMetricTest {
         @Override
         public void add(long value, Attributes attributes, Context context) {
             add(value, attributes);
+        }
+    }
+
+    private static final class ThrowingAttributeValidator extends AttributeValidator {
+
+        @Override
+        public AttributeValidationResult validate(AttributesSchema schema, Map<String, String> attributes) {
+            throw new RuntimeException("validation failed");
         }
     }
 }

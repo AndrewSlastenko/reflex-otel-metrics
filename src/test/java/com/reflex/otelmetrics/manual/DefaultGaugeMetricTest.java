@@ -81,6 +81,18 @@ class DefaultGaugeMetricTest {
         assertThatCode(() -> metric.set(1, Map.of())).doesNotThrowAnyException();
     }
 
+    @Test
+    void validatorExceptionDoesNotEscapeAndSkipsPublish() {
+        DefaultGaugeMetric metric = new DefaultGaugeMetric(
+                resolved(true, AttributesSchema.builder().required("queue").build(), 500),
+                instrument,
+                new ThrowingAttributeValidator());
+
+        assertThatCode(() -> metric.set(1, Map.of("queue", "primary"))).doesNotThrowAnyException();
+
+        assertThat(instrument.callCount).isZero();
+    }
+
     private static ResolvedManualMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
         return new ResolvedManualMetricConfig(
                 "queue-depth",
@@ -134,6 +146,14 @@ class DefaultGaugeMetricTest {
         @Override
         public void set(long value, Attributes attributes, Context context) {
             set(value, attributes);
+        }
+    }
+
+    private static final class ThrowingAttributeValidator extends AttributeValidator {
+
+        @Override
+        public AttributeValidationResult validate(AttributesSchema schema, Map<String, String> attributes) {
+            throw new RuntimeException("validation failed");
         }
     }
 }

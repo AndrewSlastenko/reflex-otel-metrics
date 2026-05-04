@@ -12,6 +12,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class DefaultUpDownCounterMetricTest {
 
@@ -70,6 +71,43 @@ class DefaultUpDownCounterMetricTest {
         assertThat(instrument.callCount).isZero();
     }
 
+    @Test
+    void skipsNewSeriesAfterLimitIsReached() {
+        DefaultUpDownCounterMetric metric = new DefaultUpDownCounterMetric(
+                resolved(true, AttributesSchema.builder().required("client").build(), 1),
+                instrument,
+                attributeValidator);
+
+        metric.add(1, Map.of("client", "A"));
+        metric.add(2, Map.of("client", "B"));
+
+        assertThat(instrument.callCount).isEqualTo(1);
+        assertThat(instrument.value).isEqualTo(1);
+        assertThat(instrument.attributes.get(AttributeKey.stringKey("client"))).isEqualTo("A");
+    }
+
+    @Test
+    void publishExceptionDoesNotEscape() {
+        DefaultUpDownCounterMetric metric = new DefaultUpDownCounterMetric(
+                resolved(true, AttributesSchema.empty(), 500),
+                new ThrowingLongUpDownCounter(),
+                attributeValidator);
+
+        assertThatCode(() -> metric.add(1, Map.of())).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validatorExceptionDoesNotEscapeAndSkipsPublish() {
+        DefaultUpDownCounterMetric metric = new DefaultUpDownCounterMetric(
+                resolved(true, AttributesSchema.builder().required("worker").build(), 500),
+                instrument,
+                new ThrowingAttributeValidator());
+
+        assertThatCode(() -> metric.add(1, Map.of("worker", "A"))).doesNotThrowAnyException();
+
+        assertThat(instrument.callCount).isZero();
+    }
+
     private static ResolvedManualMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
         return new ResolvedManualMetricConfig(
                 "workers-active",
@@ -105,6 +143,32 @@ class DefaultUpDownCounterMetricTest {
         @Override
         public void add(long value, Attributes attributes, Context context) {
             add(value, attributes);
+        }
+    }
+
+    private static final class ThrowingLongUpDownCounter implements LongUpDownCounter {
+
+        @Override
+        public void add(long value) {
+            add(value, Attributes.empty());
+        }
+
+        @Override
+        public void add(long value, Attributes attributes) {
+            throw new RuntimeException("publish failed");
+        }
+
+        @Override
+        public void add(long value, Attributes attributes, Context context) {
+            add(value, attributes);
+        }
+    }
+
+    private static final class ThrowingAttributeValidator extends AttributeValidator {
+
+        @Override
+        public AttributeValidationResult validate(AttributesSchema schema, Map<String, String> attributes) {
+            throw new RuntimeException("validation failed");
         }
     }
 }
