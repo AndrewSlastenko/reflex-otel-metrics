@@ -13,6 +13,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class DefaultCounterMetricTest {
 
@@ -98,6 +99,16 @@ class DefaultCounterMetricTest {
         assertThat(instrument.attributes.get(AttributeKey.stringKey("client"))).isEqualTo("A");
     }
 
+    @Test
+    void publishExceptionDoesNotEscape() {
+        DefaultCounterMetric metric = new DefaultCounterMetric(
+                resolved(true, AttributesSchema.empty(), 500),
+                new ThrowingLongCounter(),
+                attributeValidator);
+
+        assertThatCode(() -> metric.add(1, Map.of())).doesNotThrowAnyException();
+    }
+
     private static ResolvedManualMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
         return new ResolvedManualMetricConfig(
                 "orders-created",
@@ -128,6 +139,24 @@ class DefaultCounterMetricTest {
             this.callCount++;
             this.value = value;
             this.attributes = attributes;
+        }
+
+        @Override
+        public void add(long value, Attributes attributes, Context context) {
+            add(value, attributes);
+        }
+    }
+
+    private static final class ThrowingLongCounter implements LongCounter {
+
+        @Override
+        public void add(long value) {
+            add(value, Attributes.empty());
+        }
+
+        @Override
+        public void add(long value, Attributes attributes) {
+            throw new RuntimeException("publish failed");
         }
 
         @Override
