@@ -1,6 +1,7 @@
 package com.reflex.otelmetrics.otel;
 
 import com.reflex.otelmetrics.api.MetricKind;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -34,6 +35,7 @@ public class OtelInstrumentRegistry {
             }
 
             return new RegisteredInstrument(kind, switch (kind) {
+                case COUNTER -> (LongCounter) meter.counterBuilder(name).build();
                 case GAUGE -> (LongGauge) meter.gaugeBuilder(name).ofLongs().build();
                 case UP_DOWN_COUNTER -> (LongUpDownCounter) meter.upDownCounterBuilder(name).build();
             });
