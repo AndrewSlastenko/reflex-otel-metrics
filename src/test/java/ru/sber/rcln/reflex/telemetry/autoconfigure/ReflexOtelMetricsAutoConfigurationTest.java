@@ -1,5 +1,6 @@
 package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
@@ -33,7 +34,11 @@ import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -217,6 +222,39 @@ class ReflexOtelMetricsAutoConfigurationTest {
                 });
     }
 
+    @Test
+    void shouldLetSpringLibraryUseNoopMetricsWhenApplicationTelemetryIsAbsent() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(
+                        TestLibraryTelemetryAutoConfiguration.class,
+                        TestLibraryFallbackAutoConfiguration.class))
+                .run(context -> {
+                    assertThat(context).hasSingleBean(TestLibraryMetrics.class);
+                    assertThat(context.getBean(TestLibraryMetrics.class)).isInstanceOf(NoopTestLibraryMetrics.class);
+                    assertThat(context).doesNotHaveBean(ReflexMetricFactory.class);
+                    assertThat(context).doesNotHaveBean(OpenTelemetry.class);
+                });
+    }
+
+    @Test
+    void shouldLetSpringLibraryBindDomainMetricsToApplicationTelemetryRuntime() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(
+                        ReflexOtelMetricsAutoConfiguration.class,
+                        TestLibraryTelemetryAutoConfiguration.class,
+                        TestLibraryFallbackAutoConfiguration.class))
+                .withBean(OpenTelemetry.class, OpenTelemetry::noop)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(ReflexMetricFactory.class);
+                    assertThat(context).hasSingleBean(TestLibraryMetrics.class);
+                    assertThat(context.getBean(TestLibraryMetrics.class))
+                            .isInstanceOf(ReflexTestLibraryMetrics.class);
+                    assertThat(context.getBeansOfType(OpenTelemetry.class)).hasSize(1);
+
+                    context.getBean(TestLibraryService.class).process("sync");
+                });
+    }
+
     private static final class TestJdbcMetricSource implements JdbcMetricSource {
 
         @Override
@@ -282,5 +320,81 @@ class ReflexOtelMetricsAutoConfigurationTest {
     private record ManualCounterMetricConsumer(
             CounterMetric ordersCreatedMetric,
             CounterMetric ordersFailedMetric) {
+    }
+
+    interface TestLibraryMetrics {
+
+        void operationStarted(String type);
+    }
+
+    private static final class NoopTestLibraryMetrics implements TestLibraryMetrics {
+
+        @Override
+        public void operationStarted(String type) {
+        }
+    }
+
+    private static final class ReflexTestLibraryMetrics implements TestLibraryMetrics {
+
+        private final CounterMetric operationStarted;
+
+        private ReflexTestLibraryMetrics(ReflexMetricFactory metricFactory) {
+            this.operationStarted = metricFactory.counter(
+                    "test-library-operation-started",
+                    MetricDefinition.of("test.library.operation.started")
+                            .scope("test-library")
+                            .description("Started test library operations")
+                            .unit("1")
+                            .attributes(AttributesSchema.builder()
+                                    .required("type")
+                                    .build())
+                            .build());
+        }
+
+        @Override
+        public void operationStarted(String type) {
+            operationStarted.increment(Map.of("type", type));
+        }
+    }
+
+    private record TestLibraryService(TestLibraryMetrics metrics) {
+
+        void process(String type) {
+            metrics.operationStarted(type);
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(ReflexMetricFactory.class)
+    @ConditionalOnBean(ReflexMetricFactory.class)
+    static class TestLibraryTelemetryAutoConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean
+        TestLibraryMetrics testLibraryMetrics(ReflexMetricFactory metricFactory) {
+            return new ReflexTestLibraryMetrics(metricFactory);
+        }
+
+        @Bean
+        TestLibraryService testLibraryService(TestLibraryMetrics metrics) {
+            return new TestLibraryService(metrics);
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @AutoConfigureAfter(TestLibraryTelemetryAutoConfiguration.class)
+    static class TestLibraryFallbackAutoConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean
+        TestLibraryMetrics testLibraryMetrics() {
+            return new NoopTestLibraryMetrics();
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        TestLibraryService testLibraryService(TestLibraryMetrics metrics) {
+            return new TestLibraryService(metrics);
+        }
     }
 }

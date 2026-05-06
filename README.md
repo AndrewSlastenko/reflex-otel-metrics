@@ -1,52 +1,52 @@
 # rcln-reflex-telemetry
 
-`ru.sber.rcln:rcln-reflex-telemetry` is a Spring Boot starter for JDBC-backed OpenTelemetry metric export.
+`ru.sber.rcln:rcln-reflex-telemetry` — Spring Boot starter для экспорта OpenTelemetry-метрик, собираемых из JDBC.
 
-The current starter targets:
+Текущий starter рассчитан на:
 
 - Java 17
 - Spring Boot 3
 - Maven Wrapper (`.\mvnw.cmd`)
 - OpenTelemetry `1.60.1`
-- OTLP/gRPC metric export
-- aggregate technical telemetry
-- fail-safe execution
+- экспорт метрик по OTLP/gRPC
+- агрегированную техническую телеметрию
+- fail-safe выполнение
 
-## What The Starter Owns
+## За что отвечает starter
 
-The starter auto-configures the shared telemetry infrastructure:
+Starter автоматически настраивает общую инфраструктуру телеметрии:
 
-- `ReflexOtelMetricsProperties` binding under `reflex.otel`
-- OTLP/gRPC metric exporter
-- OTLP/gRPC trace exporter
-- `TraceOperations` for generic span lifecycle and W3C propagation helpers (no-op when `reflex.otel.enabled` or `reflex.otel.traces.enabled` is false, or when no `Tracer` bean is available)
-- OTel `OpenTelemetry`, `Meter`, `Tracer`, and instrument registry beans
-- config resolution and validation helpers
-- series limiting support
-- aggregate technical telemetry hooks
-- fail-safe execution defaults for starter-managed infrastructure
+- binding `ReflexOtelMetricsProperties` под префиксом `reflex.otel`
+- exporter метрик OTLP/gRPC
+- exporter трейсов OTLP/gRPC
+- `TraceOperations` для общего жизненного цикла span-ов и W3C propagation helpers (no-op, когда `reflex.otel.enabled` или `reflex.otel.traces.enabled` равны `false`, либо когда нет bean-а `Tracer`)
+- OTel bean-ы `OpenTelemetry`, `Meter`, `Tracer` и registry инструментов
+- helpers для резолва и валидации конфигурации
+- поддержку ограничения количества серий
+- hooks агрегированной технической телеметрии
+- fail-safe defaults для инфраструктуры, которой управляет starter
 
-Application code is expected to contribute metric source beans and their JDBC mapping logic.
+Код приложения должен предоставлять bean-ы источников метрик и JDBC-маппинг.
 
-## Build And Test
+## Сборка и тесты
 
-Run the full test suite from the repository root with:
+Запустить полный набор тестов из корня репозитория:
 
 ```powershell
 .\mvnw.cmd test
 ```
 
-Run only the starter auto-configuration tests with:
+Запустить только тесты автоконфигурации starter-а:
 
 ```powershell
 .\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
 ```
 
-## Configuration Contract
+## Контракт конфигурации
 
-The starter binds properties from `reflex.otel`.
+Starter читает свойства из `reflex.otel`.
 
-Global properties:
+Глобальные свойства:
 
 ```yaml
 reflex:
@@ -62,13 +62,13 @@ reflex:
       enabled: true
     metrics:
       enabled: true
-      metric-prefix: ci054147
+      metric-prefix: ci05414726
       scopes:
         business:
           enabled: true
 ```
 
-Per-source runtime overrides live under `reflex.otel.metrics.sources.<metric-id>`:
+Runtime overrides для отдельных источников находятся в `reflex.otel.metrics.sources.<metric-id>`:
 
 ```yaml
 reflex:
@@ -91,7 +91,7 @@ reflex:
           overflow-policy: AGGREGATE_TO_OTHER
 ```
 
-These keys map directly to the current `ReflexOtelMetricsProperties` and `MetricRuntimeProperties` model:
+Эти ключи напрямую соответствуют текущей модели `ReflexOtelMetricsProperties` и `MetricRuntimeProperties`:
 
 - `reflex.otel.enabled`
 - `instrumentation-scope-name`
@@ -118,21 +118,21 @@ These keys map directly to the current `ReflexOtelMetricsProperties` and `Metric
 - `sources.<metric-id>.max-series`
 - `sources.<metric-id>.overflow-policy`
 
-Runtime configuration is resolved as:
+Runtime-конфигурация резолвится в таком порядке:
 
-1. starter defaults
-2. defaults returned by the metric source bean
-3. property overrides from `application.yml` or `application.properties`
+1. defaults starter-а
+2. defaults, возвращенные bean-ом источника метрик
+3. overrides из `application.yml` или `application.properties`
 
-## Export Timing
+## Частота экспорта
 
-Metric collection and OTLP export are separate steps.
+Сбор метрик и OTLP-экспорт — разные шаги.
 
-1. the metric source query reads values from the database on its own schedule
-2. the starter writes those values into OpenTelemetry instruments
-3. the OpenTelemetry SDK exports accumulated metric data on its own periodic cycle
+1. query источника метрик читает значения из базы по своему расписанию
+2. starter записывает эти значения в OpenTelemetry instruments
+3. OpenTelemetry SDK экспортирует накопленные данные по своему периодическому циклу
 
-By default, the starter exports every minute:
+По умолчанию starter экспортирует раз в минуту:
 
 ```yaml
 reflex:
@@ -141,11 +141,11 @@ reflex:
       export-interval: 1m
 ```
 
-Use this to avoid exporting too often when database polling happens more frequently than downstream consumers need.
+Используйте это, чтобы не экспортировать слишком часто, когда polling базы происходит чаще, чем нужно downstream-потребителям.
 
 ## Instrumentation Scope
 
-`instrumentation-scope-name` controls the OpenTelemetry instrumentation scope used for both `Meter` and `Tracer`.
+`instrumentation-scope-name` управляет OpenTelemetry instrumentation scope, который используется и для `Meter`, и для `Tracer`.
 
 ```yaml
 reflex:
@@ -153,13 +153,13 @@ reflex:
     instrumentation-scope-name: com.example.business-metrics
 ```
 
-This does not change the metric name itself. Metric names still come from `metric-prefix + suffix`. The scope name identifies which library or module emitted the telemetry.
+Это не меняет имя самой метрики. Имена метрик по-прежнему формируются из `metric-prefix + suffix`. Scope name показывает, какая библиотека или модуль выпустили телеметрию.
 
 ## Trace operations
 
-Inject `TraceOperations` like any other starter bean. Use `SpanSpec` for the span name, an optional parent `TraceCarrier`, and string attributes. Spans are exported when global telemetry and tracing are enabled and an OTLP traces endpoint is configured (see `reflex.otel.otlp.traces-endpoint` above).
+`TraceOperations` можно инжектить как любой другой bean starter-а. Используйте `SpanSpec` для имени span-а, опционального parent `TraceCarrier` и строковых атрибутов. Span-ы экспортируются, когда глобальная телеметрия и трассировка включены, а OTLP traces endpoint настроен (см. `reflex.otel.otlp.traces-endpoint` выше).
 
-The names in the following sketch are placeholders for your application types and workflow layer:
+Имена в примере ниже — placeholders для типов приложения и workflow-слоя:
 
 ```java
 import ru.sber.rcln.reflex.telemetry.api.SpanSpec;
@@ -182,63 +182,63 @@ traces.inSpan(
         () -> action.execute(context));
 ```
 
-### Propagation rules
+### Правила propagation
 
-- Store `traceparent` and `tracestate` as opaque strings.
-- Do not store spans in the database.
-- Do not parse `tracestate` in application code.
-- Call `captureCurrent()` only inside an active `inSpan(...)`.
-- Put the captured carrier into the next process context, queue headers, HTTP headers, or another transport.
-- Use span attributes for business identifiers and workflow names; use `traceparent` (via the carrier) for trace linkage.
+- Храните `traceparent` и `tracestate` как opaque strings.
+- Не храните span-ы в базе данных.
+- Не парсите `tracestate` в коде приложения.
+- Вызывайте `captureCurrent()` только внутри активного `inSpan(...)`.
+- Передавайте captured carrier в контекст следующего процесса, queue headers, HTTP headers или другой transport.
+- Используйте span attributes для бизнес-идентификаторов и workflow names; используйте `traceparent` через carrier для связки trace-ов.
 
-### Multi-step workflows
+### Многошаговые workflow
 
-A typical pattern maps execution contexts as follows:
+Типовой паттерн маппит execution contexts так:
 
-- **inParams** — initial trace carrier from the previous process.
-- **params** — current runtime trace carrier updated between actions.
-- **outParams** — trace carrier passed to the next process.
+- **inParams** — initial trace carrier от предыдущего процесса.
+- **params** — текущий runtime trace carrier, обновляемый между actions.
+- **outParams** — trace carrier, передаваемый в следующий процесс.
 
-When fanning out to another process, write the strings from `captureCurrent()` into that context. Suggested keys:
+При fan-out в другой процесс запишите строки из `captureCurrent()` в его context. Рекомендуемые ключи:
 
 ```text
 _otel.traceparent
 _otel.tracestate
 ```
 
-## How Metric Kinds Behave
+## Как ведут себя виды метрик
 
-The current starter supports `GAUGE` and `UP_DOWN_COUNTER`. They behave differently between database polls and OTLP exports.
+Текущий starter поддерживает `GAUGE` и `UP_DOWN_COUNTER`. Они по-разному ведут себя между database polls и OTLP exports.
 
 ### `GAUGE`
 
-Use `GAUGE` for snapshots like "how many rows exist right now".
+Используйте `GAUGE` для snapshot-ов вроде "сколько строк существует прямо сейчас".
 
-Example:
+Пример:
 
-- at `10:00:00` the query returns `42`
-- at `10:00:30` the query returns `45`
-- at `10:01:00` the SDK exports `45`
+- в `10:00:00` query возвращает `42`
+- в `10:00:30` query возвращает `45`
+- в `10:01:00` SDK экспортирует `45`
 
-The latest observed value wins for each attribute set.
+Для каждого набора атрибутов побеждает последнее увиденное значение.
 
 ### `UP_DOWN_COUNTER`
 
-Use `UP_DOWN_COUNTER` only when each collection run produces a delta that should be added to the previous state.
+Используйте `UP_DOWN_COUNTER` только тогда, когда каждый collection run возвращает delta, которую нужно добавить к предыдущему состоянию.
 
-Example:
+Пример:
 
-- at `10:00:00` the query returns `+5`
-- at `10:00:30` the query returns `-2`
-- at `10:01:00` the SDK exports the accumulated change for the interval
+- в `10:00:00` query возвращает `+5`
+- в `10:00:30` query возвращает `-2`
+- в `10:01:00` SDK экспортирует накопленное изменение за интервал
 
-Do not use `UP_DOWN_COUNTER` for full table snapshots like `select count(*) ...`, otherwise each poll adds the whole snapshot again and the exported number will drift upward or downward incorrectly.
+Не используйте `UP_DOWN_COUNTER` для полных snapshot-ов таблицы вроде `select count(*) ...`, иначе каждый poll снова добавит весь snapshot, и экспортируемое значение будет некорректно расти или снижаться.
 
-## Metric Source Contract
+## Контракт источника метрик
 
-Each metric source is a Spring bean with a stable `metricId()` and code-level defaults.
+Каждый источник метрик — Spring bean со стабильным `metricId()` и code-level defaults.
 
-For JDBC-backed metrics, implement `JdbcMetricSource`:
+Для JDBC-метрик реализуйте `JdbcMetricSource`:
 
 ```java
 package com.example.metrics;
@@ -302,7 +302,7 @@ public class DocumentsByStatusMetricSource implements JdbcMetricSource {
 }
 ```
 
-With the example above, an operator can override only the deploy-time values when needed, for example:
+В примере выше оператор может переопределить только deploy-time значения, если это нужно:
 
 ```properties
 reflex.otel.metrics.metric-prefix=ci054147
@@ -312,11 +312,11 @@ reflex.otel.metrics.sources.documents-by-status.fixed-delay=PT2M
 
 ## Manual Metric Beans
 
-JDBC metrics are collected on a starter-managed schedule: the starter runs the source query, maps rows to points, and publishes them to OpenTelemetry. Manual metrics are emitted directly by application code at the point where the business event or state change happens.
+JDBC-метрики собираются по расписанию, которым управляет starter: starter запускает query источника, маппит rows в points и публикует их в OpenTelemetry. Manual metrics эмитятся напрямую кодом приложения в момент бизнес-события или изменения состояния.
 
-For manual metrics, the Java bean declaration is the primary contract. The bean defines the metric id, kind, suffix, scope, description, unit, attribute schema, cardinality limit, and overflow policy. YAML is an optional runtime override layer for deploy-time values such as enabling a metric, changing its suffix or scope, and adjusting cardinality handling.
+Для manual metrics Java bean declaration — основной контракт. Bean определяет metric id, kind, suffix, scope, description, unit, attribute schema, cardinality limit и overflow policy. YAML — опциональный runtime override layer для deploy-time значений: включение метрики, изменение suffix или scope, настройка cardinality handling.
 
-Low-level metric beans work well when a service only needs a single instrument:
+Низкоуровневые metric beans удобны, когда сервису нужен один instrument:
 
 ```java
 package com.example.metrics;
@@ -371,7 +371,7 @@ class OrderService {
 }
 ```
 
-For larger flows, prefer a domain metric bean that groups the low-level instruments and exposes business-specific methods:
+Для больших flow предпочитайте domain metric bean, который группирует низкоуровневые instruments и предоставляет business-specific методы:
 
 ```java
 package com.example.metrics;
@@ -471,7 +471,137 @@ class OrderService {
 }
 ```
 
-Manual metric runtime overrides live under `reflex.otel.metrics.manual.<metric-id>`:
+## Интеграция Spring-библиотек
+
+Spring-библиотеки могут публиковать свои manual metrics без запуска отдельного telemetry runtime. Библиотека должна держать метрики за domain interface, иметь no-op fallback и опционально биндинговать этот interface к `ReflexMetricFactory`, когда приложение включило этот starter.
+
+Код библиотеки вызывает собственный interface, а не OpenTelemetry или `ReflexMetricFactory` напрямую:
+
+```java
+package com.example.library;
+
+public interface DocumentLibraryMetrics {
+
+    void syncStarted(String source);
+}
+
+final class NoopDocumentLibraryMetrics implements DocumentLibraryMetrics {
+
+    @Override
+    public void syncStarted(String source) {
+    }
+}
+```
+
+Reflex-backed реализация может жить в том же library artifact:
+
+```java
+package com.example.library;
+
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
+import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
+import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
+import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
+import java.util.Map;
+
+public final class ReflexDocumentLibraryMetrics implements DocumentLibraryMetrics {
+
+    private final CounterMetric syncStarted;
+
+    public ReflexDocumentLibraryMetrics(ReflexMetricFactory factory) {
+        this.syncStarted = factory.counter(
+                "document-library-sync-started",
+                MetricDefinition.of("document.library.sync.started")
+                        .scope("document-library")
+                        .description("Started document library sync operations")
+                        .unit("1")
+                        .attributes(AttributesSchema.builder()
+                                .required("source")
+                                .build())
+                        .build());
+    }
+
+    @Override
+    public void syncStarted(String source) {
+        syncStarted.increment(Map.of("source", source));
+    }
+}
+```
+
+Автоконфигурация библиотеки должна создавать Reflex-backed bean только тогда, когда application context уже содержит runtime этого starter-а:
+
+```java
+package com.example.library.autoconfigure;
+
+import com.example.library.DocumentLibraryMetrics;
+import com.example.library.ReflexDocumentLibraryMetrics;
+import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+
+@AutoConfiguration
+@ConditionalOnClass(ReflexMetricFactory.class)
+@ConditionalOnBean(ReflexMetricFactory.class)
+class DocumentLibraryTelemetryAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    DocumentLibraryMetrics documentLibraryMetrics(ReflexMetricFactory factory) {
+        return new ReflexDocumentLibraryMetrics(factory);
+    }
+}
+
+@AutoConfiguration
+@AutoConfigureAfter(DocumentLibraryTelemetryAutoConfiguration.class)
+class DocumentLibraryFallbackAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    DocumentLibraryMetrics documentLibraryMetrics() {
+        return source -> {
+        };
+    }
+}
+```
+
+Зарегистрируйте обе автоконфигурации в библиотечном `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`:
+
+```text
+com.example.library.autoconfigure.DocumentLibraryTelemetryAutoConfiguration
+com.example.library.autoconfigure.DocumentLibraryFallbackAutoConfiguration
+```
+
+Если библиотека включает compile-time dependency на этот starter только для опциональной интеграции, объявляйте ее как optional, чтобы consumers не получали telemetry runtime транзитивно:
+
+```xml
+<dependency>
+    <groupId>ru.sber.rcln</groupId>
+    <artifactId>rcln-reflex-telemetry</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <optional>true</optional>
+</dependency>
+```
+
+Приложение-потребитель явно добавляет `rcln-reflex-telemetry`, когда хочет экспортировать метрики. В этом случае по-прежнему существует только один application `ApplicationContext`, одна `ReflexOtelMetricsAutoConfiguration` и один OpenTelemetry runtime. Автоконфигурации библиотек только создают свои domain metric beans и используют application `ReflexMetricFactory`.
+
+Operational overrides используют тот же раздел manual metrics:
+
+```yaml
+reflex:
+  otel:
+    metrics:
+      manual:
+        document-library-sync-started:
+          enabled: true
+          max-series: 100
+          overflow-policy: FAIL
+```
+
+Runtime overrides для manual metrics находятся в `reflex.otel.metrics.manual.<metric-id>`:
 
 ```yaml
 reflex:
@@ -486,6 +616,6 @@ reflex:
           overflow-policy: FAIL
 ```
 
-Manual metric calls are fail-safe for business code. Disabled metrics return without publishing. Invalid attributes, cardinality overflow, and OpenTelemetry runtime errors are logged and skipped by the metric implementation instead of failing the application flow.
+Вызовы manual metrics fail-safe для бизнес-кода. Disabled metrics возвращаются без публикации. Invalid attributes, cardinality overflow и OpenTelemetry runtime errors логируются и пропускаются реализацией метрики, а не ломают application flow.
 
-`AGGREGATE_TO_OTHER` is not supported for manual metrics in v1 because manual emission does not have a batch of overflow points to aggregate. Use `FAIL` to skip new series over the limit, or `TRUNCATE` to stop accepting additional series after the limit is reached.
+`AGGREGATE_TO_OTHER` не поддерживается для manual metrics в v1, потому что manual emission не имеет batch-а overflow points, которые можно агрегировать. Используйте `FAIL`, чтобы пропускать новые series сверх лимита, или `TRUNCATE`, чтобы прекратить принимать дополнительные series после достижения лимита.
