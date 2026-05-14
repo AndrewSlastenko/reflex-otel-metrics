@@ -68,6 +68,7 @@
 - JDBC-источники: `reflex.telemetry.metrics.sources.<metric-id>`
 - Ручные метрики: `reflex.telemetry.metrics.manual.<metric-id>`
 - Глобальный флаг: `reflex.telemetry.enabled`
+- Платформенный префикс имён метрик и `service.name`: `reflex.telemetry.system-code`
 - Общие OTLP-настройки: `reflex.telemetry.otlp.*`
 - Instrumentation scope: `reflex.telemetry.instrumentation-scope-name`
 - Трассировка: `reflex.telemetry.traces.*`

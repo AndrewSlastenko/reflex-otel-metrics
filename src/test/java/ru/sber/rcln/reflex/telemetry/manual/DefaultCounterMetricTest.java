@@ -2,6 +2,7 @@ package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
 import io.opentelemetry.api.common.AttributeKey;
@@ -127,7 +128,7 @@ class DefaultCounterMetricTest {
                 enabled,
                 "reflex.orders.created",
                 "orders.created",
-                "default",
+                ReflexMetricScopes.MANUAL,
                 MetricKind.COUNTER,
                 null,
                 null,

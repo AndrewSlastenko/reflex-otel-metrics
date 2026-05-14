@@ -4,6 +4,7 @@ import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.UpDownCounterMetric;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
@@ -128,7 +129,7 @@ class ReflexMetricFactoryTest {
                 true,
                 "reflex.orders.created",
                 "orders.created",
-                "default",
+                ReflexMetricScopes.MANUAL,
                 kind,
                 description,
                 unit,
@@ -143,7 +144,7 @@ class ReflexMetricFactoryTest {
                 false,
                 "reflex.orders.created",
                 "orders.created",
-                "default",
+                ReflexMetricScopes.MANUAL,
                 kind,
                 null,
                 null,
