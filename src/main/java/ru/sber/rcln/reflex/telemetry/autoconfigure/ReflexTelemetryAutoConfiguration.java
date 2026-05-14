@@ -124,9 +124,12 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkMeterProvider.class, OpenTelemetry.class})
-    SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter, ReflexTelemetryProperties properties) {
+    SdkMeterProvider sdkMeterProvider(
+            OtlpGrpcMetricExporter exporter,
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
-        applyServiceNameResource(builder, properties);
+        applyServiceNameResource(builder, properties, namingPolicy);
         return builder.registerMetricReader(PeriodicMetricReader.builder(exporter)
                 .setInterval(properties.getOtlp().getExportInterval())
                 .build())
@@ -137,9 +140,12 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkTracerProvider.class, OpenTelemetry.class})
-    SdkTracerProvider sdkTracerProvider(OtlpGrpcSpanExporter exporter, ReflexTelemetryProperties properties) {
+    SdkTracerProvider sdkTracerProvider(
+            OtlpGrpcSpanExporter exporter,
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
         SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
-        applyServiceNameResource(builder, properties);
+        applyServiceNameResource(builder, properties, namingPolicy);
         return builder.addSpanProcessor(BatchSpanProcessor.builder(exporter).build())
                 .build();
     }
@@ -240,20 +246,29 @@ public class ReflexTelemetryAutoConfiguration {
         }
     }
 
-    private static void applyServiceNameResource(SdkMeterProviderBuilder builder, ReflexTelemetryProperties properties) {
-        serviceNameResource(properties).ifPresent(builder::addResource);
+    private static void applyServiceNameResource(
+            SdkMeterProviderBuilder builder,
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
+        serviceNameResource(properties, namingPolicy).ifPresent(builder::addResource);
     }
 
-    private static void applyServiceNameResource(SdkTracerProviderBuilder builder, ReflexTelemetryProperties properties) {
-        serviceNameResource(properties).ifPresent(builder::addResource);
+    private static void applyServiceNameResource(
+            SdkTracerProviderBuilder builder,
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
+        serviceNameResource(properties, namingPolicy).ifPresent(builder::addResource);
     }
 
-    private static java.util.Optional<Resource> serviceNameResource(ReflexTelemetryProperties properties) {
-        String serviceName = properties.getServiceName();
-        if (serviceName == null || serviceName.isBlank()) {
+    private static java.util.Optional<Resource> serviceNameResource(
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
+        String serviceName = namingPolicy.serviceName(properties.getServiceName());
+        if (serviceName == null) {
             return java.util.Optional.empty();
         }
 
-        return java.util.Optional.of(Resource.create(Attributes.of(AttributeKey.stringKey("service.name"), serviceName.trim())));
+        return java.util.Optional.of(Resource.create(
+                Attributes.of(AttributeKey.stringKey("service.name"), serviceName)));
     }
 }

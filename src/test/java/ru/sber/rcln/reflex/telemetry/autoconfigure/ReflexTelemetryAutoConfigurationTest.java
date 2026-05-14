@@ -138,10 +138,26 @@ class ReflexTelemetryAutoConfigurationTest {
     @Test
     void shouldApplyConfiguredServiceNameToStarterSdkResources() {
         contextRunner
-                .withPropertyValues("reflex.telemetry.service-name=contracts-api")
+                .withPropertyValues(
+                        "reflex.telemetry.system-code=ci05414726",
+                        "reflex.telemetry.service-name=contracts-api")
                 .run(context -> {
-                    assertThat(serviceName(context.getBean(SdkTracerProvider.class))).isEqualTo("contracts-api");
-                    assertThat(serviceName(context.getBean(SdkMeterProvider.class))).isEqualTo("contracts-api");
+                    assertThat(serviceName(context.getBean(SdkTracerProvider.class))).isEqualTo("ci05414726_contracts-api");
+                    assertThat(serviceName(context.getBean(SdkMeterProvider.class))).isEqualTo("ci05414726_contracts-api");
+                });
+    }
+
+    @Test
+    void shouldNotPrefixServiceNameTwice() {
+        contextRunner
+                .withPropertyValues(
+                        "reflex.telemetry.system-code=ci05414726",
+                        "reflex.telemetry.service-name=ci05414726_contracts-api")
+                .run(context -> {
+                    assertThat(serviceName(context.getBean(SdkTracerProvider.class)))
+                            .isEqualTo("ci05414726_contracts-api");
+                    assertThat(serviceName(context.getBean(SdkMeterProvider.class)))
+                            .isEqualTo("ci05414726_contracts-api");
                 });
     }
 
