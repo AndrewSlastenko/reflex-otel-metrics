@@ -6,6 +6,7 @@ import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
 import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
+import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.time.Duration;
 import java.util.Map;
@@ -135,6 +136,16 @@ class MetricConfigResolverTest {
         assertThat(resolved.schedule().cron()).isNull();
     }
 
+    @Test
+    void shouldUseJdbcScopeWhenJdbcSourceDoesNotSpecifyScope() {
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties, new ReflexTelemetryNamingPolicy(null))
+                .resolve(new JdbcMetricSourceWithoutScope());
+
+        assertThat(resolved.scope()).isEqualTo(ReflexMetricScopes.JDBC);
+    }
+
     private static ReflexTelemetryProperties baseProperties() {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setMetricPrefix("ci054147");
@@ -178,6 +189,43 @@ class MetricConfigResolverTest {
         @Override
         public RowMapper<MetricPoint> rowMapper() {
             return (rs, rowNum) -> new MetricPoint(1L, Map.of());
+        }
+    }
+
+    private static final class JdbcMetricSourceWithoutScope implements JdbcMetricSource {
+
+        @Override
+        public String metricId() {
+            return "documents-by-status";
+        }
+
+        @Override
+        public MetricDefinitionDefaults defaults() {
+            return new MetricDefinitionDefaults(
+                    "documents.current",
+                    MetricKind.GAUGE,
+                    null,
+                    "dataSource",
+                    new MetricScheduleDefaults(
+                            MetricScheduleDefaults.Mode.FIXED_DELAY,
+                            Duration.ofMinutes(1),
+                            null,
+                            Duration.ZERO),
+                    Duration.ofSeconds(30),
+                    Duration.ofMinutes(2),
+                    Duration.ZERO,
+                    500,
+                    SeriesOverflowPolicy.FAIL);
+        }
+
+        @Override
+        public QueryDefinition queryDefinition() {
+            return new QueryDefinition("select 1");
+        }
+
+        @Override
+        public RowMapper<MetricPoint> rowMapper() {
+            return (rs, rowNum) -> new MetricPoint(1, Map.of());
         }
     }
 

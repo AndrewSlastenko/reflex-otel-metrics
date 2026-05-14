@@ -12,7 +12,7 @@ class MetricDefinitionTest {
         MetricDefinition definition = MetricDefinition.of("orders.created").build();
 
         assertThat(definition.metricSuffix()).isEqualTo("orders.created");
-        assertThat(definition.scope()).isEqualTo("default");
+        assertThat(definition.scope()).isEqualTo(ReflexMetricScopes.MANUAL);
         assertThat(definition.description()).isNull();
         assertThat(definition.unit()).isNull();
         assertThat(definition.attributes()).isEqualTo(AttributesSchema.empty());

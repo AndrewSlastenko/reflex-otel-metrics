@@ -12,7 +12,7 @@ public record MetricDefinition(
         int maxSeries,
         SeriesOverflowPolicy overflowPolicy
 ) {
-    private static final String DEFAULT_SCOPE = "default";
+    private static final String DEFAULT_SCOPE = ReflexMetricScopes.MANUAL;
     private static final int DEFAULT_MAX_SERIES = 500;
 
     public MetricDefinition {

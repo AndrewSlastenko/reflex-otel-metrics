@@ -1,15 +1,27 @@
 package ru.sber.rcln.reflex.telemetry.config;
 
+import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
 import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
 import ru.sber.rcln.reflex.telemetry.api.MetricSource;
+import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public class MetricConfigResolver {
 
     private final @NonNull ReflexTelemetryProperties properties;
+    private final @NonNull ReflexTelemetryNamingPolicy namingPolicy;
+
+    public MetricConfigResolver(@NonNull ReflexTelemetryProperties properties) {
+        this(properties, new ReflexTelemetryNamingPolicy(null));
+    }
+
+    public MetricConfigResolver(
+            @NonNull ReflexTelemetryProperties properties,
+            @NonNull ReflexTelemetryNamingPolicy namingPolicy) {
+        this.properties = properties;
+        this.namingPolicy = namingPolicy;
+    }
 
     public ResolvedMetricConfig resolve(@NonNull MetricSource source) {
 
@@ -19,8 +31,8 @@ public class MetricConfigResolver {
                 .getOrDefault(source.metricId(), new MetricRuntimeProperties());
 
         String suffix = runtime.getSuffix() != null ? runtime.getSuffix() : defaults.metricSuffix();
-        String scope = runtime.getScope() != null ? runtime.getScope() : defaults.scope();
-        String dataSourceRef = source instanceof ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource
+        String scope = runtime.getScope() != null ? runtime.getScope() : defaultScope(source, defaults);
+        String dataSourceRef = source instanceof JdbcMetricSource
                 ? (runtime.getDataSourceRef() != null ? runtime.getDataSourceRef() : defaults.dataSourceRef())
                 : null;
         MetricScheduleSettings schedule = resolveSchedule(defaults.schedule(), runtime);
@@ -51,6 +63,17 @@ public class MetricConfigResolver {
                 maxSeries,
                 overflowPolicy
         );
+    }
+
+    private static String defaultScope(MetricSource source, MetricDefinitionDefaults defaults) {
+        String scope = defaults.scope();
+        if (scope != null && !scope.isBlank()) {
+            return scope;
+        }
+        if (source instanceof JdbcMetricSource) {
+            return ReflexMetricScopes.JDBC;
+        }
+        return scope;
     }
 
     private boolean resolveScopeEnabled(String scope) {
