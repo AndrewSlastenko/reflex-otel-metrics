@@ -52,6 +52,7 @@ Starter читает свойства из `reflex.telemetry`.
 reflex:
   telemetry:
     enabled: true
+    system-code: ci05414726
     service-name: contracts-api
     instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
     otlp:
@@ -63,9 +64,10 @@ reflex:
       enabled: true
     metrics:
       enabled: true
-      metric-prefix: ci05414726
       scopes:
-        business:
+        jdbc:
+          enabled: true
+        manual:
           enabled: true
 ```
 
@@ -79,7 +81,7 @@ reflex:
         documents-by-status:
           enabled: true
           suffix: documents.current
-          scope: business
+          scope: jdbc
           data-source-ref: businessReplicaDataSource
           kind: UP_DOWN_COUNTER
           schedule-mode: FIXED_DELAY
@@ -95,6 +97,7 @@ reflex:
 Эти ключи напрямую соответствуют текущей модели `ReflexTelemetryProperties` и `MetricRuntimeProperties`:
 
 - `reflex.telemetry.enabled`
+- `system-code`
 - `service-name`
 - `instrumentation-scope-name`
 - `otlp.metrics-endpoint`
@@ -103,7 +106,6 @@ reflex:
 - `otlp.export-interval`
 - `reflex.telemetry.traces.enabled`
 - `metrics.enabled`
-- `metric-prefix`
 - `scopes.<scope>.enabled`
 - `sources.<metric-id>.enabled`
 - `sources.<metric-id>.suffix`
@@ -138,6 +140,37 @@ reflex:
 
 Это имя приклада/сервиса в backend-е трассировки и метрик. Если приложение само предоставляет `OpenTelemetry`, `OpenTelemetrySdk`, `SdkTracerProvider` или `SdkMeterProvider`, starter не переопределяет resource — в этом случае `service.name` задается на стороне приложения.
 
+## System code and naming
+
+`reflex.telemetry.system-code` is the single source of truth for platform prefixes.
+
+For metrics, the starter exports names as:
+
+```text
+<system-code>.<metric-suffix>
+```
+
+For OpenTelemetry resource identity, the starter exports `service.name` as:
+
+```text
+<system-code>_<service-name>
+```
+
+Application configuration should keep `service-name` unprefixed. The starter prevents double-prefixing when a value is already prefixed.
+
+## Metric scopes
+
+Metric scopes are Reflex logical groups for enabling or disabling sets of metrics. They are not OpenTelemetry instrumentation scopes.
+
+The starter owns these default scopes:
+
+| Scope | Applies to |
+| ----- | ---------- |
+| `jdbc` | Reflex JDBC polling metrics |
+| `manual` | Metrics created through `ReflexMetricFactory` |
+
+Use `reflex.telemetry.metrics.scopes.<scope>.enabled` to disable a group. A metric can still override scope explicitly through its Java definition or runtime YAML override when a narrower deployment group is needed.
+
 ## Частота экспорта
 
 Сбор метрик и OTLP-экспорт — разные шаги.
@@ -167,7 +200,8 @@ reflex:
     instrumentation-scope-name: com.example.business-metrics
 ```
 
-Это не меняет имя самой метрики. Имена метрик по-прежнему формируются из `metric-prefix + suffix`. Scope name показывает, какая библиотека или модуль выпустили телеметрию.
+Это не меняет имя самой метрики. Имена метрик формируются как `<system-code>.<suffix>`: префикс задаёт `reflex.telemetry.system-code`, суффикс — политика именования метрики (definition/YAML). OpenTelemetry instrumentation scope здесь не совпадает с логическим Reflex metric scope (`jdbc`, `manual` и опциональные переопределения на метрике).
+Значение `instrumentation-scope-name` показывает, какая библиотека или модуль выпустили телеметрию.
 Это не `service.name`: имя сервиса задается отдельным свойством `reflex.telemetry.service-name`.
 
 ## Trace operations
@@ -283,7 +317,7 @@ public class DocumentsByStatusMetricSource implements JdbcMetricSource {
         return new MetricDefinitionDefaults(
                 "documents.by-status",
                 MetricKind.UP_DOWN_COUNTER,
-                "business",
+                "jdbc",
                 "businessReplicaDataSource",
                 new MetricScheduleDefaults(
                         MetricScheduleDefaults.Mode.FIXED_DELAY,
@@ -320,7 +354,7 @@ public class DocumentsByStatusMetricSource implements JdbcMetricSource {
 В примере выше оператор может переопределить только deploy-time значения, если это нужно:
 
 ```properties
-reflex.telemetry.metrics.metric-prefix=ci054147
+reflex.telemetry.system-code=ci054147
 reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current
 reflex.telemetry.metrics.sources.documents-by-status.fixed-delay=PT2M
 ```
@@ -329,7 +363,7 @@ reflex.telemetry.metrics.sources.documents-by-status.fixed-delay=PT2M
 
 JDBC-метрики собираются по расписанию, которым управляет starter: starter запускает query источника, маппит rows в points и публикует их в OpenTelemetry. Manual metrics эмитятся напрямую кодом приложения в момент бизнес-события или изменения состояния.
 
-Для manual metrics Java bean declaration — основной контракт. Bean определяет metric id, kind, suffix, scope, description, unit, attribute schema, cardinality limit и overflow policy. YAML — опциональный runtime override layer для deploy-time значений: включение метрики, изменение suffix или scope, настройка cardinality handling.
+Для manual metrics Java bean declaration — основной контракт. Bean определяет metric id, kind, suffix, scope (по умолчанию логический scope `manual`), description, unit, attribute schema, cardinality limit и overflow policy. YAML — опциональный runtime override layer для deploy-time значений: включение метрики, изменение suffix или scope, настройка cardinality handling.
 
 Низкоуровневые metric beans удобны, когда сервису нужен один instrument:
 
@@ -355,7 +389,6 @@ class OrderMetricConfiguration {
         return factory.counter(
                 "orders-created",
                 MetricDefinition.of("orders.created")
-                        .scope("business")
                         .description("Orders created by client and channel")
                         .unit("{order}")
                         .attributes(AttributesSchema.builder()
@@ -417,7 +450,6 @@ class OrderMetrics {
         this.created = factory.counter(
                 "orders-created",
                 MetricDefinition.of("orders.created")
-                        .scope("business")
                         .description("Orders created by client and channel")
                         .unit("{order}")
                         .attributes(clientChannelAttributes)
@@ -427,7 +459,6 @@ class OrderMetrics {
         this.failed = factory.counter(
                 "orders-failed",
                 MetricDefinition.of("orders.failed")
-                        .scope("business")
                         .description("Orders failed by client and channel")
                         .unit("{order}")
                         .attributes(clientChannelAttributes)
@@ -437,7 +468,6 @@ class OrderMetrics {
         this.queueSize = factory.gauge(
                 "orders-queue-size",
                 MetricDefinition.of("orders.queue.size")
-                        .scope("business")
                         .description("Current order queue size by channel")
                         .unit("{order}")
                         .attributes(AttributesSchema.builder()
@@ -626,7 +656,6 @@ reflex:
         orders-created:
           enabled: true
           suffix: orders.created
-          scope: business
           max-series: 500
           overflow-policy: FAIL
 ```
