@@ -12,8 +12,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Getter
 @Setter
-@ConfigurationProperties(prefix = "reflex.otel")
-public class ReflexOtelMetricsProperties {
+@ConfigurationProperties(prefix = "reflex.telemetry")
+public class ReflexTelemetryProperties {
 
     private boolean enabled = true;
     private String instrumentationScopeName = "ru.sber.rcln.reflex.telemetry";

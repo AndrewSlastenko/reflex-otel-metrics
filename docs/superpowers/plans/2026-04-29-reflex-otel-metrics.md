@@ -1,4 +1,4 @@
-# Reflex OTEL Metrics Library Implementation Plan
+# Reflex Telemetry Library Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -28,7 +28,7 @@
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/MetricScheduleDefaults.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/SeriesOverflowPolicy.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/api/QueryDefinition.java`
-- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricRuntimeProperties.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolver.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedMetricConfig.java`
@@ -49,7 +49,7 @@
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistry.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/internal/InternalTelemetryRecorder.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/internal/LoggingSupport.java`
-- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`
 - Create: `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
 
 ### Tests
@@ -59,7 +59,7 @@
 - Create: `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/SeriesLimiterTest.java`
 - Create: `src/test/java/ru/sber/rcln/reflex/telemetry/runtime/MetricExecutionTaskTest.java`
 - Create: `src/test/java/ru/sber/rcln/reflex/telemetry/jdbc/JdbcMetricCollectorTest.java`
-- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`
 
 ## Task 1: Bootstrap the Maven Starter
 
@@ -410,7 +410,7 @@ git commit -m "feat: add metric source api contracts"
 
 **Files:**
 
-- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricRuntimeProperties.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolver.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedMetricConfig.java`
@@ -424,9 +424,9 @@ Expand `MetricConfigResolverTest`:
 ```java
 @Test
 void propertiesShouldOverrideBeanDefaults() {
-    ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+    ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
     properties.setMetricPrefix("ci054147");
-    properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+    properties.getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
 
     MetricRuntimeProperties runtime = new MetricRuntimeProperties();
     runtime.setEnabled(false);
@@ -505,8 +505,8 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@ConfigurationProperties(prefix = "reflex.otel")
-public class ReflexOtelMetricsProperties {
+@ConfigurationProperties(prefix = "reflex.telemetry")
+public class ReflexTelemetryProperties {
 
     private boolean enabled = true;
     private MetricsProperties metrics = new MetricsProperties();
@@ -667,9 +667,9 @@ import java.util.List;
 
 public class MetricConfigResolver {
 
-    private final ReflexOtelMetricsProperties properties;
+    private final ReflexTelemetryProperties properties;
 
-    public MetricConfigResolver(ReflexOtelMetricsProperties properties) {
+    public MetricConfigResolver(ReflexTelemetryProperties properties) {
         this.properties = properties;
     }
 
@@ -679,7 +679,7 @@ public class MetricConfigResolver {
         String suffix = runtime.getSuffix() != null ? runtime.getSuffix() : defaults.metricSuffix();
         String scope = runtime.getScope() != null ? runtime.getScope() : defaults.scope();
         String dataSourceRef = runtime.getDataSourceRef() != null ? runtime.getDataSourceRef() : defaults.dataSourceRef();
-        boolean scopeEnabled = properties.getScopes().getOrDefault(scope, new ReflexOtelMetricsProperties.ScopeProperties(true)).isEnabled();
+        boolean scopeEnabled = properties.getScopes().getOrDefault(scope, new ReflexTelemetryProperties.ScopeProperties(true)).isEnabled();
         boolean enabled = properties.isEnabled() && scopeEnabled && (runtime.getEnabled() != null ? runtime.getEnabled() : true);
         MetricScheduleSettings schedule = runtime.getScheduleMode() != null
                 ? new MetricScheduleSettings(runtime.getScheduleMode(), runtime.getFixedDelay(), runtime.getCron(), runtime.getInitialDelay())
@@ -1554,17 +1554,17 @@ git commit -m "feat: add metric execution runtime"
 
 **Files:**
 
-- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`
 - Create: `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
-- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Create: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`
 - **Step 1: Write the failing auto-configuration test**
 
-Create `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`:
 
 ```java
 package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
-import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -1574,17 +1574,17 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ReflexOtelMetricsAutoConfigurationTest {
+class ReflexTelemetryAutoConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ReflexOtelMetricsAutoConfiguration.class));
+            .withConfiguration(AutoConfigurations.of(ReflexTelemetryAutoConfiguration.class));
 
     @Test
     void shouldCreateCoreBeansWhenEnabled() {
         contextRunner
-                .withPropertyValues("reflex.otel.metrics.enabled=true")
+                .withPropertyValues("reflex.telemetry.metrics.enabled=true")
                 .run(context -> {
-                    assertThat(context).hasSingleBean(ReflexOtelMetricsProperties.class);
+                    assertThat(context).hasSingleBean(ReflexTelemetryProperties.class);
                     assertThat(context).hasSingleBean(SeriesLimiter.class);
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
                     assertThat(context).hasSingleBean(OpenTelemetrySdk.class);
@@ -1598,21 +1598,21 @@ class ReflexOtelMetricsAutoConfigurationTest {
 Run:
 
 ```powershell
-mvn -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+mvn -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: compilation failure because auto-configuration does not exist yet
 
 - **Step 3: Implement the auto-configuration**
 
-Create `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`:
+Create `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`:
 
 ```java
 package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
-import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import ru.sber.rcln.reflex.telemetry.runtime.OverflowAggregationStrategy;
@@ -1630,13 +1630,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
-@EnableConfigurationProperties(ReflexOtelMetricsProperties.class)
-@ConditionalOnProperty(prefix = "reflex.otel.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class ReflexOtelMetricsAutoConfiguration {
+@EnableConfigurationProperties(ReflexTelemetryProperties.class)
+@ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+public class ReflexTelemetryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    MetricConfigResolver metricConfigResolver(ReflexOtelMetricsProperties properties) {
+    MetricConfigResolver metricConfigResolver(ReflexTelemetryProperties properties) {
         return new MetricConfigResolver(properties);
     }
 
@@ -1666,7 +1666,7 @@ public class ReflexOtelMetricsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexOtelMetricsProperties properties) {
+    OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexTelemetryProperties properties) {
         return OtlpGrpcMetricExporter.builder()
                 .setEndpoint(properties.getOtlp().getMetricsEndpoint())
                 .setTimeout(properties.getOtlp().getExportTimeout())
@@ -1712,7 +1712,7 @@ public class ReflexOtelMetricsAutoConfiguration {
 Create `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`:
 
 ```text
-ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexOtelMetricsAutoConfiguration
+ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexTelemetryAutoConfiguration
 ```
 
 - **Step 4: Re-run the auto-configuration test**
@@ -1720,7 +1720,7 @@ ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexOtelMetricsAutoConfiguration
 Run:
 
 ```powershell
-mvn -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+mvn -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: `BUILD SUCCESS`
@@ -1728,7 +1728,7 @@ Expected: `BUILD SUCCESS`
 - **Step 5: Commit**
 
 ```bash
-git add src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java
 git commit -m "feat: add spring boot auto-configuration"
 ```
 
@@ -1737,21 +1737,21 @@ git commit -m "feat: add spring boot auto-configuration"
 **Files:**
 
 - Modify: `README.md`
-- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`
 - **Step 1: Write the failing integration-style auto-configuration test**
 
-Append to `ReflexOtelMetricsAutoConfigurationTest`:
+Append to `ReflexTelemetryAutoConfigurationTest`:
 
 ```java
 @Test
 void shouldBindMetricPropertiesOverrides() {
     contextRunner
             .withPropertyValues(
-                    "reflex.otel.metrics.metric-prefix=ci054147",
-                    "reflex.otel.metrics.sources.documents-by-status.suffix=documents.current"
+                    "reflex.telemetry.metrics.metric-prefix=ci054147",
+                    "reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current"
             )
             .run(context -> {
-                ReflexOtelMetricsProperties properties = context.getBean(ReflexOtelMetricsProperties.class);
+                ReflexTelemetryProperties properties = context.getBean(ReflexTelemetryProperties.class);
                 assertThat(properties.getMetricPrefix()).isEqualTo("ci054147");
                 assertThat(properties.getSources().get("documents-by-status").getSuffix()).isEqualTo("documents.current");
             });
@@ -1763,7 +1763,7 @@ void shouldBindMetricPropertiesOverrides() {
 Run:
 
 ```powershell
-mvn -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+mvn -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: failing assertion if configuration binding is incomplete
@@ -1803,7 +1803,7 @@ Properties can override the operational settings:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     otlp:
       metrics-endpoint: http://otel-collector:4317
       traces-endpoint: http://otel-collector:4317
@@ -1845,7 +1845,7 @@ Expected: `BUILD SUCCESS`
 - **Step 5: Commit**
 
 ```bash
-git add README.md src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
+git add README.md src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java
 git commit -m "docs: add starter usage documentation"
 ```
 

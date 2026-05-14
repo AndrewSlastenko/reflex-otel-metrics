@@ -86,7 +86,7 @@ public class ReflexMetricFactory {
         if (instrumentRegistry == null) {
             throw new IllegalStateException(
                     "OtelInstrumentRegistry is required to create enabled manual metrics. "
-                            + "Enable reflex.otel.metrics.enabled or provide an OtelInstrumentRegistry bean.");
+                            + "Enable reflex.telemetry.metrics.enabled or provide an OtelInstrumentRegistry bean.");
         }
         return instrumentRegistry;
     }

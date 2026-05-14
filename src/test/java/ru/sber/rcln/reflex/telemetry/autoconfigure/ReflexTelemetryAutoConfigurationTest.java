@@ -15,7 +15,7 @@ import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
-import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
@@ -52,17 +52,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class ReflexOtelMetricsAutoConfigurationTest {
+class ReflexTelemetryAutoConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ReflexOtelMetricsAutoConfiguration.class));
+            .withConfiguration(AutoConfigurations.of(ReflexTelemetryAutoConfiguration.class));
 
     @Test
     void shouldCreateCoreBeansWhenEnabled() {
         contextRunner
-                .withPropertyValues("reflex.otel.enabled=true")
+                .withPropertyValues("reflex.telemetry.enabled=true")
                 .run(context -> {
-                    assertThat(context).hasSingleBean(ReflexOtelMetricsProperties.class);
+                    assertThat(context).hasSingleBean(ReflexTelemetryProperties.class);
                     assertThat(context).hasSingleBean(SeriesLimiter.class);
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
                     assertThat(context).hasSingleBean(OpenTelemetrySdk.class);
@@ -79,7 +79,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
         when(openTelemetry.getTracer("custom.scope")).thenReturn(tracer);
 
         contextRunner
-                .withPropertyValues("reflex.otel.instrumentation-scope-name=custom.scope")
+                .withPropertyValues("reflex.telemetry.instrumentation-scope-name=custom.scope")
                 .withBean(OpenTelemetry.class, () -> openTelemetry)
                 .run(context -> {
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
@@ -96,12 +96,12 @@ class ReflexOtelMetricsAutoConfigurationTest {
         contextRunner
                 .withBean(JdbcMetricSource.class, TestJdbcMetricSource::new)
                 .withPropertyValues(
-                        "reflex.otel.metrics.metric-prefix=ci054147",
-                        "reflex.otel.instrumentation-scope-name=com.example.metrics",
-                        "reflex.otel.otlp.export-interval=PT1M",
-                        "reflex.otel.metrics.sources.documents-by-status.suffix=documents.current")
+                        "reflex.telemetry.metrics.metric-prefix=ci054147",
+                        "reflex.telemetry.instrumentation-scope-name=com.example.metrics",
+                        "reflex.telemetry.otlp.export-interval=PT1M",
+                        "reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current")
                 .run(context -> {
-                    ReflexOtelMetricsProperties properties = context.getBean(ReflexOtelMetricsProperties.class);
+                    ReflexTelemetryProperties properties = context.getBean(ReflexTelemetryProperties.class);
                     MetricConfigResolver resolver = context.getBean(MetricConfigResolver.class);
                     JdbcMetricSource source = context.getBean(JdbcMetricSource.class);
                     ResolvedMetricConfig resolved = resolver.resolve(source);
@@ -139,7 +139,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
     @Test
     void shouldCreateNoopTraceOperationsWhenTracesAreDisabled() {
         contextRunner
-                .withPropertyValues("reflex.otel.traces.enabled=false")
+                .withPropertyValues("reflex.telemetry.traces.enabled=false")
                 .run(context -> {
                     assertThat(context).hasSingleBean(TraceOperations.class);
                     assertThat(context.getBean(TraceOperations.class)).isInstanceOf(NoopTraceOperations.class);
@@ -212,7 +212,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
     @Test
     void shouldKeepManualMetricBeansAvailableWhenMetricsAreDisabled() {
         contextRunner
-                .withPropertyValues("reflex.otel.metrics.enabled=false")
+                .withPropertyValues("reflex.telemetry.metrics.enabled=false")
                 .run(context -> {
                     assertThat(context).hasSingleBean(ReflexMetricFactory.class);
                     assertThat(context).doesNotHaveBean(OtlpGrpcMetricExporter.class);
@@ -240,7 +240,7 @@ class ReflexOtelMetricsAutoConfigurationTest {
     void shouldLetSpringLibraryBindDomainMetricsToApplicationTelemetryRuntime() {
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(
-                        ReflexOtelMetricsAutoConfiguration.class,
+                        ReflexTelemetryAutoConfiguration.class,
                         TestLibraryTelemetryAutoConfiguration.class,
                         TestLibraryFallbackAutoConfiguration.class))
                 .withBean(OpenTelemetry.class, OpenTelemetry::noop)

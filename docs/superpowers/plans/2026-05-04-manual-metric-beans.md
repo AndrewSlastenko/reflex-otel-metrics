@@ -19,7 +19,7 @@
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/GaugeMetric.java`: public gauge interface.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/UpDownCounterMetric.java`: public up-down-counter interface.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricRuntimeProperties.java`: YAML override model under `manual`.
-- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`: add `manual` map.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`: add `manual` map.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedManualMetricConfig.java`: immutable resolved manual config.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolver.java`: Java defaults plus YAML overrides.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/AttributeValidationResult.java`: validation result value object.
@@ -31,7 +31,7 @@
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/manual/DefaultUpDownCounterMetric.java`: up-down-counter implementation.
 - Modify `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelInstrumentRegistry.java`: support `LongCounter`.
 - Modify `src/main/java/ru/sber/rcln/reflex/telemetry/otel/OtelMetricPublisher.java`: handle `COUNTER` for existing publisher tests.
-- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`: expose `ManualMetricConfigResolver` and `ReflexMetricFactory`.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`: expose `ManualMetricConfigResolver` and `ReflexMetricFactory`.
 - Modify `README.md`: document low-level beans and domain beans.
 - Add tests under `src/test/java/ru/sber/rcln/reflex/telemetry/manual`, `config`, `otel`, and `autoconfigure`.
 
@@ -387,7 +387,7 @@ git commit -m "feat: add manual metric API types"
 **Files:**
 
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricRuntimeProperties.java`
-- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ResolvedManualMetricConfig.java`
 - Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolver.java`
 - Test: `src/test/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolverTest.java`
@@ -409,7 +409,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void shouldResolveFromJavaDefinitionWhenYamlIsMissing() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.setMetricPrefix("ci054147");
         ManualMetricConfigResolver resolver = new ManualMetricConfigResolver(properties);
 
@@ -437,7 +437,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void shouldApplyYamlOverrides() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.setMetricPrefix("ci054147");
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setEnabled(false);
@@ -461,8 +461,8 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void shouldDisableWhenScopeIsDisabled() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
-        properties.getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(false));
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
+        properties.getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(false));
 
         ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties).resolve(
                 "orders-created",
@@ -513,7 +513,7 @@ public record ResolvedManualMetricConfig(
 }
 ```
 
-Add to `ReflexOtelMetricsProperties`:
+Add to `ReflexTelemetryProperties`:
 
 ```java
 private Map<String, ManualMetricRuntimeProperties> manual = new LinkedHashMap<>();
@@ -538,9 +538,9 @@ import java.util.Objects;
 
 public class ManualMetricConfigResolver {
 
-    private final ReflexOtelMetricsProperties properties;
+    private final ReflexTelemetryProperties properties;
 
-    public ManualMetricConfigResolver(ReflexOtelMetricsProperties properties) {
+    public ManualMetricConfigResolver(ReflexTelemetryProperties properties) {
         this.properties = Objects.requireNonNull(properties, "properties must not be null");
     }
 
@@ -575,7 +575,7 @@ public class ManualMetricConfigResolver {
     }
 
     private boolean resolveScopeEnabled(String scope) {
-        ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getScopes().get(scope);
+        ReflexTelemetryProperties.ScopeProperties scopeProperties = properties.getScopes().get(scope);
         return scopeProperties == null || scopeProperties.isEnabled();
     }
 }
@@ -956,7 +956,7 @@ package ru.sber.rcln.reflex.telemetry.manual;
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
-import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.Meter;
 import org.junit.jupiter.api.Test;
@@ -969,7 +969,7 @@ class ReflexMetricFactoryTest {
     @Test
     void shouldCreateCounterMetric() {
         ReflexMetricFactory factory = new ReflexMetricFactory(
-                new ManualMetricConfigResolver(new ReflexOtelMetricsProperties()),
+                new ManualMetricConfigResolver(new ReflexTelemetryProperties()),
                 new OtelInstrumentRegistry(mock(Meter.class)),
                 new AttributeValidator());
 
@@ -988,7 +988,7 @@ package ru.sber.rcln.reflex.telemetry.manual;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
-import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
@@ -1035,7 +1035,7 @@ class DefaultCounterMetricTest {
 
     private static ReflexMetricFactory factory(Meter meter) {
         return new ReflexMetricFactory(
-                new ManualMetricConfigResolver(new ReflexOtelMetricsProperties()),
+                new ManualMetricConfigResolver(new ReflexTelemetryProperties()),
                 new OtelInstrumentRegistry(meter),
                 new AttributeValidator());
     }
@@ -1131,11 +1131,11 @@ git commit -m "feat: add reflex manual metric factory"
 
 **Files:**
 
-- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
-- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`
 - **Step 1: Add failing autoconfiguration test**
 
-Add to `ReflexOtelMetricsAutoConfigurationTest`:
+Add to `ReflexTelemetryAutoConfigurationTest`:
 
 ```java
 @Test
@@ -1176,7 +1176,7 @@ static class ManualMetricBeansConfiguration {
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: fails because resolver/factory beans are not auto-configured.
@@ -1188,7 +1188,7 @@ Add imports and beans:
 ```java
 @Bean
 @ConditionalOnMissingBean
-ManualMetricConfigResolver manualMetricConfigResolver(ReflexOtelMetricsProperties properties) {
+ManualMetricConfigResolver manualMetricConfigResolver(ReflexTelemetryProperties properties) {
     return new ManualMetricConfigResolver(properties);
 }
 
@@ -1213,7 +1213,7 @@ ReflexMetricFactory reflexMetricFactory(
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: tests pass.
@@ -1327,7 +1327,7 @@ public class OrderMetrics {
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     metrics:
       manual:
         orders-created:

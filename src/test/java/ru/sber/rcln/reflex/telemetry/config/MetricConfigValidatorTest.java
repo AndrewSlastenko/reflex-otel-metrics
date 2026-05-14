@@ -126,7 +126,7 @@ class MetricConfigValidatorTest {
 
     @Test
     void runtimeCronSwitchShouldValidateAgainstFixedDelayDefault() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
         runtimeProperties.setCron("0 * * * *");
@@ -139,7 +139,7 @@ class MetricConfigValidatorTest {
 
     @Test
     void runtimeFixedDelaySwitchShouldValidateAgainstCronDefault() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
         runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
@@ -168,10 +168,10 @@ class MetricConfigValidatorTest {
         );
     }
 
-    private static ReflexOtelMetricsProperties baseProperties() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+    private static ReflexTelemetryProperties baseProperties() {
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setMetricPrefix("ci054147");
-        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
         return properties;
     }
 

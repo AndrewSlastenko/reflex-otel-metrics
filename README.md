@@ -16,10 +16,10 @@
 
 Starter автоматически настраивает общую инфраструктуру телеметрии:
 
-- binding `ReflexOtelMetricsProperties` под префиксом `reflex.otel`
+- binding `ReflexTelemetryProperties` под префиксом `reflex.telemetry`
 - exporter метрик OTLP/gRPC
 - exporter трейсов OTLP/gRPC
-- `TraceOperations` для общего жизненного цикла span-ов и W3C propagation helpers (no-op, когда `reflex.otel.enabled` или `reflex.otel.traces.enabled` равны `false`, либо когда нет bean-а `Tracer`)
+- `TraceOperations` для общего жизненного цикла span-ов и W3C propagation helpers (no-op, когда `reflex.telemetry.enabled` или `reflex.telemetry.traces.enabled` равны `false`, либо когда нет bean-а `Tracer`)
 - OTel bean-ы `OpenTelemetry`, `Meter`, `Tracer` и registry инструментов
 - helpers для резолва и валидации конфигурации
 - поддержку ограничения количества серий
@@ -39,18 +39,18 @@ Starter автоматически настраивает общую инфра�
 Запустить только тесты автоконфигурации starter-а:
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 ## Контракт конфигурации
 
-Starter читает свойства из `reflex.otel`.
+Starter читает свойства из `reflex.telemetry`.
 
 Глобальные свойства:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     enabled: true
     instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
     otlp:
@@ -68,11 +68,11 @@ reflex:
           enabled: true
 ```
 
-Runtime overrides для отдельных источников находятся в `reflex.otel.metrics.sources.<metric-id>`:
+Runtime overrides для отдельных источников находятся в `reflex.telemetry.metrics.sources.<metric-id>`:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     metrics:
       sources:
         documents-by-status:
@@ -91,15 +91,15 @@ reflex:
           overflow-policy: AGGREGATE_TO_OTHER
 ```
 
-Эти ключи напрямую соответствуют текущей модели `ReflexOtelMetricsProperties` и `MetricRuntimeProperties`:
+Эти ключи напрямую соответствуют текущей модели `ReflexTelemetryProperties` и `MetricRuntimeProperties`:
 
-- `reflex.otel.enabled`
+- `reflex.telemetry.enabled`
 - `instrumentation-scope-name`
 - `otlp.metrics-endpoint`
 - `otlp.traces-endpoint`
 - `otlp.export-timeout`
 - `otlp.export-interval`
-- `reflex.otel.traces.enabled`
+- `reflex.telemetry.traces.enabled`
 - `metrics.enabled`
 - `metric-prefix`
 - `scopes.<scope>.enabled`
@@ -136,7 +136,7 @@ Runtime-конфигурация резолвится в таком порядк
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     otlp:
       export-interval: 1m
 ```
@@ -149,7 +149,7 @@ reflex:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     instrumentation-scope-name: com.example.business-metrics
 ```
 
@@ -157,7 +157,7 @@ reflex:
 
 ## Trace operations
 
-`TraceOperations` можно инжектить как любой другой bean starter-а. Используйте `SpanSpec` для имени span-а, опционального parent `TraceCarrier` и строковых атрибутов. Span-ы экспортируются, когда глобальная телеметрия и трассировка включены, а OTLP traces endpoint настроен (см. `reflex.otel.otlp.traces-endpoint` выше).
+`TraceOperations` можно инжектить как любой другой bean starter-а. Используйте `SpanSpec` для имени span-а, опционального parent `TraceCarrier` и строковых атрибутов. Span-ы экспортируются, когда глобальная телеметрия и трассировка включены, а OTLP traces endpoint настроен (см. `reflex.telemetry.otlp.traces-endpoint` выше).
 
 Имена в примере ниже — placeholders для типов приложения и workflow-слоя:
 
@@ -305,9 +305,9 @@ public class DocumentsByStatusMetricSource implements JdbcMetricSource {
 В примере выше оператор может переопределить только deploy-time значения, если это нужно:
 
 ```properties
-reflex.otel.metrics.metric-prefix=ci054147
-reflex.otel.metrics.sources.documents-by-status.suffix=documents.current
-reflex.otel.metrics.sources.documents-by-status.fixed-delay=PT2M
+reflex.telemetry.metrics.metric-prefix=ci054147
+reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current
+reflex.telemetry.metrics.sources.documents-by-status.fixed-delay=PT2M
 ```
 
 ## Manual Metric Beans
@@ -586,13 +586,13 @@ com.example.library.autoconfigure.DocumentLibraryFallbackAutoConfiguration
 </dependency>
 ```
 
-Приложение-потребитель явно добавляет `rcln-reflex-telemetry`, когда хочет экспортировать метрики. В этом случае по-прежнему существует только один application `ApplicationContext`, одна `ReflexOtelMetricsAutoConfiguration` и один OpenTelemetry runtime. Автоконфигурации библиотек только создают свои domain metric beans и используют application `ReflexMetricFactory`.
+Приложение-потребитель явно добавляет `rcln-reflex-telemetry`, когда хочет экспортировать метрики. В этом случае по-прежнему существует только один application `ApplicationContext`, одна `ReflexTelemetryAutoConfiguration` и один OpenTelemetry runtime. Автоконфигурации библиотек только создают свои domain metric beans и используют application `ReflexMetricFactory`.
 
 Operational overrides используют тот же раздел manual metrics:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     metrics:
       manual:
         document-library-sync-started:
@@ -601,11 +601,11 @@ reflex:
           overflow-policy: FAIL
 ```
 
-Runtime overrides для manual metrics находятся в `reflex.otel.metrics.manual.<metric-id>`:
+Runtime overrides для manual metrics находятся в `reflex.telemetry.metrics.manual.<metric-id>`:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     metrics:
       manual:
         orders-created:

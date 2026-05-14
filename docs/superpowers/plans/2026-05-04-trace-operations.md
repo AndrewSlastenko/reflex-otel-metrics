@@ -53,12 +53,12 @@ When an action creates a child process, the application writes `traces.captureCu
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/api/TraceOperations.java`: public facade for running code in spans and capturing the current carrier.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperations.java`: OpenTelemetry-backed implementation.
 - Create `src/main/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperations.java`: disabled/no-op implementation.
-- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`: add trace enablement properties.
-- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`: auto-configure `TraceOperations`.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`: add trace enablement properties.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`: auto-configure `TraceOperations`.
 - Modify `pom.xml`: add `opentelemetry-sdk-testing` as a test dependency if needed for in-memory span assertions.
 - Create `src/test/java/ru/sber/rcln/reflex/telemetry/tracing/DefaultTraceOperationsTest.java`: unit tests for span lifecycle and propagation.
 - Create `src/test/java/ru/sber/rcln/reflex/telemetry/tracing/NoopTraceOperationsTest.java`: no-op behavior tests.
-- Modify `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`: auto-configuration coverage.
+- Modify `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`: auto-configuration coverage.
 - Modify `README.md`: document generic tracing API and application-side workflow integration pattern.
 
 ---
@@ -591,12 +591,12 @@ git commit -m "feat: implement trace operations"
 
 **Files:**
 
-- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java`
-- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java`
-- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java`
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`
+- Modify: `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`
+- Modify: `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`
 - **Step 1: Write auto-configuration tests**
 
-Add imports to `ReflexOtelMetricsAutoConfigurationTest`:
+Add imports to `ReflexTelemetryAutoConfigurationTest`:
 
 ```java
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
@@ -616,7 +616,7 @@ void shouldCreateTraceOperationsWhenEnabled() {
 @Test
 void shouldCreateNoopTraceOperationsWhenTracesAreDisabled() {
     contextRunner
-            .withPropertyValues("reflex.otel.traces.enabled=false")
+            .withPropertyValues("reflex.telemetry.traces.enabled=false")
             .run(context -> {
                 assertThat(context).hasSingleBean(TraceOperations.class);
                 assertThat(context.getBean(TraceOperations.class)).isInstanceOf(NoopTraceOperations.class);
@@ -638,14 +638,14 @@ void shouldBackOffWhenTraceOperationsProvidedByApplication() {
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: compilation fails or assertions fail because `TraceOperations` is not auto-configured.
 
 - **Step 3: Add trace properties**
 
-Modify `ReflexOtelMetricsProperties`:
+Modify `ReflexTelemetryProperties`:
 
 ```java
 private TraceProperties traces = new TraceProperties();
@@ -674,7 +674,7 @@ public static class TraceProperties {
 
 - **Step 4: Configure `TraceOperations` bean**
 
-Modify `ReflexOtelMetricsAutoConfiguration` imports:
+Modify `ReflexTelemetryAutoConfiguration` imports:
 
 ```java
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
@@ -687,7 +687,7 @@ Add bean method:
 ```java
 @Bean
 @ConditionalOnMissingBean
-TraceOperations traceOperations(Tracer tracer, ReflexOtelMetricsProperties properties) {
+TraceOperations traceOperations(Tracer tracer, ReflexTelemetryProperties properties) {
     if (!properties.getTraces().isEnabled()) {
         return new NoopTraceOperations();
     }
@@ -700,7 +700,7 @@ TraceOperations traceOperations(Tracer tracer, ReflexOtelMetricsProperties prope
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: tests pass.
@@ -708,7 +708,7 @@ Expected: tests pass.
 - **Step 6: Commit**
 
 ```powershell
-git add src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexOtelMetricsProperties.java src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfiguration.java src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexOtelMetricsAutoConfigurationTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java
 git commit -m "feat: auto-configure trace operations"
 ```
 
@@ -725,7 +725,7 @@ Add under configuration:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     otlp:
       traces-endpoint: http://localhost:4317
     traces:

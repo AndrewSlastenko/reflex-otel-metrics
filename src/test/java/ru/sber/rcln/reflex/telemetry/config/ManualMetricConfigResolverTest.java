@@ -16,7 +16,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void defaultResolutionUsesJavaDefinition() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setMetricPrefix("ci054147");
         AttributesSchema attributes = AttributesSchema.builder().required("status").optional("region").build();
         MetricDefinition definition = MetricDefinition.of("documents.by.status")
@@ -46,7 +46,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void nullManualMapStillResolvesFromJavaDefinition() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setManual(null);
 
         ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
@@ -57,7 +57,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void yamlRuntimeOverridesAllowedOperationalFieldsOnly() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setMetricPrefix("ci054147");
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setSuffix("documents.current");
@@ -90,8 +90,8 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void scopeDisabledDisablesManualMetric() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
-        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(false));
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
+        properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(false));
         MetricDefinition definition = MetricDefinition.of("documents.by.status")
                 .scope("business")
                 .build();
@@ -104,7 +104,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void runtimeDisabledDisablesManualMetric() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setEnabled(Boolean.FALSE);
         properties.getMetrics().getManual().put("documents-by-status", runtime);
@@ -117,7 +117,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void metricsDisabledDisablesManualMetric() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setEnabled(false);
 
         ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
@@ -128,7 +128,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void blankMetricIdIsRejected() {
-        ManualMetricConfigResolver resolver = new ManualMetricConfigResolver(new ReflexOtelMetricsProperties());
+        ManualMetricConfigResolver resolver = new ManualMetricConfigResolver(new ReflexTelemetryProperties());
 
         assertThatThrownBy(() -> resolver.resolve(" ", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -137,7 +137,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void blankRuntimeSuffixIsRejected() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setSuffix(" ");
         properties.getMetrics().getManual().put("documents-by-status", runtime);
@@ -150,7 +150,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void blankRuntimeScopeIsRejected() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setScope(" ");
         properties.getMetrics().getManual().put("documents-by-status", runtime);
@@ -163,7 +163,7 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void zeroRuntimeMaxSeriesIsRejected() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setMaxSeries(0);
         properties.getMetrics().getManual().put("documents-by-status", runtime);
@@ -177,15 +177,15 @@ class ManualMetricConfigResolverTest {
     @Test
     void springBootBindingBindsManualMetricRuntimeProperties() {
         MockEnvironment environment = new MockEnvironment()
-                .withProperty("reflex.otel.metrics.manual.orders-created.suffix", "orders.created")
-                .withProperty("reflex.otel.metrics.manual.orders-created.scope", "orders")
-                .withProperty("reflex.otel.metrics.manual.orders-created.max-series", "12")
-                .withProperty("reflex.otel.metrics.manual.orders-created.overflow-policy", "TRUNCATE")
-                .withProperty("reflex.otel.metrics.manual.orders-created.enabled", "false");
+                .withProperty("reflex.telemetry.metrics.manual.orders-created.suffix", "orders.created")
+                .withProperty("reflex.telemetry.metrics.manual.orders-created.scope", "orders")
+                .withProperty("reflex.telemetry.metrics.manual.orders-created.max-series", "12")
+                .withProperty("reflex.telemetry.metrics.manual.orders-created.overflow-policy", "TRUNCATE")
+                .withProperty("reflex.telemetry.metrics.manual.orders-created.enabled", "false");
 
-        ReflexOtelMetricsProperties properties = Binder.get(environment)
-                .bind("reflex.otel", Bindable.of(ReflexOtelMetricsProperties.class))
-                .orElseThrow(() -> new AssertionError("Expected reflex.otel properties to bind"));
+        ReflexTelemetryProperties properties = Binder.get(environment)
+                .bind("reflex.telemetry", Bindable.of(ReflexTelemetryProperties.class))
+                .orElseThrow(() -> new AssertionError("Expected reflex.telemetry properties to bind"));
 
         ManualMetricRuntimeProperties runtime = properties.getMetrics().getManual().get("orders-created");
         assertThat(runtime).isNotNull();
@@ -199,17 +199,17 @@ class ManualMetricConfigResolverTest {
     @Test
     void springBootBindingBindsRootMetricsAndTraceBranches() {
         MockEnvironment environment = new MockEnvironment()
-                .withProperty("reflex.otel.enabled", "false")
-                .withProperty("reflex.otel.instrumentation-scope-name", "custom.scope")
-                .withProperty("reflex.otel.otlp.traces-endpoint", "http://collector:4317")
-                .withProperty("reflex.otel.metrics.enabled", "false")
-                .withProperty("reflex.otel.metrics.metric-prefix", "ci054147")
-                .withProperty("reflex.otel.metrics.manual.orders-created.suffix", "orders.created")
-                .withProperty("reflex.otel.traces.enabled", "false");
+                .withProperty("reflex.telemetry.enabled", "false")
+                .withProperty("reflex.telemetry.instrumentation-scope-name", "custom.scope")
+                .withProperty("reflex.telemetry.otlp.traces-endpoint", "http://collector:4317")
+                .withProperty("reflex.telemetry.metrics.enabled", "false")
+                .withProperty("reflex.telemetry.metrics.metric-prefix", "ci054147")
+                .withProperty("reflex.telemetry.metrics.manual.orders-created.suffix", "orders.created")
+                .withProperty("reflex.telemetry.traces.enabled", "false");
 
-        ReflexOtelMetricsProperties properties = Binder.get(environment)
-                .bind("reflex.otel", Bindable.of(ReflexOtelMetricsProperties.class))
-                .orElseThrow(() -> new AssertionError("Expected reflex.otel properties to bind"));
+        ReflexTelemetryProperties properties = Binder.get(environment)
+                .bind("reflex.telemetry", Bindable.of(ReflexTelemetryProperties.class))
+                .orElseThrow(() -> new AssertionError("Expected reflex.telemetry properties to bind"));
 
         assertThat(properties.isEnabled()).isFalse();
         assertThat(properties.getInstrumentationScopeName()).isEqualTo("custom.scope");

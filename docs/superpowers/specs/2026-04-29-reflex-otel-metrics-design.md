@@ -1,4 +1,4 @@
-# Reflex OTEL Metrics Library Design
+# Reflex Telemetry Library Design
 
 ## Status
 

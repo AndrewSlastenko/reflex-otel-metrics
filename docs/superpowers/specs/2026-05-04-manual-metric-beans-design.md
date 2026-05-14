@@ -86,7 +86,7 @@ Manual metrics use a separate configuration section:
 
 ```yaml
 reflex:
-  otel:
+  telemetry:
     metrics:
       manual:
         orders-created:

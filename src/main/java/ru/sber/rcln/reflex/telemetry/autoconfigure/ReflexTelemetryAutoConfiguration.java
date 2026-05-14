@@ -4,7 +4,7 @@ import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
-import ru.sber.rcln.reflex.telemetry.config.ReflexOtelMetricsProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
@@ -37,18 +37,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 
 @AutoConfiguration
-@EnableConfigurationProperties(ReflexOtelMetricsProperties.class)
-public class ReflexOtelMetricsAutoConfiguration {
+@EnableConfigurationProperties(ReflexTelemetryProperties.class)
+public class ReflexTelemetryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    MetricConfigResolver metricConfigResolver(ReflexOtelMetricsProperties properties) {
+    MetricConfigResolver metricConfigResolver(ReflexTelemetryProperties properties) {
         return new MetricConfigResolver(properties);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    ManualMetricConfigResolver manualMetricConfigResolver(ReflexOtelMetricsProperties properties) {
+    ManualMetricConfigResolver manualMetricConfigResolver(ReflexTelemetryProperties properties) {
         return new ManualMetricConfigResolver(properties);
     }
 
@@ -83,10 +83,10 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, OpenTelemetry.class})
-    OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexOtelMetricsProperties properties) {
+    OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexTelemetryProperties properties) {
         return OtlpGrpcMetricExporter.builder()
                 .setEndpoint(properties.getOtlp().getMetricsEndpoint())
                 .setTimeout(properties.getOtlp().getExportTimeout())
@@ -94,10 +94,10 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({OtlpGrpcSpanExporter.class, OpenTelemetry.class})
-    OtlpGrpcSpanExporter otlpGrpcSpanExporter(ReflexOtelMetricsProperties properties) {
+    OtlpGrpcSpanExporter otlpGrpcSpanExporter(ReflexTelemetryProperties properties) {
         return OtlpGrpcSpanExporter.builder()
                 .setEndpoint(properties.getOtlp().getTracesEndpoint())
                 .setTimeout(properties.getOtlp().getExportTimeout())
@@ -105,10 +105,10 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkMeterProvider.class, OpenTelemetry.class})
-    SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter, ReflexOtelMetricsProperties properties) {
+    SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter, ReflexTelemetryProperties properties) {
         return SdkMeterProvider.builder()
                 .registerMetricReader(PeriodicMetricReader.builder(exporter)
                         .setInterval(properties.getOtlp().getExportInterval())
@@ -117,8 +117,8 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkTracerProvider.class, OpenTelemetry.class})
     SdkTracerProvider sdkTracerProvider(OtlpGrpcSpanExporter exporter) {
         return SdkTracerProvider.builder()
@@ -127,7 +127,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @Conditional(SdkSignalProviderAvailableCondition.class)
     @ConditionalOnMissingBean({OpenTelemetrySdk.class, OpenTelemetry.class})
     OpenTelemetrySdk openTelemetrySdk(
@@ -141,25 +141,25 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({OpenTelemetry.class, OpenTelemetrySdk.class})
     OpenTelemetry openTelemetry(OpenTelemetrySdk openTelemetrySdk) {
         return openTelemetrySdk;
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
-    Meter meter(OpenTelemetry openTelemetry, ReflexOtelMetricsProperties properties) {
+    Meter meter(OpenTelemetry openTelemetry, ReflexTelemetryProperties properties) {
         return openTelemetry.getMeter(properties.getInstrumentationScopeName());
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
-    Tracer tracer(OpenTelemetry openTelemetry, ReflexOtelMetricsProperties properties) {
+    Tracer tracer(OpenTelemetry openTelemetry, ReflexTelemetryProperties properties) {
         return openTelemetry.getTracer(properties.getInstrumentationScopeName());
     }
 
@@ -168,7 +168,7 @@ public class ReflexOtelMetricsAutoConfiguration {
     TraceOperations traceOperations(
             ObjectProvider<Tracer> tracerProvider,
             ObjectProvider<OpenTelemetry> openTelemetryProvider,
-            ReflexOtelMetricsProperties properties) {
+            ReflexTelemetryProperties properties) {
         if (!properties.isEnabled() || !properties.getTraces().isEnabled()) {
             return new NoopTraceOperations();
         }
@@ -188,8 +188,8 @@ public class ReflexOtelMetricsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "reflex.otel", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnProperty(prefix = "reflex.otel.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
     OtelInstrumentRegistry otelInstrumentRegistry(Meter meter) {
         return new OtelInstrumentRegistry(meter);

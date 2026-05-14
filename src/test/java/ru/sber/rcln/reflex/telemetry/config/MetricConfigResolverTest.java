@@ -45,9 +45,9 @@ class MetricConfigResolverTest {
 
     @Test
     void propertiesShouldOverrideBeanDefaults() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setMetricPrefix("ci054147");
-        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setEnabled(Boolean.FALSE);
@@ -65,7 +65,7 @@ class MetricConfigResolverTest {
 
     @Test
     void partialFixedDelayOverrideShouldBeHonoredWithoutRuntimeScheduleMode() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
@@ -80,7 +80,7 @@ class MetricConfigResolverTest {
 
     @Test
     void metricsDisabledShouldDisableJdbcMetric() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
         properties.getMetrics().setEnabled(false);
 
         ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
@@ -90,7 +90,7 @@ class MetricConfigResolverTest {
 
     @Test
     void partialInitialDelayOverrideShouldBeHonoredWithoutRuntimeScheduleMode() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setInitialDelay(Duration.ofSeconds(45));
@@ -105,7 +105,7 @@ class MetricConfigResolverTest {
 
     @Test
     void runtimeCronShouldNotInheritFixedDelayWhenDefaultIsFixedDelay() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
@@ -121,7 +121,7 @@ class MetricConfigResolverTest {
 
     @Test
     void runtimeFixedDelayShouldNotInheritCronWhenDefaultIsCron() {
-        ReflexOtelMetricsProperties properties = baseProperties();
+        ReflexTelemetryProperties properties = baseProperties();
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
         runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
@@ -135,10 +135,10 @@ class MetricConfigResolverTest {
         assertThat(resolved.schedule().cron()).isNull();
     }
 
-    private static ReflexOtelMetricsProperties baseProperties() {
-        ReflexOtelMetricsProperties properties = new ReflexOtelMetricsProperties();
+    private static ReflexTelemetryProperties baseProperties() {
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setMetricPrefix("ci054147");
-        properties.getMetrics().getScopes().put("business", new ReflexOtelMetricsProperties.ScopeProperties(true));
+        properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
         return properties;
     }
 

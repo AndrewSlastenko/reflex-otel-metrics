@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MetricConfigResolver {
 
-    private final @NonNull ReflexOtelMetricsProperties properties;
+    private final @NonNull ReflexTelemetryProperties properties;
 
     public ResolvedMetricConfig resolve(@NonNull MetricSource source) {
 
@@ -54,7 +54,7 @@ public class MetricConfigResolver {
     }
 
     private boolean resolveScopeEnabled(String scope) {
-        ReflexOtelMetricsProperties.ScopeProperties scopeProperties = properties.getMetrics().getScopes().get(scope);
+        ReflexTelemetryProperties.ScopeProperties scopeProperties = properties.getMetrics().getScopes().get(scope);
         return scopeProperties == null || scopeProperties.isEnabled();
     }
 

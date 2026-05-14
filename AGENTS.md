@@ -33,8 +33,8 @@
 | Пакет           | Назначение                                                                                                            |
 | --------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `api`           | Публичные контракты: `JdbcMetricSource`, `MetricSource`, `MetricDefinition`, виды метрик, схемы атрибутов, расписание |
-| `autoconfigure` | `ReflexOtelMetricsAutoConfiguration`, регистрация бинов OTel и стартера                                               |
-| `config`        | `ReflexOtelMetricsProperties`, резолверы/валидаторы конфигурации JDBC и manual                                        |
+| `autoconfigure` | `ReflexTelemetryAutoConfiguration`, регистрация бинов OTel и стартера                                               |
+| `config`        | `ReflexTelemetryProperties`, резолверы/валидаторы конфигурации JDBC и manual                                        |
 | `jdbc`          | Сбор JDBC-метрик (`JdbcMetricCollector` и фабрика)                                                                    |
 | `manual`        | `ReflexMetricFactory`, реализации counter/gauge/up-down-counter, валидация атрибутов, трекер серий                    |
 | `otel`          | Реестр инструментов, публикация в OTel API                                                                            |
@@ -56,21 +56,21 @@
 Точечный прогон (пример):
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexOtelMetricsAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Перед тем как утверждать, что правки готовы, прогоните релевантные тесты (по крайней мере затронутые модули или полный `test`).
 
 ## Конфигурация
 
-Префикс свойств: `**reflex.otel**`.
+Префикс свойств: `**reflex.telemetry**`.
 
-- JDBC-источники: `reflex.otel.metrics.sources.<metric-id>`
-- Ручные метрики: `reflex.otel.metrics.manual.<metric-id>`
-- Глобальный флаг: `reflex.otel.enabled`
-- Общие OTLP-настройки: `reflex.otel.otlp.*`
-- Instrumentation scope: `reflex.otel.instrumentation-scope-name`
-- Трассировка: `reflex.otel.traces.*`
+- JDBC-источники: `reflex.telemetry.metrics.sources.<metric-id>`
+- Ручные метрики: `reflex.telemetry.metrics.manual.<metric-id>`
+- Глобальный флаг: `reflex.telemetry.enabled`
+- Общие OTLP-настройки: `reflex.telemetry.otlp.*`
+- Instrumentation scope: `reflex.telemetry.instrumentation-scope-name`
+- Трассировка: `reflex.telemetry.traces.*`
 
 Детали ключей, приоритет резолва (defaults бина → YAML) и семантика `GAUGE` vs `UP_DOWN_COUNTER` — в [README.md](README.md).
 
