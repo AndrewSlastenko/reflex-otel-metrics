@@ -22,6 +22,7 @@ import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import ru.sber.rcln.reflex.telemetry.tracing.NoopTraceOperations;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -31,6 +32,7 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,6 +45,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.util.Map;
@@ -98,6 +101,7 @@ class ReflexTelemetryAutoConfigurationTest {
                 .withPropertyValues(
                         "reflex.telemetry.metrics.metric-prefix=ci054147",
                         "reflex.telemetry.instrumentation-scope-name=com.example.metrics",
+                        "reflex.telemetry.service-name=contracts-api",
                         "reflex.telemetry.otlp.export-interval=PT1M",
                         "reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current")
                 .run(context -> {
@@ -108,6 +112,7 @@ class ReflexTelemetryAutoConfigurationTest {
 
                     assertThat(properties.getMetrics().getMetricPrefix()).isEqualTo("ci054147");
                     assertThat(properties.getInstrumentationScopeName()).isEqualTo("com.example.metrics");
+                    assertThat(properties.getServiceName()).isEqualTo("contracts-api");
                     assertThat(properties.getOtlp().getExportInterval()).isEqualTo(Duration.ofMinutes(1));
                     assertThat(properties.getMetrics().getSources())
                             .containsKey("documents-by-status");
@@ -115,6 +120,26 @@ class ReflexTelemetryAutoConfigurationTest {
                             .isEqualTo("documents.current");
                     assertThat(resolved.suffix()).isEqualTo("documents.current");
                     assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
+                });
+    }
+
+    @Test
+    void shouldApplyConfiguredServiceNameToStarterSdkResources() {
+        contextRunner
+                .withPropertyValues("reflex.telemetry.service-name=contracts-api")
+                .run(context -> {
+                    assertThat(serviceName(context.getBean(SdkTracerProvider.class))).isEqualTo("contracts-api");
+                    assertThat(serviceName(context.getBean(SdkMeterProvider.class))).isEqualTo("contracts-api");
+                });
+    }
+
+    @Test
+    void shouldKeepDefaultServiceNameResourceWhenConfiguredServiceNameIsBlank() {
+        contextRunner
+                .withPropertyValues("reflex.telemetry.service-name=  ")
+                .run(context -> {
+                    assertThat(serviceName(context.getBean(SdkTracerProvider.class))).isEqualTo(defaultServiceName());
+                    assertThat(serviceName(context.getBean(SdkMeterProvider.class))).isEqualTo(defaultServiceName());
                 });
     }
 
@@ -290,6 +315,26 @@ class ReflexTelemetryAutoConfigurationTest {
         public RowMapper<MetricPoint> rowMapper() {
             return (rs, rowNum) -> new MetricPoint(1L, Map.of());
         }
+    }
+
+    private static String serviceName(SdkTracerProvider provider) {
+        Object sharedState = ReflectionTestUtils.getField(provider, "sharedState");
+        Resource resource = (Resource) ReflectionTestUtils.getField(sharedState, "resource");
+        return serviceName(resource);
+    }
+
+    private static String serviceName(SdkMeterProvider provider) {
+        Object sharedState = ReflectionTestUtils.getField(provider, "sharedState");
+        Resource resource = ReflectionTestUtils.invokeMethod(sharedState, "getResource");
+        return serviceName(resource);
+    }
+
+    private static String serviceName(Resource resource) {
+        return resource.getAttribute(AttributeKey.stringKey("service.name"));
+    }
+
+    private static String defaultServiceName() {
+        return serviceName(Resource.getDefault());
     }
 
     @Configuration(proxyBeanMethods = false)

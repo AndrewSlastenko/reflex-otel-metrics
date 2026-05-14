@@ -52,6 +52,7 @@ Starter читает свойства из `reflex.telemetry`.
 reflex:
   telemetry:
     enabled: true
+    service-name: contracts-api
     instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
     otlp:
       metrics-endpoint: http://localhost:4317
@@ -94,6 +95,7 @@ reflex:
 Эти ключи напрямую соответствуют текущей модели `ReflexTelemetryProperties` и `MetricRuntimeProperties`:
 
 - `reflex.telemetry.enabled`
+- `service-name`
 - `instrumentation-scope-name`
 - `otlp.metrics-endpoint`
 - `otlp.traces-endpoint`
@@ -123,6 +125,18 @@ Runtime-конфигурация резолвится в таком порядк
 1. defaults starter-а
 2. defaults, возвращенные bean-ом источника метрик
 3. overrides из `application.yml` или `application.properties`
+
+## Service name
+
+`service-name` управляет OpenTelemetry resource attribute `service.name` для SDK, который создает starter.
+
+```yaml
+reflex:
+  telemetry:
+    service-name: contracts-api
+```
+
+Это имя приклада/сервиса в backend-е трассировки и метрик. Если приложение само предоставляет `OpenTelemetry`, `OpenTelemetrySdk`, `SdkTracerProvider` или `SdkMeterProvider`, starter не переопределяет resource — в этом случае `service.name` задается на стороне приложения.
 
 ## Частота экспорта
 
@@ -154,6 +168,7 @@ reflex:
 ```
 
 Это не меняет имя самой метрики. Имена метрик по-прежнему формируются из `metric-prefix + suffix`. Scope name показывает, какая библиотека или модуль выпустили телеметрию.
+Это не `service.name`: имя сервиса задается отдельным свойством `reflex.telemetry.service-name`.
 
 ## Trace operations
 

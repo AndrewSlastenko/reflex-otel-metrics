@@ -17,6 +17,7 @@ public class ReflexTelemetryProperties {
 
     private boolean enabled = true;
     private String instrumentationScopeName = "ru.sber.rcln.reflex.telemetry";
+    private String serviceName;
     private OtlpProperties otlp = new OtlpProperties();
     private MetricsProperties metrics = new MetricsProperties();
     @Getter(AccessLevel.NONE)

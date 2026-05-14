@@ -13,6 +13,8 @@ import ru.sber.rcln.reflex.telemetry.runtime.OverflowAggregationStrategy;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import ru.sber.rcln.reflex.telemetry.tracing.DefaultTraceOperations;
 import ru.sber.rcln.reflex.telemetry.tracing.NoopTraceOperations;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -23,8 +25,11 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -109,10 +114,11 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkMeterProvider.class, OpenTelemetry.class})
     SdkMeterProvider sdkMeterProvider(OtlpGrpcMetricExporter exporter, ReflexTelemetryProperties properties) {
-        return SdkMeterProvider.builder()
-                .registerMetricReader(PeriodicMetricReader.builder(exporter)
-                        .setInterval(properties.getOtlp().getExportInterval())
-                        .build())
+        SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
+        applyServiceNameResource(builder, properties);
+        return builder.registerMetricReader(PeriodicMetricReader.builder(exporter)
+                .setInterval(properties.getOtlp().getExportInterval())
+                .build())
                 .build();
     }
 
@@ -120,9 +126,10 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkTracerProvider.class, OpenTelemetry.class})
-    SdkTracerProvider sdkTracerProvider(OtlpGrpcSpanExporter exporter) {
-        return SdkTracerProvider.builder()
-                .addSpanProcessor(BatchSpanProcessor.builder(exporter).build())
+    SdkTracerProvider sdkTracerProvider(OtlpGrpcSpanExporter exporter, ReflexTelemetryProperties properties) {
+        SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
+        applyServiceNameResource(builder, properties);
+        return builder.addSpanProcessor(BatchSpanProcessor.builder(exporter).build())
                 .build();
     }
 
@@ -220,5 +227,22 @@ public class ReflexTelemetryAutoConfiguration {
         @ConditionalOnBean(SdkTracerProvider.class)
         static class TracerProviderAvailable {
         }
+    }
+
+    private static void applyServiceNameResource(SdkMeterProviderBuilder builder, ReflexTelemetryProperties properties) {
+        serviceNameResource(properties).ifPresent(builder::addResource);
+    }
+
+    private static void applyServiceNameResource(SdkTracerProviderBuilder builder, ReflexTelemetryProperties properties) {
+        serviceNameResource(properties).ifPresent(builder::addResource);
+    }
+
+    private static java.util.Optional<Resource> serviceNameResource(ReflexTelemetryProperties properties) {
+        String serviceName = properties.getServiceName();
+        if (serviceName == null || serviceName.isBlank()) {
+            return java.util.Optional.empty();
+        }
+
+        return java.util.Optional.of(Resource.create(Attributes.of(AttributeKey.stringKey("service.name"), serviceName.trim())));
     }
 }
