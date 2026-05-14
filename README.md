@@ -94,6 +94,15 @@ reflex:
           overflow-policy: AGGREGATE_TO_OTHER
 ```
 
+Поддерживаемые синхронные `kind` для `sources.<metric-id>.kind`:
+
+- `COUNTER`
+- `GAUGE`
+- `UP_DOWN_COUNTER`
+- `HISTOGRAM`
+
+Ограничение по overflow для JDBC/runtime pipeline: для `HISTOGRAM` политика `AGGREGATE_TO_OTHER` не поддерживается. Используйте `FAIL` или `TRUNCATE`.
+
 Эти ключи напрямую соответствуют текущей модели `ReflexTelemetryProperties` и `MetricRuntimeProperties`:
 
 - `reflex.telemetry.enabled`
@@ -257,7 +266,20 @@ _otel.tracestate
 
 ## Как ведут себя виды метрик
 
-Текущий starter поддерживает `GAUGE` и `UP_DOWN_COUNTER`. Они по-разному ведут себя между database polls и OTLP exports.
+Starter поддерживает все синхронные виды: `COUNTER`, `GAUGE`, `UP_DOWN_COUNTER`, `HISTOGRAM`.
+Они по-разному ведут себя между database polls и OTLP exports.
+
+### `COUNTER`
+
+Используйте `COUNTER`, когда каждый poll возвращает только неотрицательный инкремент для набора атрибутов.
+
+Пример:
+
+- в `10:00:00` query возвращает `+10`
+- в `10:00:30` query возвращает `+7`
+- в `10:01:00` SDK экспортирует накопленное увеличение за интервал
+
+Для `COUNTER` значения должны быть неотрицательными.
 
 ### `GAUGE`
 
@@ -282,6 +304,19 @@ _otel.tracestate
 - в `10:01:00` SDK экспортирует накопленное изменение за интервал
 
 Не используйте `UP_DOWN_COUNTER` для полных snapshot-ов таблицы вроде `select count(*) ...`, иначе каждый poll снова добавит весь snapshot, и экспортируемое значение будет некорректно расти или снижаться.
+
+### `HISTOGRAM`
+
+Используйте `HISTOGRAM` для распределений (latency, size, duration), когда каждый poll возвращает отдельные наблюдения.
+
+Пример:
+
+- в `10:00:00` query возвращает `12.3`
+- в `10:00:30` query возвращает `25.8`
+- в `10:01:00` SDK экспортирует распределение по histogram buckets
+
+Для histogram points используйте `MetricPoint.histogram(double, attributes)`; legacy-конструктор `new MetricPoint(long, ...)` сохраняется для long-based метрик.
+Для `HISTOGRAM` недоступна overflow-политика `AGGREGATE_TO_OTHER` (только `FAIL`/`TRUNCATE`).
 
 ## Контракт источника метрик
 
@@ -359,13 +394,24 @@ reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current
 reflex.telemetry.metrics.sources.documents-by-status.fixed-delay=PT2M
 ```
 
+Для JDBC-источников `HISTOGRAM` используйте `MetricPoint.histogram(...)` в `rowMapper()`:
+
+```java
+@Override
+public RowMapper<MetricPoint> rowMapper() {
+    return (rs, rowNum) -> MetricPoint.histogram(
+            rs.getDouble("latency_ms"),
+            Map.of("endpoint", rs.getString("endpoint")));
+}
+```
+
 ## Manual Metric Beans
 
 JDBC-метрики собираются по расписанию, которым управляет starter: starter запускает query источника, маппит rows в points и публикует их в OpenTelemetry. Manual metrics эмитятся напрямую кодом приложения в момент бизнес-события или изменения состояния.
 
 Для manual metrics Java bean declaration — основной контракт. Bean определяет metric id, kind, suffix, scope (по умолчанию логический scope `manual`), description, unit, attribute schema, cardinality limit и overflow policy. YAML — опциональный runtime override layer для deploy-time значений: включение метрики, изменение suffix или scope, настройка cardinality handling.
 
-Низкоуровневые metric beans удобны, когда сервису нужен один instrument:
+Низкоуровневые metric beans удобны, когда сервису нужен один instrument. `ReflexMetricFactory` поддерживает `counter(...)`, `gauge(...)`, `upDownCounter(...)` и `histogram(...)`:
 
 ```java
 package com.example.metrics;

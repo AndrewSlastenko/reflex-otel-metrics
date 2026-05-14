@@ -28,7 +28,11 @@ public class MetricExecutionTask {
         try {
             boolean executed = lockManager.executeWithLock(config, () -> {
                 List<MetricPoint> points = coordinator.collect();
-                List<MetricPoint> limited = seriesLimiter.apply(points, config.maxSeries(), config.overflowPolicy());
+                List<MetricPoint> limited = seriesLimiter.apply(
+                        points,
+                        config.maxSeries(),
+                        config.overflowPolicy(),
+                        config.metricKind());
                 publisher.publish(config, limited);
             });
 

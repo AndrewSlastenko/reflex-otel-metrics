@@ -125,6 +125,30 @@ class MetricConfigValidatorTest {
     }
 
     @Test
+    void shouldRejectHistogramAggregateOverflowPolicy() {
+        ResolvedMetricConfig config = new ResolvedMetricConfig(
+                "documents-latency",
+                true,
+                "ci05414726.documents.latency",
+                "documents.latency",
+                "business",
+                "businessReplicaDataSource",
+                MetricKind.HISTOGRAM,
+                MetricScheduleSettings.fixedDelay(Duration.ofMinutes(1), Duration.ZERO),
+                Duration.ofSeconds(45),
+                Duration.ofMinutes(10),
+                Duration.ZERO,
+                500,
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+        );
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly(
+                        "Metric 'documents-latency' does not support AGGREGATE_TO_OTHER overflow policy for HISTOGRAM kind; use FAIL or TRUNCATE"
+                );
+    }
+
+    @Test
     void runtimeCronSwitchShouldValidateAgainstFixedDelayDefault() {
         ReflexTelemetryProperties properties = baseProperties();
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();

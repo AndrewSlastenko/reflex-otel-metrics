@@ -1,5 +1,7 @@
 package ru.sber.rcln.reflex.telemetry.config;
 
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.Duration;
@@ -50,6 +52,12 @@ public class MetricConfigValidator {
                 && !config.lockAtLeastFor().isNegative()
                 && config.lockAtLeastFor().compareTo(config.lockAtMostFor()) > 0) {
             errors.add("Metric '" + config.metricId() + "' requires lockAtLeastFor to be less than or equal to lockAtMostFor");
+        }
+
+        if (config.metricKind() == MetricKind.HISTOGRAM
+                && config.overflowPolicy() == SeriesOverflowPolicy.AGGREGATE_TO_OTHER) {
+            errors.add("Metric '" + config.metricId()
+                    + "' does not support AGGREGATE_TO_OTHER overflow policy for HISTOGRAM kind; use FAIL or TRUNCATE");
         }
 
         return errors;

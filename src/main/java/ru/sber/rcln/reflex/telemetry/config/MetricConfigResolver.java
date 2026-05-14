@@ -2,9 +2,11 @@ package ru.sber.rcln.reflex.telemetry.config;
 
 import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
 import ru.sber.rcln.reflex.telemetry.api.MetricSource;
 import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import lombok.NonNull;
 
 public class MetricConfigResolver {
@@ -42,6 +44,7 @@ public class MetricConfigResolver {
         var lockAtLeastFor = runtime.getLockAtLeastFor() != null ? runtime.getLockAtLeastFor() : defaults.lockAtLeastFor();
         int maxSeries = runtime.getMaxSeries() != null ? runtime.getMaxSeries() : defaults.maxSeries();
         var overflowPolicy = runtime.getOverflowPolicy() != null ? runtime.getOverflowPolicy() : defaults.overflowPolicy();
+        assertOverflowPolicyCompatibility(source.metricId(), metricKind, overflowPolicy);
 
         boolean enabled = properties.isEnabled()
                 && properties.getMetrics().isEnabled()
@@ -63,6 +66,17 @@ public class MetricConfigResolver {
                 maxSeries,
                 overflowPolicy
         );
+    }
+
+    private static void assertOverflowPolicyCompatibility(
+            String metricId,
+            MetricKind metricKind,
+            SeriesOverflowPolicy overflowPolicy) {
+        if (metricKind == MetricKind.HISTOGRAM
+                && overflowPolicy == SeriesOverflowPolicy.AGGREGATE_TO_OTHER) {
+            throw new IllegalArgumentException("Metric '" + metricId
+                    + "' does not support AGGREGATE_TO_OTHER overflow policy for HISTOGRAM kind; use FAIL or TRUNCATE");
+        }
     }
 
     private static String defaultScope(MetricSource source, MetricDefinitionDefaults defaults) {

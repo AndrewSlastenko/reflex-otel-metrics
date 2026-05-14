@@ -3,6 +3,8 @@ package ru.sber.rcln.reflex.telemetry.otel;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.DoubleGaugeBuilder;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
@@ -25,6 +27,26 @@ public class OtelInstrumentRegistry {
     }
 
     public Object getOrCreate(@NonNull String name, @NonNull MetricKind kind, String description, String unit) {
+        return getOrCreateRegistered(name, kind, description, unit).instrument();
+    }
+
+    public MetricInstrumentWriter getOrCreateWriter(String name, MetricKind kind) {
+        return getOrCreateWriter(name, kind, null, null);
+    }
+
+    public MetricInstrumentWriter getOrCreateWriter(
+            @NonNull String name,
+            @NonNull MetricKind kind,
+            String description,
+            String unit) {
+        return getOrCreateRegistered(name, kind, description, unit).writer();
+    }
+
+    private RegisteredInstrument getOrCreateRegistered(
+            @NonNull String name,
+            @NonNull MetricKind kind,
+            String description,
+            String unit) {
         return instruments.compute(name, (key, existing) -> {
             if (existing != null) {
                 if (existing.kind() != kind) {
@@ -36,15 +58,16 @@ public class OtelInstrumentRegistry {
                 return existing;
             }
 
-            return new RegisteredInstrument(kind, switch (kind) {
-                case COUNTER -> createCounter(name, description, unit);
-                case GAUGE -> createGauge(name, description, unit);
-                case UP_DOWN_COUNTER -> createUpDownCounter(name, description, unit);
-            });
-        }).instrument();
+            return switch (kind) {
+                case COUNTER -> registerCounter(name, description, unit);
+                case GAUGE -> registerGauge(name, description, unit);
+                case UP_DOWN_COUNTER -> registerUpDownCounter(name, description, unit);
+                case HISTOGRAM -> registerHistogram(name, description, unit);
+            };
+        });
     }
 
-    private LongCounter createCounter(String name, String description, String unit) {
+    private RegisteredInstrument registerCounter(String name, String description, String unit) {
         LongCounterBuilder builder = meter.counterBuilder(name);
         if (hasText(description)) {
             builder = builder.setDescription(description);
@@ -52,10 +75,14 @@ public class OtelInstrumentRegistry {
         if (hasText(unit)) {
             builder = builder.setUnit(unit);
         }
-        return builder.build();
+        LongCounter counter = builder.build();
+        return new RegisteredInstrument(
+                MetricKind.COUNTER,
+                counter,
+                (point, attributes) -> counter.add(point.value(), attributes));
     }
 
-    private LongGauge createGauge(String name, String description, String unit) {
+    private RegisteredInstrument registerGauge(String name, String description, String unit) {
         DoubleGaugeBuilder builder = meter.gaugeBuilder(name);
         if (hasText(description)) {
             builder = builder.setDescription(description);
@@ -63,10 +90,14 @@ public class OtelInstrumentRegistry {
         if (hasText(unit)) {
             builder = builder.setUnit(unit);
         }
-        return builder.ofLongs().build();
+        LongGauge gauge = builder.ofLongs().build();
+        return new RegisteredInstrument(
+                MetricKind.GAUGE,
+                gauge,
+                (point, attributes) -> gauge.set(point.value(), attributes));
     }
 
-    private LongUpDownCounter createUpDownCounter(String name, String description, String unit) {
+    private RegisteredInstrument registerUpDownCounter(String name, String description, String unit) {
         LongUpDownCounterBuilder builder = meter.upDownCounterBuilder(name);
         if (hasText(description)) {
             builder = builder.setDescription(description);
@@ -74,13 +105,32 @@ public class OtelInstrumentRegistry {
         if (hasText(unit)) {
             builder = builder.setUnit(unit);
         }
-        return builder.build();
+        LongUpDownCounter counter = builder.build();
+        return new RegisteredInstrument(
+                MetricKind.UP_DOWN_COUNTER,
+                counter,
+                (point, attributes) -> counter.add(point.value(), attributes));
+    }
+
+    private RegisteredInstrument registerHistogram(String name, String description, String unit) {
+        DoubleHistogramBuilder builder = meter.histogramBuilder(name);
+        if (hasText(description)) {
+            builder = builder.setDescription(description);
+        }
+        if (hasText(unit)) {
+            builder = builder.setUnit(unit);
+        }
+        DoubleHistogram histogram = builder.build();
+        return new RegisteredInstrument(
+                MetricKind.HISTOGRAM,
+                histogram,
+                (point, attributes) -> histogram.record(point.asDoubleValue(), attributes));
     }
 
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
 
-    private record RegisteredInstrument(MetricKind kind, Object instrument) {
+    private record RegisteredInstrument(MetricKind kind, Object instrument, MetricInstrumentWriter writer) {
     }
 }

@@ -1,8 +1,11 @@
 package ru.sber.rcln.reflex.telemetry.otel;
 
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
+import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongGaugeBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
@@ -13,6 +16,7 @@ import org.mockito.InOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -23,7 +27,7 @@ import static org.mockito.Mockito.when;
 class OtelInstrumentRegistryTest {
 
     @Test
-    void shouldCreateCounterInstrument() {
+    void shouldCreateCounterWriter() {
         Meter meter = mock(Meter.class);
         LongCounterBuilder counterBuilder = mock(LongCounterBuilder.class);
         LongCounter counter = mock(LongCounter.class);
@@ -32,10 +36,12 @@ class OtelInstrumentRegistryTest {
 
         OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
 
-        Object instrument = registry.getOrCreate("orders.created", MetricKind.COUNTER);
+        MetricInstrumentWriter writer = registry.getOrCreateWriter("orders.created", MetricKind.COUNTER);
+        writer.record(new MetricPoint(7L, java.util.Map.of()), io.opentelemetry.api.common.Attributes.empty());
 
-        assertThat(instrument).isSameAs(counter);
+        assertThat(writer).isNotNull();
         verify(meter).counterBuilder("orders.created");
+        verify(counter).add(eq(7L), eq(io.opentelemetry.api.common.Attributes.empty()));
     }
 
     @Test
@@ -50,9 +56,9 @@ class OtelInstrumentRegistryTest {
 
         OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
 
-        Object instrument = registry.getOrCreate("orders.created", MetricKind.COUNTER, "Created orders", "1");
+        MetricInstrumentWriter writer = registry.getOrCreateWriter("orders.created", MetricKind.COUNTER, "Created orders", "1");
 
-        assertThat(instrument).isSameAs(counter);
+        assertThat(writer).isNotNull();
         InOrder inOrder = inOrder(counterBuilder);
         inOrder.verify(counterBuilder).setDescription("Created orders");
         inOrder.verify(counterBuilder).setUnit("1");
@@ -69,16 +75,16 @@ class OtelInstrumentRegistryTest {
 
         OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
 
-        Object instrument = registry.getOrCreate("orders.created", MetricKind.COUNTER, "  ", "");
+        MetricInstrumentWriter writer = registry.getOrCreateWriter("orders.created", MetricKind.COUNTER, "  ", "");
 
-        assertThat(instrument).isSameAs(counter);
+        assertThat(writer).isNotNull();
         verify(counterBuilder, never()).setDescription("  ");
         verify(counterBuilder, never()).setUnit("");
         verify(counterBuilder).build();
     }
 
     @Test
-    void shouldCacheInstrumentForTheSameMetricKind() {
+    void shouldCacheWriterForTheSameMetricKind() {
         Meter meter = mock(Meter.class);
         DoubleGaugeBuilder gaugeBuilder = mock(DoubleGaugeBuilder.class);
         LongGaugeBuilder longGaugeBuilder = mock(LongGaugeBuilder.class);
@@ -89,11 +95,10 @@ class OtelInstrumentRegistryTest {
 
         OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
 
-        Object first = registry.getOrCreate("documents.current", MetricKind.GAUGE);
-        Object second = registry.getOrCreate("documents.current", MetricKind.GAUGE);
+        MetricInstrumentWriter first = registry.getOrCreateWriter("documents.current", MetricKind.GAUGE);
+        MetricInstrumentWriter second = registry.getOrCreateWriter("documents.current", MetricKind.GAUGE);
 
-        assertThat(first).isSameAs(gauge);
-        assertThat(second).isSameAs(gauge);
+        assertThat(first).isSameAs(second);
         verify(meter).gaugeBuilder("documents.current");
     }
 
@@ -118,5 +123,22 @@ class OtelInstrumentRegistryTest {
                 .hasMessageContaining("requested as UP_DOWN_COUNTER");
 
         verifyNoInteractions(upDownCounterBuilder);
+    }
+
+    @Test
+    void shouldCreateHistogramWriter() {
+        Meter meter = mock(Meter.class);
+        DoubleHistogramBuilder histogramBuilder = mock(DoubleHistogramBuilder.class);
+        DoubleHistogram histogram = mock(DoubleHistogram.class);
+        when(meter.histogramBuilder("orders.duration")).thenReturn(histogramBuilder);
+        when(histogramBuilder.build()).thenReturn(histogram);
+
+        OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
+
+        MetricInstrumentWriter writer = registry.getOrCreateWriter("orders.duration", MetricKind.HISTOGRAM);
+        writer.record(MetricPoint.histogram(12.5d, java.util.Map.<String, String>of()), io.opentelemetry.api.common.Attributes.empty());
+
+        assertThat(writer).isNotNull();
+        verify(histogram).record(eq(12.5d), eq(io.opentelemetry.api.common.Attributes.empty()));
     }
 }

@@ -2,6 +2,7 @@ package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
+import ru.sber.rcln.reflex.telemetry.api.HistogramMetric;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
@@ -14,6 +15,7 @@ import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
@@ -81,6 +83,23 @@ class ReflexMetricFactoryTest {
     }
 
     @Test
+    void createsHistogramMetricFromResolvedConfigAndRegistryInstrument() {
+        MetricDefinition definition = MetricDefinition.of("request.latency").build();
+        configResolver.nextConfig = resolved(MetricKind.HISTOGRAM, "Request latency", "ms", SeriesOverflowPolicy.FAIL);
+
+        HistogramMetric metric = factory.histogram("request-latency", definition);
+
+        assertThat(metric).isInstanceOf(DefaultHistogramMetric.class);
+        assertThat(configResolver.metricId).isEqualTo("request-latency");
+        assertThat(configResolver.kind).isEqualTo(MetricKind.HISTOGRAM);
+        assertThat(configResolver.definition).isSameAs(definition);
+        assertThat(instrumentRegistry.name).isEqualTo("reflex.orders.created");
+        assertThat(instrumentRegistry.kind).isEqualTo(MetricKind.HISTOGRAM);
+        assertThat(instrumentRegistry.description).isEqualTo("Request latency");
+        assertThat(instrumentRegistry.unit).isEqualTo("ms");
+    }
+
+    @Test
     void failsFastWhenResolvedConfigUsesAggregateToOtherOverflowPolicy() {
         MetricDefinition definition = MetricDefinition.of("orders.created")
                 .overflowPolicy(SeriesOverflowPolicy.AGGREGATE_TO_OTHER)
@@ -113,6 +132,12 @@ class ReflexMetricFactoryTest {
                 "workers-active",
                 MetricDefinition.of("workers.active").build());
         upDownCounter.add(-1);
+
+        configResolver.nextConfig = disabled(MetricKind.HISTOGRAM);
+        HistogramMetric histogram = factory.histogram(
+                "request-latency",
+                MetricDefinition.of("request.latency").build());
+        histogram.record(12.5d);
     }
 
     private static ResolvedManualMetricConfig resolved(MetricKind kind, SeriesOverflowPolicy overflowPolicy) {
@@ -192,6 +217,7 @@ class ReflexMetricFactoryTest {
                 case COUNTER -> new NoopLongCounter();
                 case GAUGE -> new NoopLongGauge();
                 case UP_DOWN_COUNTER -> new NoopLongUpDownCounter();
+                case HISTOGRAM -> new NoopDoubleHistogram();
             };
         }
     }
@@ -235,6 +261,20 @@ class ReflexMetricFactoryTest {
 
         @Override
         public void add(long value, Attributes attributes, Context context) {
+        }
+    }
+
+    private static final class NoopDoubleHistogram implements DoubleHistogram {
+        @Override
+        public void record(double value) {
+        }
+
+        @Override
+        public void record(double value, Attributes attributes) {
+        }
+
+        @Override
+        public void record(double value, Attributes attributes, Context context) {
         }
     }
 }

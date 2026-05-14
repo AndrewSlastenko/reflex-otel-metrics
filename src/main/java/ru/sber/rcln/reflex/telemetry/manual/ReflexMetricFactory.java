@@ -2,6 +2,7 @@ package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
+import ru.sber.rcln.reflex.telemetry.api.HistogramMetric;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.UpDownCounterMetric;
@@ -9,6 +10,7 @@ import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import java.util.function.Supplier;
@@ -79,6 +81,21 @@ public class ReflexMetricFactory {
                 config.description(),
                 config.unit());
         return new DefaultUpDownCounterMetric(config, instrument, attributeValidator);
+    }
+
+    public HistogramMetric histogram(String metricId, MetricDefinition definition) {
+        ResolvedManualMetricConfig config = configResolver.resolve(metricId, MetricKind.HISTOGRAM, definition);
+        if (!config.enabled()) {
+            return (value, attributes) -> {
+            };
+        }
+
+        DoubleHistogram instrument = (DoubleHistogram) requireInstrumentRegistry().getOrCreate(
+                config.fullMetricName(),
+                MetricKind.HISTOGRAM,
+                config.description(),
+                config.unit());
+        return new DefaultHistogramMetric(config, instrument, attributeValidator);
     }
 
     private OtelInstrumentRegistry requireInstrumentRegistry() {

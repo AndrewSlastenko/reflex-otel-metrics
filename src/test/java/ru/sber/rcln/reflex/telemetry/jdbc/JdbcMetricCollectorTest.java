@@ -28,4 +28,18 @@ class JdbcMetricCollectorTest {
 
         assertThat(points).singleElement().extracting(MetricPoint::value).isEqualTo(10L);
     }
+
+    @Test
+    void shouldCollectHistogramPointsFromJdbcTemplate() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        RowMapper<MetricPoint> rowMapper = (rs, rowNum) -> MetricPoint.histogram(10.5, Map.of("bucket", "p95"));
+        when(jdbcTemplate.query("select latency from v_documents", rowMapper))
+                .thenReturn(List.of(MetricPoint.histogram(10.5, Map.of("bucket", "p95"))));
+
+        JdbcMetricCollector collector = new JdbcMetricCollector(jdbcTemplate);
+
+        List<MetricPoint> points = collector.collect(new QueryDefinition("select latency from v_documents"), rowMapper);
+
+        assertThat(points).singleElement().extracting(MetricPoint::asDoubleValue).isEqualTo(10.5d);
+    }
 }

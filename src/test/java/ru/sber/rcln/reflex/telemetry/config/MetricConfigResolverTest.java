@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MetricConfigResolverTest {
 
@@ -144,6 +145,35 @@ class MetricConfigResolverTest {
                 .resolve(new JdbcMetricSourceWithoutScope());
 
         assertThat(resolved.scope()).isEqualTo(ReflexMetricScopes.JDBC);
+    }
+
+    @Test
+    void shouldResolveHistogramKindAndExplicitOverflowOverride() {
+        ReflexTelemetryProperties properties = baseProperties();
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setKind(MetricKind.HISTOGRAM);
+        runtimeProperties.setOverflowPolicy(SeriesOverflowPolicy.TRUNCATE);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
+
+        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new TestJdbcMetricSource());
+
+        assertThat(resolved.metricKind()).isEqualTo(MetricKind.HISTOGRAM);
+        assertThat(resolved.overflowPolicy()).isEqualTo(SeriesOverflowPolicy.TRUNCATE);
+    }
+
+    @Test
+    void shouldFailFastForHistogramWithAggregateToOtherOverflowPolicy() {
+        ReflexTelemetryProperties properties = baseProperties();
+        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
+        runtimeProperties.setKind(MetricKind.HISTOGRAM);
+        runtimeProperties.setOverflowPolicy(SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
+        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
+
+        MetricConfigResolver resolver = new MetricConfigResolver(properties);
+
+        assertThatThrownBy(() -> resolver.resolve(new TestJdbcMetricSource()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Metric 'documents-by-status' does not support AGGREGATE_TO_OTHER overflow policy for HISTOGRAM kind; use FAIL or TRUNCATE");
     }
 
     private static ReflexTelemetryProperties baseProperties() {

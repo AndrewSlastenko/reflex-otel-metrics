@@ -1,5 +1,6 @@
 package ru.sber.rcln.reflex.telemetry.runtime;
 
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.util.List;
@@ -21,7 +22,8 @@ class SeriesLimiterTest {
                         new MetricPoint(3, Map.of("status", "c"))
                 ),
                 2,
-                SeriesOverflowPolicy.TRUNCATE
+                SeriesOverflowPolicy.TRUNCATE,
+                MetricKind.GAUGE
         );
 
         assertThat(limited).hasSize(2);
@@ -37,7 +39,8 @@ class SeriesLimiterTest {
                         new MetricPoint(3, Map.of("status", "c"))
                 ),
                 2,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
+                MetricKind.GAUGE
         );
 
         assertThat(limited).hasSize(2);
@@ -47,13 +50,32 @@ class SeriesLimiterTest {
     }
 
     @Test
+    void shouldRejectHistogramAggregateOverflowPolicy() {
+        SeriesLimiter limiter = new SeriesLimiter(new OverflowAggregationStrategy());
+
+        assertThatThrownBy(() -> limiter.apply(
+                List.of(
+                        MetricPoint.histogram(1.1, Map.of("status", "a")),
+                        MetricPoint.histogram(1.2, Map.of("status", "b")),
+                        MetricPoint.histogram(1.3, Map.of("status", "c"))
+                ),
+                2,
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
+                MetricKind.HISTOGRAM
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("AGGREGATE_TO_OTHER is not supported for HISTOGRAM metrics. Use FAIL or TRUNCATE overflow policy.");
+    }
+
+    @Test
     void shouldRejectNonPositiveMaxSeries() {
         SeriesLimiter limiter = new SeriesLimiter(new OverflowAggregationStrategy());
 
         assertThatThrownBy(() -> limiter.apply(
                 List.of(new MetricPoint(1, Map.of("status", "a"))),
                 0,
-                SeriesOverflowPolicy.TRUNCATE
+                SeriesOverflowPolicy.TRUNCATE,
+                MetricKind.GAUGE
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("maxSeries must be greater than 0");

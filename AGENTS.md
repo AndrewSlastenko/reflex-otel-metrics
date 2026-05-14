@@ -73,7 +73,7 @@
 - Instrumentation scope: `reflex.telemetry.instrumentation-scope-name`
 - Трассировка: `reflex.telemetry.traces.*`
 
-Детали ключей, приоритет резолва (defaults бина → YAML) и семантика `GAUGE` vs `UP_DOWN_COUNTER` — в [README.md](README.md).
+Детали ключей, приоритет резолва (defaults бина → YAML), семантика sync-kind (`COUNTER`/`GAUGE`/`UP_DOWN_COUNTER`/`HISTOGRAM`) и ограничения overflow — в [README.md](README.md).
 
 ## Инварианты для изменений кода
 
