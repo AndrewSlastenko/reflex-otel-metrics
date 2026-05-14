@@ -15,9 +15,9 @@
 Complete `docs/superpowers/plans/2026-05-14-system-code-naming.md` first. This plan assumes:
 
 - `ReflexTelemetryProperties.systemCode` exists;
-- `TelemetryNamingPolicy` exists;
-- current business metric names use `TelemetryNamingPolicy.metricName(...)`;
-- SDK resource `service.name` uses `TelemetryNamingPolicy.serviceName(...)`;
+- `ReflexTelemetryNamingPolicy` exists;
+- current business metric names use `ReflexTelemetryNamingPolicy.metricName(...)`;
+- SDK resource `service.name` uses `ReflexTelemetryNamingPolicy.serviceName(...)`;
 - `reflex.telemetry.metrics.metric-prefix` has been removed.
 
 ## OneAgent Compatibility Decision
@@ -257,7 +257,7 @@ package ru.sber.rcln.reflex.telemetry.otel;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import ru.sber.rcln.reflex.telemetry.config.TelemetryNamingPolicy;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import org.junit.jupiter.api.Test;
@@ -267,7 +267,7 @@ class MetricViewConfigurerTest {
     @Test
     void shouldRegisterPrefixingViewsWithoutFailingProviderBuild() {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
-        MetricViewConfigurer configurer = new MetricViewConfigurer(new TelemetryNamingPolicy("ci05414726"));
+        MetricViewConfigurer configurer = new MetricViewConfigurer(new ReflexTelemetryNamingPolicy("ci05414726"));
 
         configurer.configure(builder);
 
@@ -293,7 +293,7 @@ Create `src/main/java/ru/sber/rcln/reflex/telemetry/otel/MetricViewConfigurer.ja
 ```java
 package ru.sber.rcln.reflex.telemetry.otel;
 
-import ru.sber.rcln.reflex.telemetry.config.TelemetryNamingPolicy;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
@@ -304,7 +304,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MetricViewConfigurer {
 
-    private final @NonNull TelemetryNamingPolicy namingPolicy;
+    private final @NonNull ReflexTelemetryNamingPolicy namingPolicy;
 
     public void configure(@NonNull SdkMeterProviderBuilder builder) {
         registerPrefixingView(builder, InstrumentType.COUNTER);
@@ -337,7 +337,7 @@ In `ReflexTelemetryAutoConfiguration`, add bean:
 ```java
 @Bean
 @ConditionalOnMissingBean
-MetricViewConfigurer metricViewConfigurer(TelemetryNamingPolicy namingPolicy) {
+MetricViewConfigurer metricViewConfigurer(ReflexTelemetryNamingPolicy namingPolicy) {
     return new MetricViewConfigurer(namingPolicy);
 }
 ```
@@ -348,7 +348,7 @@ Change `sdkMeterProvider` signature:
 SdkMeterProvider sdkMeterProvider(
         OtlpGrpcMetricExporter exporter,
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy,
+        ReflexTelemetryNamingPolicy namingPolicy,
         MetricViewConfigurer metricViewConfigurer) {
 ```
 

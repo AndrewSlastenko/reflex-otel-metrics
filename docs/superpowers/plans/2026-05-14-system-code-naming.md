@@ -24,11 +24,11 @@ This plan does not add HTTP/JDBC/Kafka standard instrumentation dependencies, to
 ## File Structure
 
 - Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryProperties.java`: add `systemCode`, remove `metrics.metricPrefix`.
-- Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicy.java`: derive prefixed metric names and effective service names.
-- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolver.java`: use `TelemetryNamingPolicy` for JDBC metric names.
-- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolver.java`: use `TelemetryNamingPolicy` for manual metric names.
+- Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicy.java`: derive prefixed metric names and effective service names.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolver.java`: use `ReflexTelemetryNamingPolicy` for JDBC metric names.
+- Modify `src/main/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolver.java`: use `ReflexTelemetryNamingPolicy` for manual metric names.
 - Modify `src/main/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfiguration.java`: expose naming policy bean, wire resolvers with it, and apply policy to SDK resource `service.name`.
-- Add `src/test/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicyTest.java`: focused unit coverage.
+- Add `src/test/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicyTest.java`: focused unit coverage.
 - Modify `src/test/java/ru/sber/rcln/reflex/telemetry/config/MetricConfigResolverTest.java`: update expected metric names.
 - Modify `src/test/java/ru/sber/rcln/reflex/telemetry/config/ManualMetricConfigResolverTest.java`: update expected metric names.
 - Modify `src/test/java/ru/sber/rcln/reflex/telemetry/autoconfigure/ReflexTelemetryAutoConfigurationTest.java`: effective service-name and bean wiring coverage.
@@ -39,12 +39,12 @@ This plan does not add HTTP/JDBC/Kafka standard instrumentation dependencies, to
 ### Task 1: Naming Policy Unit
 
 **Files:**
-- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicy.java`
-- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicyTest.java`
+- Create: `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicy.java`
+- Test: `src/test/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicyTest.java`
 
 - [ ] **Step 1: Write failing naming policy tests**
 
-Create `src/test/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicyTest.java`:
+Create `src/test/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicyTest.java`:
 
 ```java
 package ru.sber.rcln.reflex.telemetry.config;
@@ -53,11 +53,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class TelemetryNamingPolicyTest {
+class ReflexTelemetryNamingPolicyTest {
 
     @Test
     void shouldPrefixMetricNameWithSystemCodeAndDot() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy("ci05414726");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy("ci05414726");
 
         assertThat(policy.metricName("documents.current"))
                 .isEqualTo("ci05414726.documents.current");
@@ -65,7 +65,7 @@ class TelemetryNamingPolicyTest {
 
     @Test
     void shouldNotPrefixMetricNameTwice() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy("ci05414726");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy("ci05414726");
 
         assertThat(policy.metricName("ci05414726.documents.current"))
                 .isEqualTo("ci05414726.documents.current");
@@ -73,7 +73,7 @@ class TelemetryNamingPolicyTest {
 
     @Test
     void shouldLeaveMetricNameUnchangedWhenSystemCodeIsBlank() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy(" ");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy(" ");
 
         assertThat(policy.metricName("documents.current"))
                 .isEqualTo("documents.current");
@@ -81,7 +81,7 @@ class TelemetryNamingPolicyTest {
 
     @Test
     void shouldPrefixServiceNameWithSystemCodeAndUnderscore() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy("ci05414726");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy("ci05414726");
 
         assertThat(policy.serviceName("contracts-api"))
                 .isEqualTo("ci05414726_contracts-api");
@@ -89,7 +89,7 @@ class TelemetryNamingPolicyTest {
 
     @Test
     void shouldNotPrefixServiceNameTwice() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy("ci05414726");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy("ci05414726");
 
         assertThat(policy.serviceName("ci05414726_contracts-api"))
                 .isEqualTo("ci05414726_contracts-api");
@@ -97,7 +97,7 @@ class TelemetryNamingPolicyTest {
 
     @Test
     void shouldTrimInputs() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy(" ci05414726 ");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy(" ci05414726 ");
 
         assertThat(policy.metricName(" documents.current "))
                 .isEqualTo("ci05414726.documents.current");
@@ -107,7 +107,7 @@ class TelemetryNamingPolicyTest {
 
     @Test
     void shouldReturnBlankServiceNameAsNull() {
-        TelemetryNamingPolicy policy = new TelemetryNamingPolicy("ci05414726");
+        ReflexTelemetryNamingPolicy policy = new ReflexTelemetryNamingPolicy("ci05414726");
 
         assertThat(policy.serviceName(" ")).isNull();
         assertThat(policy.serviceName(null)).isNull();
@@ -120,25 +120,25 @@ class TelemetryNamingPolicyTest {
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=TelemetryNamingPolicyTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryNamingPolicyTest test
 ```
 
-Expected: compilation fails because `TelemetryNamingPolicy` does not exist.
+Expected: compilation fails because `ReflexTelemetryNamingPolicy` does not exist.
 
 - [ ] **Step 3: Add minimal naming policy**
 
-Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicy.java`:
+Create `src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicy.java`:
 
 ```java
 package ru.sber.rcln.reflex.telemetry.config;
 
 import lombok.NonNull;
 
-public class TelemetryNamingPolicy {
+public class ReflexTelemetryNamingPolicy {
 
     private final String systemCode;
 
-    public TelemetryNamingPolicy(String systemCode) {
+    public ReflexTelemetryNamingPolicy(String systemCode) {
         this.systemCode = normalize(systemCode);
     }
 
@@ -175,7 +175,7 @@ public class TelemetryNamingPolicy {
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=TelemetryNamingPolicyTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryNamingPolicyTest test
 ```
 
 Expected: PASS.
@@ -183,7 +183,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add src/main/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicy.java src/test/java/ru/sber/rcln/reflex/telemetry/config/TelemetryNamingPolicyTest.java
+git add src/main/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicy.java src/test/java/ru/sber/rcln/reflex/telemetry/config/ReflexTelemetryNamingPolicyTest.java
 git commit -m "feat: add telemetry naming policy"
 ```
 
@@ -236,8 +236,8 @@ void shouldCreateNamingPolicyFromSystemCode() {
     contextRunner
             .withPropertyValues("reflex.telemetry.system-code=ci05414726")
             .run(context -> {
-                assertThat(context).hasSingleBean(TelemetryNamingPolicy.class);
-                assertThat(context.getBean(TelemetryNamingPolicy.class).metricName("orders.created"))
+                assertThat(context).hasSingleBean(ReflexTelemetryNamingPolicy.class);
+                assertThat(context.getBean(ReflexTelemetryNamingPolicy.class).metricName("orders.created"))
                         .isEqualTo("ci05414726.orders.created");
             });
 }
@@ -276,8 +276,8 @@ In `ReflexTelemetryAutoConfiguration`, add:
 ```java
 @Bean
 @ConditionalOnMissingBean
-TelemetryNamingPolicy telemetryNamingPolicy(ReflexTelemetryProperties properties) {
-    return new TelemetryNamingPolicy(properties.getSystemCode());
+ReflexTelemetryNamingPolicy reflexTelemetryNamingPolicy(ReflexTelemetryProperties properties) {
+    return new ReflexTelemetryNamingPolicy(properties.getSystemCode());
 }
 ```
 
@@ -288,7 +288,7 @@ Change resolver bean methods to:
 @ConditionalOnMissingBean
 MetricConfigResolver metricConfigResolver(
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     return new MetricConfigResolver(properties, namingPolicy);
 }
 
@@ -296,7 +296,7 @@ MetricConfigResolver metricConfigResolver(
 @ConditionalOnMissingBean
 ManualMetricConfigResolver manualMetricConfigResolver(
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     return new ManualMetricConfigResolver(properties, namingPolicy);
 }
 ```
@@ -307,7 +307,7 @@ Change `MetricConfigResolver` fields to:
 
 ```java
 private final @NonNull ReflexTelemetryProperties properties;
-private final @NonNull TelemetryNamingPolicy namingPolicy;
+private final @NonNull ReflexTelemetryNamingPolicy namingPolicy;
 ```
 
 Change full metric name construction to:
@@ -320,7 +320,7 @@ Change `ManualMetricConfigResolver` fields to:
 
 ```java
 private final @NonNull ReflexTelemetryProperties properties;
-private final @NonNull TelemetryNamingPolicy namingPolicy;
+private final @NonNull ReflexTelemetryNamingPolicy namingPolicy;
 ```
 
 and full metric name construction to:
@@ -334,7 +334,7 @@ namingPolicy.metricName(suffix),
 Where tests construct resolvers directly, use:
 
 ```java
-TelemetryNamingPolicy namingPolicy = new TelemetryNamingPolicy(properties.getSystemCode());
+ReflexTelemetryNamingPolicy namingPolicy = new ReflexTelemetryNamingPolicy(properties.getSystemCode());
 ResolvedMetricConfig resolved = new MetricConfigResolver(properties, namingPolicy)
         .resolve(new TestJdbcMetricSource());
 ```
@@ -342,7 +342,7 @@ ResolvedMetricConfig resolved = new MetricConfigResolver(properties, namingPolic
 For manual metrics:
 
 ```java
-TelemetryNamingPolicy namingPolicy = new TelemetryNamingPolicy(properties.getSystemCode());
+ReflexTelemetryNamingPolicy namingPolicy = new ReflexTelemetryNamingPolicy(properties.getSystemCode());
 ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties, namingPolicy)
         .resolve("orders-created", MetricKind.COUNTER, definition);
 ```
@@ -352,7 +352,7 @@ ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties,
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=TelemetryNamingPolicyTest,MetricConfigResolverTest,ManualMetricConfigResolverTest,ReflexTelemetryAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryNamingPolicyTest,MetricConfigResolverTest,ManualMetricConfigResolverTest,ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: PASS.
@@ -426,20 +426,20 @@ Expected: service-name assertions fail because resource still uses raw `service-
 
 - [ ] **Step 3: Apply naming policy to resource creation**
 
-Change `applyServiceNameResource` calls to accept `TelemetryNamingPolicy`:
+Change `applyServiceNameResource` calls to accept `ReflexTelemetryNamingPolicy`:
 
 ```java
 private static void applyServiceNameResource(
         SdkMeterProviderBuilder builder,
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     serviceNameResource(properties, namingPolicy).ifPresent(builder::addResource);
 }
 
 private static void applyServiceNameResource(
         SdkTracerProviderBuilder builder,
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     serviceNameResource(properties, namingPolicy).ifPresent(builder::addResource);
 }
 ```
@@ -450,7 +450,7 @@ Change provider bean signatures:
 SdkMeterProvider sdkMeterProvider(
         OtlpGrpcMetricExporter exporter,
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
     applyServiceNameResource(builder, properties, namingPolicy);
     ...
@@ -459,7 +459,7 @@ SdkMeterProvider sdkMeterProvider(
 SdkTracerProvider sdkTracerProvider(
         OtlpGrpcSpanExporter exporter,
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
     applyServiceNameResource(builder, properties, namingPolicy);
     ...
@@ -471,7 +471,7 @@ Replace `serviceNameResource` with:
 ```java
 private static java.util.Optional<Resource> serviceNameResource(
         ReflexTelemetryProperties properties,
-        TelemetryNamingPolicy namingPolicy) {
+        ReflexTelemetryNamingPolicy namingPolicy) {
     String serviceName = namingPolicy.serviceName(properties.getServiceName());
     if (serviceName == null) {
         return java.util.Optional.empty();
@@ -570,7 +570,7 @@ Application configuration should keep `service-name` unprefixed. The starter pre
 Run:
 
 ```powershell
-.\mvnw.cmd -Dtest=TelemetryNamingPolicyTest,MetricConfigResolverTest,ManualMetricConfigResolverTest,ReflexTelemetryAutoConfigurationTest test
+.\mvnw.cmd -Dtest=ReflexTelemetryNamingPolicyTest,MetricConfigResolverTest,ManualMetricConfigResolverTest,ReflexTelemetryAutoConfigurationTest test
 ```
 
 Expected: PASS.
