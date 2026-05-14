@@ -21,7 +21,7 @@ class MetricConfigValidatorTest {
         ResolvedMetricConfig config = new ResolvedMetricConfig(
                 "documents-by-status",
                 true,
-                "ci054147.documents.current",
+                "ci05414726.documents.current",
                 "documents.current",
                 "business",
                 null,
@@ -43,7 +43,7 @@ class MetricConfigValidatorTest {
         ResolvedMetricConfig config = new ResolvedMetricConfig(
                 "documents-by-status",
                 true,
-                "ci054147.documents.current",
+                "ci05414726.documents.current",
                 "documents.current",
                 "business",
                 "businessReplicaDataSource",
@@ -70,7 +70,7 @@ class MetricConfigValidatorTest {
         ResolvedMetricConfig config = new ResolvedMetricConfig(
                 "documents-by-status",
                 true,
-                "ci054147.documents.current",
+                "ci05414726.documents.current",
                 "documents.current",
                 "business",
                 "businessReplicaDataSource",
@@ -154,7 +154,7 @@ class MetricConfigValidatorTest {
         return new ResolvedMetricConfig(
                 "documents-by-status",
                 true,
-                "ci054147.documents.current",
+                "ci05414726.documents.current",
                 "documents.current",
                 "business",
                 "businessReplicaDataSource",
@@ -170,7 +170,7 @@ class MetricConfigValidatorTest {
 
     private static ReflexTelemetryProperties baseProperties() {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
-        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.setSystemCode("ci05414726");
         properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
         return properties;
     }

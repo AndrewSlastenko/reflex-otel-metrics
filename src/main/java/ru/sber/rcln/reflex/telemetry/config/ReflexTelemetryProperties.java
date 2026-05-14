@@ -18,6 +18,7 @@ public class ReflexTelemetryProperties {
     private boolean enabled = true;
     private String instrumentationScopeName = "ru.sber.rcln.reflex.telemetry";
     private String serviceName;
+    private String systemCode;
     private OtlpProperties otlp = new OtlpProperties();
     private MetricsProperties metrics = new MetricsProperties();
     @Getter(AccessLevel.NONE)
@@ -45,7 +46,6 @@ public class ReflexTelemetryProperties {
     public static class MetricsProperties {
 
         private boolean enabled = true;
-        private String metricPrefix = "reflex";
         private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
         private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
         @Setter(AccessLevel.NONE)

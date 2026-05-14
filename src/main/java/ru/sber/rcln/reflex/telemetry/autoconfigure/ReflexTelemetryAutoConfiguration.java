@@ -4,6 +4,7 @@ import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
@@ -47,14 +48,24 @@ public class ReflexTelemetryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    MetricConfigResolver metricConfigResolver(ReflexTelemetryProperties properties) {
-        return new MetricConfigResolver(properties);
+    ReflexTelemetryNamingPolicy reflexTelemetryNamingPolicy(ReflexTelemetryProperties properties) {
+        return new ReflexTelemetryNamingPolicy(properties.getSystemCode());
     }
 
     @Bean
     @ConditionalOnMissingBean
-    ManualMetricConfigResolver manualMetricConfigResolver(ReflexTelemetryProperties properties) {
-        return new ManualMetricConfigResolver(properties);
+    MetricConfigResolver metricConfigResolver(
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
+        return new MetricConfigResolver(properties, namingPolicy);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    ManualMetricConfigResolver manualMetricConfigResolver(
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
+        return new ManualMetricConfigResolver(properties, namingPolicy);
     }
 
     @Bean

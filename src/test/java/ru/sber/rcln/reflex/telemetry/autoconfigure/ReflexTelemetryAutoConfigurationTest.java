@@ -15,8 +15,9 @@ import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
-import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
@@ -99,7 +100,7 @@ class ReflexTelemetryAutoConfigurationTest {
         contextRunner
                 .withBean(JdbcMetricSource.class, TestJdbcMetricSource::new)
                 .withPropertyValues(
-                        "reflex.telemetry.metrics.metric-prefix=ci054147",
+                        "reflex.telemetry.system-code=ci05414726",
                         "reflex.telemetry.instrumentation-scope-name=com.example.metrics",
                         "reflex.telemetry.service-name=contracts-api",
                         "reflex.telemetry.otlp.export-interval=PT1M",
@@ -110,7 +111,7 @@ class ReflexTelemetryAutoConfigurationTest {
                     JdbcMetricSource source = context.getBean(JdbcMetricSource.class);
                     ResolvedMetricConfig resolved = resolver.resolve(source);
 
-                    assertThat(properties.getMetrics().getMetricPrefix()).isEqualTo("ci054147");
+                    assertThat(properties.getSystemCode()).isEqualTo("ci05414726");
                     assertThat(properties.getInstrumentationScopeName()).isEqualTo("com.example.metrics");
                     assertThat(properties.getServiceName()).isEqualTo("contracts-api");
                     assertThat(properties.getOtlp().getExportInterval()).isEqualTo(Duration.ofMinutes(1));
@@ -119,7 +120,18 @@ class ReflexTelemetryAutoConfigurationTest {
                     assertThat(properties.getMetrics().getSources().get("documents-by-status").getSuffix())
                             .isEqualTo("documents.current");
                     assertThat(resolved.suffix()).isEqualTo("documents.current");
-                    assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
+                    assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.current");
+                });
+    }
+
+    @Test
+    void shouldCreateNamingPolicyFromSystemCode() {
+        contextRunner
+                .withPropertyValues("reflex.telemetry.system-code=ci05414726")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(ReflexTelemetryNamingPolicy.class);
+                    assertThat(context.getBean(ReflexTelemetryNamingPolicy.class).metricName("orders.created"))
+                            .isEqualTo("ci05414726.orders.created");
                 });
     }
 

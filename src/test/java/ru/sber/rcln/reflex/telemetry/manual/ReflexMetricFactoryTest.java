@@ -7,6 +7,7 @@ import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.UpDownCounterMetric;
 import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
@@ -158,7 +159,7 @@ class ReflexMetricFactoryTest {
         private MetricDefinition definition;
 
         private RecordingConfigResolver() {
-            super(new ReflexTelemetryProperties());
+            super(new ReflexTelemetryProperties(), new ReflexTelemetryNamingPolicy(null));
         }
 
         @Override

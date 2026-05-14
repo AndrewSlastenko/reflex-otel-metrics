@@ -13,7 +13,7 @@ public class MetricConfigResolver {
     private final @NonNull ReflexTelemetryNamingPolicy namingPolicy;
 
     public MetricConfigResolver(@NonNull ReflexTelemetryProperties properties) {
-        this(properties, new ReflexTelemetryNamingPolicy(null));
+        this(properties, new ReflexTelemetryNamingPolicy(properties.getSystemCode()));
     }
 
     public MetricConfigResolver(
@@ -51,7 +51,7 @@ public class MetricConfigResolver {
         return new ResolvedMetricConfig(
                 source.metricId(),
                 enabled,
-                properties.getMetrics().getMetricPrefix() + "." + suffix,
+                namingPolicy.metricName(suffix),
                 suffix,
                 scope,
                 dataSourceRef,

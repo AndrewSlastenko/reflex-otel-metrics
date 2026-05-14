@@ -3,12 +3,18 @@ package ru.sber.rcln.reflex.telemetry.config;
 import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public class ManualMetricConfigResolver {
 
     private final @NonNull ReflexTelemetryProperties properties;
+    private final @NonNull ReflexTelemetryNamingPolicy namingPolicy;
+
+    public ManualMetricConfigResolver(
+            @NonNull ReflexTelemetryProperties properties,
+            @NonNull ReflexTelemetryNamingPolicy namingPolicy) {
+        this.properties = properties;
+        this.namingPolicy = namingPolicy;
+    }
 
     public ResolvedManualMetricConfig resolve(
             String metricId,
@@ -37,7 +43,7 @@ public class ManualMetricConfigResolver {
         return new ResolvedManualMetricConfig(
                 metricId,
                 enabled,
-                properties.getMetrics().getMetricPrefix() + "." + suffix,
+                namingPolicy.metricName(suffix),
                 suffix,
                 scope,
                 kind,

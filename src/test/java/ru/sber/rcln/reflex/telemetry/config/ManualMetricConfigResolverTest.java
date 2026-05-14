@@ -14,10 +14,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ManualMetricConfigResolverTest {
 
+    private static ManualMetricConfigResolver resolver(ReflexTelemetryProperties properties) {
+        return new ManualMetricConfigResolver(properties, new ReflexTelemetryNamingPolicy(properties.getSystemCode()));
+    }
+
     @Test
     void defaultResolutionUsesJavaDefinition() {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
-        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.setSystemCode("ci05414726");
         AttributesSchema attributes = AttributesSchema.builder().required("status").optional("region").build();
         MetricDefinition definition = MetricDefinition.of("documents.by.status")
                 .scope("business")
@@ -28,12 +32,12 @@ class ManualMetricConfigResolverTest {
                 .overflowPolicy(SeriesOverflowPolicy.AGGREGATE_TO_OTHER)
                 .build();
 
-        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+        ResolvedManualMetricConfig resolved = resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, definition);
 
         assertThat(resolved.metricId()).isEqualTo("documents-by-status");
         assertThat(resolved.enabled()).isTrue();
-        assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.by.status");
+        assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.by.status");
         assertThat(resolved.suffix()).isEqualTo("documents.by.status");
         assertThat(resolved.scope()).isEqualTo("business");
         assertThat(resolved.metricKind()).isEqualTo(MetricKind.COUNTER);
@@ -49,7 +53,7 @@ class ManualMetricConfigResolverTest {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setManual(null);
 
-        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+        ResolvedManualMetricConfig resolved = resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build());
 
         assertThat(resolved.suffix()).isEqualTo("documents.by.status");
@@ -58,7 +62,7 @@ class ManualMetricConfigResolverTest {
     @Test
     void yamlRuntimeOverridesAllowedOperationalFieldsOnly() {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
-        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.setSystemCode("ci05414726");
         ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
         runtime.setSuffix("documents.current");
         runtime.setScope("reporting");
@@ -73,11 +77,11 @@ class ManualMetricConfigResolverTest {
                 .overflowPolicy(SeriesOverflowPolicy.AGGREGATE_TO_OTHER)
                 .build();
 
-        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+        ResolvedManualMetricConfig resolved = resolver(properties)
                 .resolve("documents-by-status", MetricKind.GAUGE, definition);
 
         assertThat(resolved.enabled()).isTrue();
-        assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
+        assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.current");
         assertThat(resolved.suffix()).isEqualTo("documents.current");
         assertThat(resolved.scope()).isEqualTo("reporting");
         assertThat(resolved.maxSeries()).isEqualTo(10);
@@ -96,7 +100,7 @@ class ManualMetricConfigResolverTest {
                 .scope("business")
                 .build();
 
-        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+        ResolvedManualMetricConfig resolved = resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, definition);
 
         assertThat(resolved.enabled()).isFalse();
@@ -109,7 +113,7 @@ class ManualMetricConfigResolverTest {
         runtime.setEnabled(Boolean.FALSE);
         properties.getMetrics().getManual().put("documents-by-status", runtime);
 
-        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+        ResolvedManualMetricConfig resolved = resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build());
 
         assertThat(resolved.enabled()).isFalse();
@@ -120,7 +124,7 @@ class ManualMetricConfigResolverTest {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
         properties.getMetrics().setEnabled(false);
 
-        ResolvedManualMetricConfig resolved = new ManualMetricConfigResolver(properties)
+        ResolvedManualMetricConfig resolved = resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build());
 
         assertThat(resolved.enabled()).isFalse();
@@ -128,9 +132,9 @@ class ManualMetricConfigResolverTest {
 
     @Test
     void blankMetricIdIsRejected() {
-        ManualMetricConfigResolver resolver = new ManualMetricConfigResolver(new ReflexTelemetryProperties());
+        ManualMetricConfigResolver manualResolver = resolver(new ReflexTelemetryProperties());
 
-        assertThatThrownBy(() -> resolver.resolve(" ", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
+        assertThatThrownBy(() -> manualResolver.resolve(" ", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("metricId must not be blank");
     }
@@ -142,7 +146,7 @@ class ManualMetricConfigResolverTest {
         runtime.setSuffix(" ");
         properties.getMetrics().getManual().put("documents-by-status", runtime);
 
-        assertThatThrownBy(() -> new ManualMetricConfigResolver(properties)
+        assertThatThrownBy(() -> resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("suffix must not be blank");
@@ -155,7 +159,7 @@ class ManualMetricConfigResolverTest {
         runtime.setScope(" ");
         properties.getMetrics().getManual().put("documents-by-status", runtime);
 
-        assertThatThrownBy(() -> new ManualMetricConfigResolver(properties)
+        assertThatThrownBy(() -> resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("scope must not be blank");
@@ -168,10 +172,25 @@ class ManualMetricConfigResolverTest {
         runtime.setMaxSeries(0);
         properties.getMetrics().getManual().put("documents-by-status", runtime);
 
-        assertThatThrownBy(() -> new ManualMetricConfigResolver(properties)
+        assertThatThrownBy(() -> resolver(properties)
                 .resolve("documents-by-status", MetricKind.COUNTER, MetricDefinition.of("documents.by.status").build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("maxSeries must be greater than zero");
+    }
+
+    @Test
+    void resolvedManualMetricUsesSystemCodeForFullMetricName() {
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
+        properties.setSystemCode("ci05414726");
+        ManualMetricRuntimeProperties runtime = new ManualMetricRuntimeProperties();
+        runtime.setSuffix("orders.created");
+        runtime.setScope("orders");
+        properties.getMetrics().getManual().put("orders-created", runtime);
+
+        ResolvedManualMetricConfig resolved = resolver(properties)
+                .resolve("orders-created", MetricKind.COUNTER, MetricDefinition.of("ignored").scope("orders").build());
+
+        assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.orders.created");
     }
 
     @Test
@@ -203,7 +222,7 @@ class ManualMetricConfigResolverTest {
                 .withProperty("reflex.telemetry.instrumentation-scope-name", "custom.scope")
                 .withProperty("reflex.telemetry.otlp.traces-endpoint", "http://collector:4317")
                 .withProperty("reflex.telemetry.metrics.enabled", "false")
-                .withProperty("reflex.telemetry.metrics.metric-prefix", "ci054147")
+                .withProperty("reflex.telemetry.system-code", "ci05414726")
                 .withProperty("reflex.telemetry.metrics.manual.orders-created.suffix", "orders.created")
                 .withProperty("reflex.telemetry.traces.enabled", "false");
 
@@ -215,7 +234,7 @@ class ManualMetricConfigResolverTest {
         assertThat(properties.getInstrumentationScopeName()).isEqualTo("custom.scope");
         assertThat(properties.getOtlp().getTracesEndpoint()).isEqualTo("http://collector:4317");
         assertThat(properties.getMetrics().isEnabled()).isFalse();
-        assertThat(properties.getMetrics().getMetricPrefix()).isEqualTo("ci054147");
+        assertThat(properties.getSystemCode()).isEqualTo("ci05414726");
         assertThat(properties.getMetrics().getManual().get("orders-created").getSuffix()).isEqualTo("orders.created");
         assertThat(properties.getTraces().isEnabled()).isFalse();
     }

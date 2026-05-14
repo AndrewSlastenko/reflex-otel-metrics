@@ -47,7 +47,7 @@ class MetricConfigResolverTest {
     @Test
     void propertiesShouldOverrideBeanDefaults() {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
-        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.setSystemCode("ci05414726");
         properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
 
         MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
@@ -60,7 +60,7 @@ class MetricConfigResolverTest {
         ResolvedMetricConfig resolved = resolver.resolve(new TestJdbcMetricSource());
 
         assertThat(resolved.enabled()).isFalse();
-        assertThat(resolved.fullMetricName()).isEqualTo("ci054147.documents.current");
+        assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.current");
         assertThat(resolved.dataSourceRef()).isEqualTo("overrideDataSource");
     }
 
@@ -148,7 +148,7 @@ class MetricConfigResolverTest {
 
     private static ReflexTelemetryProperties baseProperties() {
         ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
-        properties.getMetrics().setMetricPrefix("ci054147");
+        properties.setSystemCode("ci05414726");
         properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
         return properties;
     }
