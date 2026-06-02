@@ -1,7 +1,6 @@
 package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
-import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
@@ -25,8 +24,11 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
+import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
@@ -54,7 +56,7 @@ public class ReflexTelemetryAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     ReflexTelemetryNamingPolicy reflexTelemetryNamingPolicy(ReflexTelemetryProperties properties) {
-        return new ReflexTelemetryNamingPolicy(properties.getSystemCode());
+        return new ReflexTelemetryNamingPolicy(properties.getService().getSystemCode());
     }
 
     @Bean
@@ -63,14 +65,6 @@ public class ReflexTelemetryAutoConfiguration {
             ReflexTelemetryProperties properties,
             ReflexTelemetryNamingPolicy namingPolicy) {
         return new MetricConfigResolver(properties, namingPolicy);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    ManualMetricConfigResolver manualMetricConfigResolver(
-            ReflexTelemetryProperties properties,
-            ReflexTelemetryNamingPolicy namingPolicy) {
-        return new ManualMetricConfigResolver(properties, namingPolicy);
     }
 
     @Bean
@@ -109,9 +103,9 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, OpenTelemetry.class})
     OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexTelemetryProperties properties) {
         log.info("Reflex telemetry OTLP metrics temporality preference: {}",
-                properties.getOtlp().getMetricsTemporalityPreference());
+                properties.getMetrics().getTemporalityPreference());
         return OtlpGrpcMetricExporter.builder()
-                .setEndpoint(properties.getOtlp().getMetricsEndpoint())
+                .setEndpoint(endpoint(properties.getMetrics().getEndpoint(), properties))
                 .setTimeout(properties.getOtlp().getExportTimeout())
                 .setAggregationTemporalitySelector(metricsTemporalitySelector(properties))
                 .build();
@@ -123,7 +117,7 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnMissingBean({OtlpGrpcSpanExporter.class, OpenTelemetry.class})
     OtlpGrpcSpanExporter otlpGrpcSpanExporter(ReflexTelemetryProperties properties) {
         return OtlpGrpcSpanExporter.builder()
-                .setEndpoint(properties.getOtlp().getTracesEndpoint())
+                .setEndpoint(endpoint(properties.getTraces().getEndpoint(), properties))
                 .setTimeout(properties.getOtlp().getExportTimeout())
                 .build();
     }
@@ -138,8 +132,9 @@ public class ReflexTelemetryAutoConfiguration {
             ReflexTelemetryNamingPolicy namingPolicy) {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
         applyServiceNameResource(builder, properties, namingPolicy);
+        registerHistogramViews(builder, properties, namingPolicy);
         return builder.registerMetricReader(PeriodicMetricReader.builder(exporter)
-                .setInterval(properties.getOtlp().getExportInterval())
+                .setInterval(properties.getMetrics().getExportInterval())
                 .build())
                 .build();
     }
@@ -184,7 +179,7 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
     Meter meter(OpenTelemetry openTelemetry, ReflexTelemetryProperties properties) {
-        return openTelemetry.getMeter(properties.getInstrumentationScopeName());
+        return openTelemetry.getMeter(properties.getService().getInstrumentationScopeName());
     }
 
     @Bean
@@ -192,7 +187,7 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
     Tracer tracer(OpenTelemetry openTelemetry, ReflexTelemetryProperties properties) {
-        return openTelemetry.getTracer(properties.getInstrumentationScopeName());
+        return openTelemetry.getTracer(properties.getService().getInstrumentationScopeName());
     }
 
     @Bean
@@ -230,11 +225,11 @@ public class ReflexTelemetryAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     ReflexMetricFactory reflexMetricFactory(
-            ManualMetricConfigResolver manualMetricConfigResolver,
+            MetricConfigResolver metricConfigResolver,
             ObjectProvider<OtelInstrumentRegistry> otelInstrumentRegistry,
             AttributeValidator attributeValidator) {
         return new ReflexMetricFactory(
-                manualMetricConfigResolver,
+                metricConfigResolver,
                 otelInstrumentRegistry::getIfAvailable,
                 attributeValidator);
     }
@@ -271,7 +266,7 @@ public class ReflexTelemetryAutoConfiguration {
     private static java.util.Optional<Resource> serviceNameResource(
             ReflexTelemetryProperties properties,
             ReflexTelemetryNamingPolicy namingPolicy) {
-        String serviceName = namingPolicy.serviceName(properties.getServiceName());
+        String serviceName = namingPolicy.serviceName(properties.getService().getName());
         if (serviceName == null) {
             return java.util.Optional.empty();
         }
@@ -281,10 +276,38 @@ public class ReflexTelemetryAutoConfiguration {
     }
 
     private static AggregationTemporalitySelector metricsTemporalitySelector(ReflexTelemetryProperties properties) {
-        return switch (properties.getOtlp().getMetricsTemporalityPreference()) {
+        return switch (properties.getMetrics().getTemporalityPreference()) {
             case DELTA -> AggregationTemporalitySelector.deltaPreferred();
             case CUMULATIVE -> AggregationTemporalitySelector.alwaysCumulative();
             case LOW_MEMORY -> AggregationTemporalitySelector.lowMemory();
         };
+    }
+
+    private static String endpoint(String signalEndpoint, ReflexTelemetryProperties properties) {
+        return hasText(signalEndpoint) ? signalEndpoint : properties.getOtlp().getEndpoint();
+    }
+
+    private static void registerHistogramViews(
+            SdkMeterProviderBuilder builder,
+            ReflexTelemetryProperties properties,
+            ReflexTelemetryNamingPolicy namingPolicy) {
+        properties.getMetrics().getDefinitions().values().stream()
+                .filter(definition -> definition.getKind() == ru.sber.rcln.reflex.telemetry.api.MetricKind.HISTOGRAM)
+                .filter(definition -> hasText(definition.getSuffix()))
+                .filter(definition -> definition.getHistogram() != null
+                        && definition.getHistogram().getBuckets() != null
+                        && !definition.getHistogram().getBuckets().isEmpty())
+                .forEach(definition -> builder.registerView(
+                        InstrumentSelector.builder()
+                                .setName(namingPolicy.metricName(definition.getSuffix()))
+                                .build(),
+                        View.builder()
+                                .setAggregation(Aggregation.explicitBucketHistogram(
+                                        definition.getHistogram().getBuckets()))
+                                .build()));
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

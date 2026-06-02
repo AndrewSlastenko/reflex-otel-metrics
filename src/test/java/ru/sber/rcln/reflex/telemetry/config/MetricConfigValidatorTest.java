@@ -1,16 +1,11 @@
 package ru.sber.rcln.reflex.telemetry.config;
 
-import java.time.Duration;
-import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
-import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
-import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
-import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
-import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
-import java.util.Map;
+import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,48 +13,63 @@ class MetricConfigValidatorTest {
 
     @Test
     void shouldRejectJdbcMetricWithoutDataSourceRef() {
-        ResolvedMetricConfig config = new ResolvedMetricConfig(
-                "documents-by-status",
-                true,
-                "ci05414726.documents.current",
-                "documents.current",
-                "business",
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.GAUGE);
+
+        config = new ResolvedMetricConfig(
+                config.metricId(),
+                config.source(),
+                config.enabled(),
+                config.fullMetricName(),
+                config.suffix(),
+                config.scope(),
+                config.description(),
+                config.unit(),
+                config.attributes(),
                 null,
-                MetricKind.GAUGE,
-                MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(30)),
-                Duration.ofSeconds(45),
-                Duration.ofMinutes(10),
-                Duration.ZERO,
-                500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-        );
+                config.metricKind(),
+                config.schedule(),
+                config.timeout(),
+                config.lockAtMostFor(),
+                config.lockAtLeastFor(),
+                config.maxSeries(),
+                config.overflowPolicy(),
+                config.histogramBuckets());
 
         assertThat(new MetricConfigValidator().validate(config))
-                .containsExactly("Metric 'documents-by-status' requires dataSourceRef");
+                .containsExactly("Metric 'documents-by-status' requires dataSourceRef for JDBC source");
+    }
+
+    @Test
+    void shouldRejectManualMetricWithDataSourceRef() {
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.MANUAL, MetricKind.COUNTER);
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly("Metric 'documents-by-status' must not set dataSourceRef for MANUAL source");
+    }
+
+    @Test
+    void shouldRejectManualMetricWithAggregateToOtherOverflowPolicy() {
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.MANUAL, MetricKind.COUNTER);
+        config = new ResolvedMetricConfig(
+                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.scope(), config.description(), config.unit(), config.attributes(), null,
+                config.metricKind(), config.schedule(), config.timeout(), config.lockAtMostFor(), config.lockAtLeastFor(),
+                config.maxSeries(), SeriesOverflowPolicy.AGGREGATE_TO_OTHER, config.histogramBuckets());
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly(
+                        "Metric 'documents-by-status' does not support AGGREGATE_TO_OTHER overflow policy for MANUAL source; use FAIL or TRUNCATE"
+                );
     }
 
     @Test
     void shouldRejectCronScheduleWithFixedDelay() {
-        ResolvedMetricConfig config = new ResolvedMetricConfig(
-                "documents-by-status",
-                true,
-                "ci05414726.documents.current",
-                "documents.current",
-                "business",
-                "businessReplicaDataSource",
-                MetricKind.GAUGE,
-                new MetricScheduleSettings(
-                        MetricScheduleSettings.Mode.CRON,
-                        Duration.ofMinutes(5),
-                        "0 * * * *",
-                        Duration.ofSeconds(30)
-                ),
-                Duration.ofSeconds(45),
-                Duration.ofMinutes(10),
-                Duration.ZERO,
-                500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-        );
+        ResolvedMetricConfig config = withSchedule(new MetricScheduleSettings(
+                MetricScheduleSettings.Mode.CRON,
+                Duration.ofMinutes(5),
+                "0 * * * *",
+                Duration.ofSeconds(30)
+        ));
 
         assertThat(new MetricConfigValidator().validate(config))
                 .containsExactly("Metric 'documents-by-status' must not set fixedDelay for CRON mode");
@@ -67,56 +77,20 @@ class MetricConfigValidatorTest {
 
     @Test
     void shouldRejectFixedDelayScheduleWithCron() {
-        ResolvedMetricConfig config = new ResolvedMetricConfig(
-                "documents-by-status",
-                true,
-                "ci05414726.documents.current",
-                "documents.current",
-                "business",
-                "businessReplicaDataSource",
-                MetricKind.GAUGE,
-                new MetricScheduleSettings(
-                        MetricScheduleSettings.Mode.FIXED_DELAY,
-                        Duration.ofMinutes(5),
-                        "0 * * * *",
-                        Duration.ofSeconds(30)
-                ),
-                Duration.ofSeconds(45),
-                Duration.ofMinutes(10),
-                Duration.ZERO,
-                500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-        );
+        ResolvedMetricConfig config = withSchedule(new MetricScheduleSettings(
+                MetricScheduleSettings.Mode.FIXED_DELAY,
+                Duration.ofMinutes(5),
+                "0 * * * *",
+                Duration.ofSeconds(30)
+        ));
 
         assertThat(new MetricConfigValidator().validate(config))
                 .containsExactly("Metric 'documents-by-status' must not set cron for FIXED_DELAY mode");
     }
 
     @Test
-    void shouldRejectNullLockDurations() {
-        ResolvedMetricConfig config = baseConfig(null, null);
-
-        assertThat(new MetricConfigValidator().validate(config))
-                .containsExactly(
-                        "Metric 'documents-by-status' requires lockAtMostFor",
-                        "Metric 'documents-by-status' requires lockAtLeastFor"
-                );
-    }
-
-    @Test
-    void shouldRejectNegativeLockDurations() {
-        ResolvedMetricConfig config = baseConfig(Duration.ofSeconds(-1), Duration.ofSeconds(-2));
-
-        assertThat(new MetricConfigValidator().validate(config))
-                .containsExactly(
-                        "Metric 'documents-by-status' requires lockAtMostFor to be non-negative",
-                        "Metric 'documents-by-status' requires lockAtLeastFor to be non-negative"
-                );
-    }
-
-    @Test
     void shouldRejectLockAtLeastForGreaterThanLockAtMostFor() {
-        ResolvedMetricConfig config = baseConfig(Duration.ofSeconds(1), Duration.ofSeconds(2));
+        ResolvedMetricConfig config = withLocks(Duration.ofSeconds(1), Duration.ofSeconds(2));
 
         assertThat(new MetricConfigValidator().validate(config))
                 .containsExactly(
@@ -128,10 +102,14 @@ class MetricConfigValidatorTest {
     void shouldRejectHistogramAggregateOverflowPolicy() {
         ResolvedMetricConfig config = new ResolvedMetricConfig(
                 "documents-latency",
+                ReflexTelemetryProperties.MetricSourceType.JDBC,
                 true,
                 "ci05414726.documents.latency",
                 "documents.latency",
                 "business",
+                null,
+                "ms",
+                AttributesSchema.empty(),
                 "businessReplicaDataSource",
                 MetricKind.HISTOGRAM,
                 MetricScheduleSettings.fixedDelay(Duration.ofMinutes(1), Duration.ZERO),
@@ -139,8 +117,8 @@ class MetricConfigValidatorTest {
                 Duration.ofMinutes(10),
                 Duration.ZERO,
                 500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-        );
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
+                List.of());
 
         assertThat(new MetricConfigValidator().validate(config))
                 .containsExactly(
@@ -149,131 +127,87 @@ class MetricConfigValidatorTest {
     }
 
     @Test
-    void runtimeCronSwitchShouldValidateAgainstFixedDelayDefault() {
-        ReflexTelemetryProperties properties = baseProperties();
-        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
-        runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.CRON);
-        runtimeProperties.setCron("0 * * * *");
-        properties.getMetrics().getSources().put("documents-by-status", runtimeProperties);
+    void shouldRejectNonIncreasingHistogramBuckets() {
+        ResolvedMetricConfig config = withHistogramBuckets(List.of(1d, 5d, 5d));
 
-        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new FixedDelayMetricSource());
-
-        assertThat(new MetricConfigValidator().validate(resolved)).isEmpty();
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly("Metric 'documents-by-status' requires histogram buckets to be strictly increasing");
     }
 
     @Test
-    void runtimeFixedDelaySwitchShouldValidateAgainstCronDefault() {
-        ReflexTelemetryProperties properties = baseProperties();
-        MetricRuntimeProperties runtimeProperties = new MetricRuntimeProperties();
-        runtimeProperties.setScheduleMode(MetricScheduleSettings.Mode.FIXED_DELAY);
-        runtimeProperties.setFixedDelay(Duration.ofMinutes(2));
-        properties.getMetrics().getSources().put("cron-metric", runtimeProperties);
-
-        ResolvedMetricConfig resolved = new MetricConfigResolver(properties).resolve(new CronMetricSource());
-
-        assertThat(new MetricConfigValidator().validate(resolved)).isEmpty();
-    }
-
-    private static ResolvedMetricConfig baseConfig(Duration lockAtMostFor, Duration lockAtLeastFor) {
-        return new ResolvedMetricConfig(
+    void shouldRejectHistogramBucketsOnNonHistogramMetric() {
+        ResolvedMetricConfig config = new ResolvedMetricConfig(
                 "documents-by-status",
+                ReflexTelemetryProperties.MetricSourceType.JDBC,
                 true,
-                "ci05414726.documents.current",
-                "documents.current",
+                "ci05414726.documents.by-status",
+                "documents.by-status",
                 "business",
+                null,
+                "1",
+                AttributesSchema.empty(),
                 "businessReplicaDataSource",
                 MetricKind.GAUGE,
                 MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(30)),
                 Duration.ofSeconds(45),
-                lockAtMostFor,
-                lockAtLeastFor,
+                Duration.ofMinutes(10),
+                Duration.ZERO,
                 500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-        );
+                SeriesOverflowPolicy.FAIL,
+                List.of(1d, 2d));
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly("Metric 'documents-by-status' must not set histogram buckets for GAUGE kind");
     }
 
-    private static ReflexTelemetryProperties baseProperties() {
-        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
-        properties.setSystemCode("ci05414726");
-        properties.getMetrics().getScopes().put("business", new ReflexTelemetryProperties.ScopeProperties(true));
-        return properties;
+    private static ResolvedMetricConfig baseConfig(
+            ReflexTelemetryProperties.MetricSourceType source,
+            MetricKind kind) {
+        return new ResolvedMetricConfig(
+                "documents-by-status",
+                source,
+                true,
+                "ci05414726.documents.by-status",
+                "documents.by-status",
+                "business",
+                null,
+                "1",
+                AttributesSchema.empty(),
+                "businessReplicaDataSource",
+                kind,
+                MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(30)),
+                Duration.ofSeconds(45),
+                Duration.ofMinutes(10),
+                Duration.ZERO,
+                500,
+                SeriesOverflowPolicy.FAIL,
+                List.of());
     }
 
-    private static final class FixedDelayMetricSource implements JdbcMetricSource {
-
-        @Override
-        public String metricId() {
-            return "documents-by-status";
-        }
-
-        @Override
-        public MetricDefinitionDefaults defaults() {
-            return new MetricDefinitionDefaults(
-                    "documents.by.status",
-                    MetricKind.GAUGE,
-                    "business",
-                    "businessReplicaDataSource",
-                    new MetricScheduleDefaults(
-                            MetricScheduleDefaults.Mode.FIXED_DELAY,
-                            Duration.ofMinutes(5),
-                            null,
-                            Duration.ofSeconds(10)
-                    ),
-                    Duration.ofSeconds(30),
-                    Duration.ofMinutes(10),
-                    Duration.ZERO,
-                    500,
-                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-            );
-        }
-
-        @Override
-        public QueryDefinition queryDefinition() {
-            return new QueryDefinition("select 1");
-        }
-
-        @Override
-        public RowMapper<MetricPoint> rowMapper() {
-            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
-        }
+    private static ResolvedMetricConfig withSchedule(MetricScheduleSettings schedule) {
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.GAUGE);
+        return new ResolvedMetricConfig(
+                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
+                config.metricKind(), schedule, config.timeout(), config.lockAtMostFor(), config.lockAtLeastFor(),
+                config.maxSeries(), config.overflowPolicy(), config.histogramBuckets());
     }
 
-    private static final class CronMetricSource implements JdbcMetricSource {
+    private static ResolvedMetricConfig withLocks(Duration lockAtMostFor, Duration lockAtLeastFor) {
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.GAUGE);
+        return new ResolvedMetricConfig(
+                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
+                config.metricKind(), config.schedule(), config.timeout(), lockAtMostFor, lockAtLeastFor,
+                config.maxSeries(), config.overflowPolicy(), config.histogramBuckets());
+    }
 
-        @Override
-        public String metricId() {
-            return "cron-metric";
-        }
-
-        @Override
-        public MetricDefinitionDefaults defaults() {
-            return new MetricDefinitionDefaults(
-                    "cron.metric",
-                    MetricKind.GAUGE,
-                    "business",
-                    "businessReplicaDataSource",
-                    new MetricScheduleDefaults(
-                            MetricScheduleDefaults.Mode.CRON,
-                            null,
-                            "0 0 * * *",
-                            Duration.ofSeconds(10)
-                    ),
-                    Duration.ofSeconds(30),
-                    Duration.ofMinutes(10),
-                    Duration.ZERO,
-                    500,
-                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER
-            );
-        }
-
-        @Override
-        public QueryDefinition queryDefinition() {
-            return new QueryDefinition("select 1");
-        }
-
-        @Override
-        public RowMapper<MetricPoint> rowMapper() {
-            return (rs, rowNum) -> new MetricPoint(1L, Map.of());
-        }
+    private static ResolvedMetricConfig withHistogramBuckets(List<Double> buckets) {
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.HISTOGRAM);
+        return new ResolvedMetricConfig(
+                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
+                config.metricKind(), config.schedule(), config.timeout(), config.lockAtMostFor(), config.lockAtLeastFor(),
+                config.maxSeries(), config.overflowPolicy(), buckets);
     }
 }

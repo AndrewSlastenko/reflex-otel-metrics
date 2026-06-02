@@ -1,7 +1,7 @@
 package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
-import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.internal.HandledExceptionLogging;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -15,13 +15,13 @@ public class DefaultCounterMetric implements CounterMetric {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultCounterMetric.class);
 
-    private final ResolvedManualMetricConfig config;
+    private final ResolvedMetricConfig config;
     private final LongCounter instrument;
     private final AttributeValidator attributeValidator;
     private final ManualSeriesTracker seriesTracker;
 
     public DefaultCounterMetric(
-            @NonNull ResolvedManualMetricConfig config,
+            @NonNull ResolvedMetricConfig config,
             @NonNull LongCounter instrument,
             @NonNull AttributeValidator attributeValidator) {
         this.config = config;

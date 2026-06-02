@@ -1,21 +1,14 @@
 package ru.sber.rcln.reflex.telemetry.autoconfigure;
 
-import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
-import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
-import ru.sber.rcln.reflex.telemetry.api.MetricDefinitionDefaults;
-import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
-import ru.sber.rcln.reflex.telemetry.api.MetricScheduleDefaults;
 import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
 import ru.sber.rcln.reflex.telemetry.api.SpanSpec;
 import ru.sber.rcln.reflex.telemetry.api.TraceCarrier;
-import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.TraceOperations;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
-import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
@@ -50,7 +43,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,7 +77,7 @@ class ReflexTelemetryAutoConfigurationTest {
         when(openTelemetry.getTracer("custom.scope")).thenReturn(tracer);
 
         contextRunner
-                .withPropertyValues("reflex.telemetry.instrumentation-scope-name=custom.scope")
+                .withPropertyValues("reflex.telemetry.service.instrumentation-scope-name=custom.scope")
                 .withBean(OpenTelemetry.class, () -> openTelemetry)
                 .run(context -> {
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
@@ -102,25 +94,24 @@ class ReflexTelemetryAutoConfigurationTest {
         contextRunner
                 .withBean(JdbcMetricSource.class, TestJdbcMetricSource::new)
                 .withPropertyValues(
-                        "reflex.telemetry.system-code=ci05414726",
-                        "reflex.telemetry.instrumentation-scope-name=com.example.metrics",
-                        "reflex.telemetry.service-name=contracts-api",
-                        "reflex.telemetry.otlp.export-interval=PT1M",
-                        "reflex.telemetry.metrics.sources.documents-by-status.suffix=documents.current")
+                        "reflex.telemetry.service.system-code=ci05414726",
+                        "reflex.telemetry.service.instrumentation-scope-name=com.example.metrics",
+                        "reflex.telemetry.service.name=contracts-api",
+                        "reflex.telemetry.metrics.export-interval=PT1M",
+                        "reflex.telemetry.metrics.definitions.documents-by-status.source=JDBC",
+                        "reflex.telemetry.metrics.definitions.documents-by-status.kind=GAUGE",
+                        "reflex.telemetry.metrics.definitions.documents-by-status.suffix=documents.current",
+                        "reflex.telemetry.metrics.definitions.documents-by-status.data-source-ref=businessReplicaDataSource")
                 .run(context -> {
                     ReflexTelemetryProperties properties = context.getBean(ReflexTelemetryProperties.class);
                     MetricConfigResolver resolver = context.getBean(MetricConfigResolver.class);
                     JdbcMetricSource source = context.getBean(JdbcMetricSource.class);
                     ResolvedMetricConfig resolved = resolver.resolve(source);
 
-                    assertThat(properties.getSystemCode()).isEqualTo("ci05414726");
-                    assertThat(properties.getInstrumentationScopeName()).isEqualTo("com.example.metrics");
-                    assertThat(properties.getServiceName()).isEqualTo("contracts-api");
-                    assertThat(properties.getOtlp().getExportInterval()).isEqualTo(Duration.ofMinutes(1));
-                    assertThat(properties.getMetrics().getSources())
-                            .containsKey("documents-by-status");
-                    assertThat(properties.getMetrics().getSources().get("documents-by-status").getSuffix())
-                            .isEqualTo("documents.current");
+                    assertThat(properties.getService().getSystemCode()).isEqualTo("ci05414726");
+                    assertThat(properties.getService().getInstrumentationScopeName()).isEqualTo("com.example.metrics");
+                    assertThat(properties.getService().getName()).isEqualTo("contracts-api");
+                    assertThat(properties.getMetrics().getDefinitions()).containsKey("documents-by-status");
                     assertThat(resolved.suffix()).isEqualTo("documents.current");
                     assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.current");
                 });
@@ -129,7 +120,7 @@ class ReflexTelemetryAutoConfigurationTest {
     @Test
     void shouldCreateNamingPolicyFromSystemCode() {
         contextRunner
-                .withPropertyValues("reflex.telemetry.system-code=ci05414726")
+                .withPropertyValues("reflex.telemetry.service.system-code=ci05414726")
                 .run(context -> {
                     assertThat(context).hasSingleBean(ReflexTelemetryNamingPolicy.class);
                     assertThat(context.getBean(ReflexTelemetryNamingPolicy.class).metricName("orders.created"))
@@ -148,7 +139,7 @@ class ReflexTelemetryAutoConfigurationTest {
     @Test
     void shouldApplyConfiguredMetricsTemporalityPreference() {
         contextRunner
-                .withPropertyValues("reflex.telemetry.otlp.metrics-temporality-preference=CUMULATIVE")
+                .withPropertyValues("reflex.telemetry.metrics.temporality-preference=CUMULATIVE")
                 .run(context -> assertThat(context.getBean(OtlpGrpcMetricExporter.class)
                         .getAggregationTemporality(InstrumentType.HISTOGRAM))
                         .isEqualTo(AggregationTemporality.CUMULATIVE));
@@ -158,8 +149,8 @@ class ReflexTelemetryAutoConfigurationTest {
     void shouldApplyConfiguredServiceNameToStarterSdkResources() {
         contextRunner
                 .withPropertyValues(
-                        "reflex.telemetry.system-code=ci05414726",
-                        "reflex.telemetry.service-name=contracts-api")
+                        "reflex.telemetry.service.system-code=ci05414726",
+                        "reflex.telemetry.service.name=contracts-api")
                 .run(context -> {
                     assertThat(serviceName(context.getBean(SdkTracerProvider.class))).isEqualTo("ci05414726_contracts-api");
                     assertThat(serviceName(context.getBean(SdkMeterProvider.class))).isEqualTo("ci05414726_contracts-api");
@@ -170,8 +161,8 @@ class ReflexTelemetryAutoConfigurationTest {
     void shouldNotPrefixServiceNameTwice() {
         contextRunner
                 .withPropertyValues(
-                        "reflex.telemetry.system-code=ci05414726",
-                        "reflex.telemetry.service-name=ci05414726_contracts-api")
+                        "reflex.telemetry.service.system-code=ci05414726",
+                        "reflex.telemetry.service.name=ci05414726_contracts-api")
                 .run(context -> {
                     assertThat(serviceName(context.getBean(SdkTracerProvider.class)))
                             .isEqualTo("ci05414726_contracts-api");
@@ -183,7 +174,7 @@ class ReflexTelemetryAutoConfigurationTest {
     @Test
     void shouldKeepDefaultServiceNameResourceWhenConfiguredServiceNameIsBlank() {
         contextRunner
-                .withPropertyValues("reflex.telemetry.service-name=  ")
+                .withPropertyValues("reflex.telemetry.service.name=  ")
                 .run(context -> {
                     assertThat(serviceName(context.getBean(SdkTracerProvider.class))).isEqualTo(defaultServiceName());
                     assertThat(serviceName(context.getBean(SdkMeterProvider.class))).isEqualTo(defaultServiceName());
@@ -195,7 +186,7 @@ class ReflexTelemetryAutoConfigurationTest {
         contextRunner
                 .withBean(OpenTelemetry.class, OpenTelemetry::noop)
                 .run(context -> {
-                    assertThat(context).hasSingleBean(ManualMetricConfigResolver.class);
+                    assertThat(context).hasSingleBean(MetricConfigResolver.class);
                     assertThat(context).hasSingleBean(AttributeValidator.class);
                     assertThat(context).hasSingleBean(ReflexMetricFactory.class);
                 });
@@ -266,6 +257,17 @@ class ReflexTelemetryAutoConfigurationTest {
     void shouldAllowMultipleManualCounterMetricBeansWithNamesAndQualifiers() {
         contextRunner
                 .withBean(OpenTelemetry.class, OpenTelemetry::noop)
+                .withPropertyValues(
+                        "reflex.telemetry.metrics.definitions.orders-created.source=MANUAL",
+                        "reflex.telemetry.metrics.definitions.orders-created.kind=COUNTER",
+                        "reflex.telemetry.metrics.definitions.orders-created.suffix=orders.created",
+                        "reflex.telemetry.metrics.definitions.orders-created.description=Orders created",
+                        "reflex.telemetry.metrics.definitions.orders-created.unit=1",
+                        "reflex.telemetry.metrics.definitions.orders-failed.source=MANUAL",
+                        "reflex.telemetry.metrics.definitions.orders-failed.kind=COUNTER",
+                        "reflex.telemetry.metrics.definitions.orders-failed.suffix=orders.failed",
+                        "reflex.telemetry.metrics.definitions.orders-failed.description=Orders failed",
+                        "reflex.telemetry.metrics.definitions.orders-failed.unit=1")
                 .withUserConfiguration(ManualCounterMetricConfiguration.class)
                 .run(context -> {
                     assertThat(context).hasBean("ordersCreatedMetric");
@@ -316,6 +318,14 @@ class ReflexTelemetryAutoConfigurationTest {
                         TestLibraryTelemetryAutoConfiguration.class,
                         TestLibraryFallbackAutoConfiguration.class))
                 .withBean(OpenTelemetry.class, OpenTelemetry::noop)
+                .withPropertyValues(
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.source=MANUAL",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.kind=COUNTER",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.suffix=test.library.operation.started",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.scope=test-library",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.description=Started test library operations",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.unit=1",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.attributes.required[0]=type")
                 .run(context -> {
                     assertThat(context).hasSingleBean(ReflexMetricFactory.class);
                     assertThat(context).hasSingleBean(TestLibraryMetrics.class);
@@ -332,25 +342,6 @@ class ReflexTelemetryAutoConfigurationTest {
         @Override
         public String metricId() {
             return "documents-by-status";
-        }
-
-        @Override
-        public MetricDefinitionDefaults defaults() {
-            return new MetricDefinitionDefaults(
-                    "documents.by-status",
-                    MetricKind.UP_DOWN_COUNTER,
-                    "business",
-                    "businessReplicaDataSource",
-                    new MetricScheduleDefaults(
-                            MetricScheduleDefaults.Mode.FIXED_DELAY,
-                            Duration.ofMinutes(5),
-                            null,
-                            Duration.ofSeconds(30)),
-                    Duration.ofSeconds(30),
-                    Duration.ofMinutes(2),
-                    Duration.ofSeconds(10),
-                    500,
-                    SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
         }
 
         @Override
@@ -389,16 +380,12 @@ class ReflexTelemetryAutoConfigurationTest {
 
         @Bean
         CounterMetric ordersCreatedMetric(ReflexMetricFactory metricFactory) {
-            return metricFactory.counter(
-                    "orders-created",
-                    MetricDefinition.of("orders.created").description("Orders created").unit("1").build());
+            return metricFactory.counter("orders-created");
         }
 
         @Bean
         CounterMetric ordersFailedMetric(ReflexMetricFactory metricFactory) {
-            return metricFactory.counter(
-                    "orders-failed",
-                    MetricDefinition.of("orders.failed").description("Orders failed").unit("1").build());
+            return metricFactory.counter("orders-failed");
         }
 
         @Bean
@@ -431,16 +418,7 @@ class ReflexTelemetryAutoConfigurationTest {
         private final CounterMetric operationStarted;
 
         private ReflexTestLibraryMetrics(ReflexMetricFactory metricFactory) {
-            this.operationStarted = metricFactory.counter(
-                    "test-library-operation-started",
-                    MetricDefinition.of("test.library.operation.started")
-                            .scope("test-library")
-                            .description("Started test library operations")
-                            .unit("1")
-                            .attributes(AttributesSchema.builder()
-                                    .required("type")
-                                    .build())
-                            .build());
+            this.operationStarted = metricFactory.counter("test-library-operation-started");
         }
 
         @Override

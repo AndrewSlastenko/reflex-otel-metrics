@@ -1,7 +1,7 @@
 package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
-import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.internal.HandledExceptionLogging;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -15,13 +15,13 @@ public class DefaultGaugeMetric implements GaugeMetric {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultGaugeMetric.class);
 
-    private final ResolvedManualMetricConfig config;
+    private final ResolvedMetricConfig config;
     private final LongGauge instrument;
     private final AttributeValidator attributeValidator;
     private final ManualSeriesTracker seriesTracker;
 
     public DefaultGaugeMetric(
-            @NonNull ResolvedManualMetricConfig config,
+            @NonNull ResolvedMetricConfig config,
             @NonNull LongGauge instrument,
             @NonNull AttributeValidator attributeValidator) {
         this.config = config;

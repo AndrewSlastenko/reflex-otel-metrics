@@ -16,7 +16,11 @@ public class OtelMetricPublisher {
 
     public void publish(@NonNull ResolvedMetricConfig config, @NonNull List<MetricPoint> points) {
 
-        MetricInstrumentWriter writer = registry.getOrCreateWriter(config.fullMetricName(), config.metricKind());
+        MetricInstrumentWriter writer = registry.getOrCreateWriter(
+                config.fullMetricName(),
+                config.metricKind(),
+                config.description(),
+                config.unit());
         for (MetricPoint point : points) {
             Attributes attributes = toAttributes(point.attributes());
             writer.record(point, attributes);

@@ -1,8 +1,10 @@
 package ru.sber.rcln.reflex.telemetry.runtime;
 
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.config.MetricScheduleSettings;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import org.junit.jupiter.api.Test;
 
@@ -53,10 +55,14 @@ class MetricSchedulerRegistrarTest {
     private static ResolvedMetricConfig fixedDelayConfig() {
         return new ResolvedMetricConfig(
                 "documents-by-status",
+                ReflexTelemetryProperties.MetricSourceType.JDBC,
                 true,
                 "ci054147.documents.current",
                 "documents.current",
                 "business",
+                "Documents current",
+                "1",
+                AttributesSchema.empty(),
                 "businessReplicaDataSource",
                 MetricKind.UP_DOWN_COUNTER,
                 MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(30)),
@@ -64,17 +70,22 @@ class MetricSchedulerRegistrarTest {
                 Duration.ofMinutes(10),
                 Duration.ZERO,
                 500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
+                java.util.List.of()
         );
     }
 
     private static ResolvedMetricConfig cronConfig() {
         return new ResolvedMetricConfig(
                 "cron-metric",
+                ReflexTelemetryProperties.MetricSourceType.JDBC,
                 true,
                 "ci054147.cron.metric",
                 "cron.metric",
                 "business",
+                "Cron metric",
+                "1",
+                AttributesSchema.empty(),
                 "businessReplicaDataSource",
                 MetricKind.GAUGE,
                 new MetricScheduleSettings(
@@ -87,7 +98,8 @@ class MetricSchedulerRegistrarTest {
                 Duration.ofMinutes(10),
                 Duration.ZERO,
                 500,
-                SeriesOverflowPolicy.AGGREGATE_TO_OTHER
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
+                java.util.List.of()
         );
     }
 }

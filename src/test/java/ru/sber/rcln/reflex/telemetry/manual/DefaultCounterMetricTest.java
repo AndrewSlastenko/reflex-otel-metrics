@@ -4,7 +4,8 @@ import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
-import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -122,19 +123,26 @@ class DefaultCounterMetricTest {
         assertThat(instrument.callCount).isZero();
     }
 
-    private static ResolvedManualMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
-        return new ResolvedManualMetricConfig(
+    private static ResolvedMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
+        return new ResolvedMetricConfig(
                 "orders-created",
+                ReflexTelemetryProperties.MetricSourceType.MANUAL,
                 enabled,
                 "reflex.orders.created",
                 "orders.created",
                 ReflexMetricScopes.MANUAL,
-                MetricKind.COUNTER,
                 null,
                 null,
                 attributes,
+                null,
+                MetricKind.COUNTER,
+                null,
+                null,
+                null,
+                null,
                 maxSeries,
-                SeriesOverflowPolicy.FAIL);
+                SeriesOverflowPolicy.FAIL,
+                java.util.List.of());
     }
 
     private static final class RecordingLongCounter implements LongCounter {

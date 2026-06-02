@@ -1,7 +1,11 @@
 package ru.sber.rcln.reflex.telemetry.config;
 
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,25 +20,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ReflexTelemetryProperties {
 
     private boolean enabled = true;
-    private String instrumentationScopeName = "ru.sber.rcln.reflex.telemetry";
-    private String serviceName;
-    private String systemCode;
+    private ServiceProperties service = new ServiceProperties();
     private OtlpProperties otlp = new OtlpProperties();
     private MetricsProperties metrics = new MetricsProperties();
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private TraceProperties traces = new TraceProperties();
 
-    public void setMetrics(MetricsProperties metrics) {
-        this.metrics = metrics != null ? metrics : new MetricsProperties();
+    public void setService(ServiceProperties service) {
+        this.service = service != null ? service : new ServiceProperties();
     }
 
     public void setOtlp(OtlpProperties otlp) {
         this.otlp = otlp != null ? otlp : new OtlpProperties();
     }
 
-    public TraceProperties getTraces() {
-        return traces;
+    public void setMetrics(MetricsProperties metrics) {
+        this.metrics = metrics != null ? metrics : new MetricsProperties();
     }
 
     public void setTraces(TraceProperties traces) {
@@ -43,42 +43,40 @@ public class ReflexTelemetryProperties {
 
     @Getter
     @Setter
-    public static class MetricsProperties {
+    public static class ServiceProperties {
 
-        private boolean enabled = true;
-        private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
-        private Map<String, MetricRuntimeProperties> sources = new LinkedHashMap<>();
-        @Setter(AccessLevel.NONE)
-        private Map<String, ManualMetricRuntimeProperties> manual = new LinkedHashMap<>();
-
-        public void setScopes(Map<String, ScopeProperties> scopes) {
-            this.scopes = scopes != null ? scopes : new LinkedHashMap<>();
-        }
-
-        public void setSources(Map<String, MetricRuntimeProperties> sources) {
-            this.sources = sources != null ? sources : new LinkedHashMap<>();
-        }
-
-        public void setManual(Map<String, ManualMetricRuntimeProperties> manual) {
-            this.manual = manual != null ? manual : new LinkedHashMap<>();
-        }
+        private String systemCode;
+        private String name;
+        private String instrumentationScopeName = "ru.sber.rcln.reflex.telemetry";
     }
 
     @Getter
     @Setter
     public static class OtlpProperties {
 
-        private String metricsEndpoint = "http://localhost:4317";
-        private String tracesEndpoint = "http://localhost:4317";
+        private String endpoint = "http://localhost:4317";
         private Duration exportTimeout = Duration.ofSeconds(10);
-        private Duration exportInterval = Duration.ofMinutes(1);
-        private MetricsTemporalityPreference metricsTemporalityPreference = MetricsTemporalityPreference.DELTA;
     }
 
-    public enum MetricsTemporalityPreference {
-        DELTA,
-        CUMULATIVE,
-        LOW_MEMORY
+    @Getter
+    @Setter
+    public static class MetricsProperties {
+
+        private boolean enabled = true;
+        private String endpoint;
+        private Duration exportInterval = Duration.ofMinutes(1);
+        private MetricsTemporalityPreference temporalityPreference = MetricsTemporalityPreference.DELTA;
+        private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
+        @Setter(AccessLevel.NONE)
+        private Map<String, MetricDefinitionProperties> definitions = new LinkedHashMap<>();
+
+        public void setScopes(Map<String, ScopeProperties> scopes) {
+            this.scopes = scopes != null ? scopes : new LinkedHashMap<>();
+        }
+
+        public void setDefinitions(Map<String, MetricDefinitionProperties> definitions) {
+            this.definitions = definitions != null ? definitions : new LinkedHashMap<>();
+        }
     }
 
     @Getter
@@ -86,6 +84,80 @@ public class ReflexTelemetryProperties {
     public static class TraceProperties {
 
         private boolean enabled = true;
+        private String endpoint;
+        private TracePropagation propagation = TracePropagation.W3C;
+    }
+
+    @Getter
+    @Setter
+    public static class MetricDefinitionProperties {
+
+        private MetricSourceType source;
+        private MetricKind kind;
+        private Boolean enabled;
+        private String suffix;
+        private String scope;
+        private String description;
+        private String unit;
+        private AttributeSchemaProperties attributes = new AttributeSchemaProperties();
+        private HistogramProperties histogram = new HistogramProperties();
+        private String dataSourceRef;
+        private ScheduleProperties schedule = new ScheduleProperties();
+        private Duration timeout = Duration.ofSeconds(30);
+        private Duration lockAtMostFor = Duration.ofMinutes(2);
+        private Duration lockAtLeastFor = Duration.ZERO;
+        private Integer maxSeries = 500;
+        private SeriesOverflowPolicy overflowPolicy = SeriesOverflowPolicy.FAIL;
+
+        public void setAttributes(AttributeSchemaProperties attributes) {
+            this.attributes = attributes != null ? attributes : new AttributeSchemaProperties();
+        }
+
+        public void setHistogram(HistogramProperties histogram) {
+            this.histogram = histogram != null ? histogram : new HistogramProperties();
+        }
+
+        public void setSchedule(ScheduleProperties schedule) {
+            this.schedule = schedule != null ? schedule : new ScheduleProperties();
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class AttributeSchemaProperties {
+
+        private List<String> required = new ArrayList<>();
+        private List<String> optional = new ArrayList<>();
+        private boolean rejectUnknown = true;
+
+        public void setRequired(List<String> required) {
+            this.required = required != null ? required : new ArrayList<>();
+        }
+
+        public void setOptional(List<String> optional) {
+            this.optional = optional != null ? optional : new ArrayList<>();
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class HistogramProperties {
+
+        private List<Double> buckets = new ArrayList<>();
+
+        public void setBuckets(List<Double> buckets) {
+            this.buckets = buckets != null ? buckets : new ArrayList<>();
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class ScheduleProperties {
+
+        private MetricScheduleSettings.Mode mode = MetricScheduleSettings.Mode.FIXED_DELAY;
+        private Duration fixedDelay = Duration.ofMinutes(1);
+        private String cron;
+        private Duration initialDelay = Duration.ZERO;
     }
 
     @Getter
@@ -95,5 +167,20 @@ public class ReflexTelemetryProperties {
     public static class ScopeProperties {
 
         private boolean enabled = true;
+    }
+
+    public enum MetricSourceType {
+        MANUAL,
+        JDBC
+    }
+
+    public enum MetricsTemporalityPreference {
+        DELTA,
+        CUMULATIVE,
+        LOW_MEMORY
+    }
+
+    public enum TracePropagation {
+        W3C
     }
 }

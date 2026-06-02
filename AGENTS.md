@@ -23,7 +23,7 @@
 ## Boilerplate, Lombok, MapStruct
 
 1. **Меньше шума, тот же смысл** — не размножать ручные геттеры/конструкторы/проверки на `null`, если тот же эффект даёт уже принятый в модуле приём (например `record` для простого носителя данных, делегирование в существующий резолвер).
-2. **Lombok** — по умолчанию уместен там, где он уже встречается в похожих классах: `@RequiredArgsConstructor` + `final` поля для сервисов и компонентов, `@NonNull` на параметрах и полях, `@Getter`/`@Setter` (и вложенные классы) для `@ConfigurationProperties`, `@Builder` для составных DTO в духе `MetricDefinition`. Не подмешивать Lombok в файл «ради одной аннотации», если соседние классы того же слоя написаны без него — выровнять стиль с окружением важнее, чем максимум аннотаций.
+2. **Lombok** — по умолчанию уместен там, где он уже встречается в похожих классах: `@RequiredArgsConstructor` + `final` поля для сервисов и компонентов, `@NonNull` на параметрах и полях, `@Getter`/`@Setter` (и вложенные классы) для `@ConfigurationProperties`. Не подмешивать Lombok в файл «ради одной аннотации», если соседние классы того же слоя написаны без него — выровнять стиль с окружением важнее, чем максимум аннотаций.
 3. **Публичный `api`** — не усложнять невидимыми для пользователя библиотеки генерациями без нужды; если добавляете Lombok на тип из `api`, соблюдайте ту же модель, что у существующих типов (например builder-only там, где так уже сделано).
 4. **MapStruct** — зависимость и процессоры уже в `pom.xml` (в т.ч. `lombok-mapstruct-binding`). Имеет смысл **вводить мапперы**, когда появляется устойчивое, повторяемое преобразование между двумя слоями типов (например внутренние модели конфигурации ↔ resolved view), а не ради пары полей — иначе достаточно явного кода или фабрики. Новые `@Mapper` — компилируемые, с понятным именем и пакетом рядом с типами, которые связывают.
 
@@ -32,7 +32,7 @@
 
 | Пакет           | Назначение                                                                                                            |
 | --------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `api`           | Публичные контракты: `JdbcMetricSource`, `MetricSource`, `MetricDefinition`, виды метрик, схемы атрибутов, расписание |
+| `api`           | Публичные контракты: `JdbcMetricSource`, `MetricSource`, виды метрик, схемы атрибутов, точки метрик, tracing API |
 | `autoconfigure` | `ReflexTelemetryAutoConfiguration`, регистрация бинов OTel и стартера                                               |
 | `config`        | `ReflexTelemetryProperties`, резолверы/валидаторы конфигурации JDBC и manual                                        |
 | `jdbc`          | Сбор JDBC-метрик (`JdbcMetricCollector` и фабрика)                                                                    |
@@ -65,15 +65,14 @@
 
 Префикс свойств: `**reflex.telemetry**`.
 
-- JDBC-источники: `reflex.telemetry.metrics.sources.<metric-id>`
-- Ручные метрики: `reflex.telemetry.metrics.manual.<metric-id>`
+- Определения JDBC и ручных метрик: `reflex.telemetry.metrics.definitions.<metric-id>`
 - Глобальный флаг: `reflex.telemetry.enabled`
-- Платформенный префикс имён метрик и `service.name`: `reflex.telemetry.system-code`
+- Сервисные настройки: `reflex.telemetry.service.*`
 - Общие OTLP-настройки: `reflex.telemetry.otlp.*`
-- Instrumentation scope: `reflex.telemetry.instrumentation-scope-name`
+- Настройки метрик: `reflex.telemetry.metrics.*`
 - Трассировка: `reflex.telemetry.traces.*`
 
-Детали ключей, приоритет резолва (defaults бина → YAML), семантика sync-kind (`COUNTER`/`GAUGE`/`UP_DOWN_COUNTER`/`HISTOGRAM`) и ограничения overflow — в [README.md](README.md).
+Детали ключей, YAML-first definitions, семантика sync-kind (`COUNTER`/`GAUGE`/`UP_DOWN_COUNTER`/`HISTOGRAM`) и ограничения overflow — в [README.md](README.md).
 
 ## Инварианты для изменений кода
 

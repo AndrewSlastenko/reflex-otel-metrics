@@ -1,17 +1,17 @@
 package ru.sber.rcln.reflex.telemetry.manual;
 
+import ru.sber.rcln.reflex.telemetry.api.AttributesSchema;
 import ru.sber.rcln.reflex.telemetry.api.CounterMetric;
 import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
 import ru.sber.rcln.reflex.telemetry.api.HistogramMetric;
-import ru.sber.rcln.reflex.telemetry.api.MetricDefinition;
 import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.api.UpDownCounterMetric;
-import ru.sber.rcln.reflex.telemetry.config.ManualMetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
-import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -20,10 +20,10 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.context.Context;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ReflexMetricFactoryTest {
 
@@ -37,15 +37,13 @@ class ReflexMetricFactoryTest {
 
     @Test
     void createsCounterMetricFromResolvedConfigAndRegistryInstrument() {
-        MetricDefinition definition = MetricDefinition.of("orders.created").build();
         configResolver.nextConfig = resolved(MetricKind.COUNTER, "Created orders", "1", SeriesOverflowPolicy.FAIL);
 
-        CounterMetric metric = factory.counter("orders-created", definition);
+        CounterMetric metric = factory.counter("orders-created");
 
         assertThat(metric).isInstanceOf(DefaultCounterMetric.class);
         assertThat(configResolver.metricId).isEqualTo("orders-created");
         assertThat(configResolver.kind).isEqualTo(MetricKind.COUNTER);
-        assertThat(configResolver.definition).isSameAs(definition);
         assertThat(instrumentRegistry.name).isEqualTo("reflex.orders.created");
         assertThat(instrumentRegistry.kind).isEqualTo(MetricKind.COUNTER);
         assertThat(instrumentRegistry.description).isEqualTo("Created orders");
@@ -54,61 +52,40 @@ class ReflexMetricFactoryTest {
 
     @Test
     void createsGaugeMetricFromResolvedConfigAndRegistryInstrument() {
-        MetricDefinition definition = MetricDefinition.of("queue.depth").build();
         configResolver.nextConfig = resolved(MetricKind.GAUGE, null, null, SeriesOverflowPolicy.FAIL);
 
-        GaugeMetric metric = factory.gauge("queue-depth", definition);
+        GaugeMetric metric = factory.gauge("queue-depth");
 
         assertThat(metric).isInstanceOf(DefaultGaugeMetric.class);
         assertThat(configResolver.metricId).isEqualTo("queue-depth");
         assertThat(configResolver.kind).isEqualTo(MetricKind.GAUGE);
-        assertThat(configResolver.definition).isSameAs(definition);
-        assertThat(instrumentRegistry.name).isEqualTo("reflex.orders.created");
         assertThat(instrumentRegistry.kind).isEqualTo(MetricKind.GAUGE);
     }
 
     @Test
     void createsUpDownCounterMetricFromResolvedConfigAndRegistryInstrument() {
-        MetricDefinition definition = MetricDefinition.of("workers.active").build();
         configResolver.nextConfig = resolved(MetricKind.UP_DOWN_COUNTER, null, null, SeriesOverflowPolicy.FAIL);
 
-        UpDownCounterMetric metric = factory.upDownCounter("workers-active", definition);
+        UpDownCounterMetric metric = factory.upDownCounter("workers-active");
 
         assertThat(metric).isInstanceOf(DefaultUpDownCounterMetric.class);
         assertThat(configResolver.metricId).isEqualTo("workers-active");
         assertThat(configResolver.kind).isEqualTo(MetricKind.UP_DOWN_COUNTER);
-        assertThat(configResolver.definition).isSameAs(definition);
-        assertThat(instrumentRegistry.name).isEqualTo("reflex.orders.created");
         assertThat(instrumentRegistry.kind).isEqualTo(MetricKind.UP_DOWN_COUNTER);
     }
 
     @Test
     void createsHistogramMetricFromResolvedConfigAndRegistryInstrument() {
-        MetricDefinition definition = MetricDefinition.of("request.latency").build();
         configResolver.nextConfig = resolved(MetricKind.HISTOGRAM, "Request latency", "ms", SeriesOverflowPolicy.FAIL);
 
-        HistogramMetric metric = factory.histogram("request-latency", definition);
+        HistogramMetric metric = factory.histogram("request-latency");
 
         assertThat(metric).isInstanceOf(DefaultHistogramMetric.class);
         assertThat(configResolver.metricId).isEqualTo("request-latency");
         assertThat(configResolver.kind).isEqualTo(MetricKind.HISTOGRAM);
-        assertThat(configResolver.definition).isSameAs(definition);
-        assertThat(instrumentRegistry.name).isEqualTo("reflex.orders.created");
         assertThat(instrumentRegistry.kind).isEqualTo(MetricKind.HISTOGRAM);
         assertThat(instrumentRegistry.description).isEqualTo("Request latency");
         assertThat(instrumentRegistry.unit).isEqualTo("ms");
-    }
-
-    @Test
-    void failsFastWhenResolvedConfigUsesAggregateToOtherOverflowPolicy() {
-        MetricDefinition definition = MetricDefinition.of("orders.created")
-                .overflowPolicy(SeriesOverflowPolicy.AGGREGATE_TO_OTHER)
-                .build();
-        configResolver.nextConfig = resolved(MetricKind.COUNTER, null, null, SeriesOverflowPolicy.AGGREGATE_TO_OTHER);
-
-        assertThatThrownBy(() -> factory.counter("orders-created", definition))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("AGGREGATE_TO_OTHER is not supported for manual metrics");
     }
 
     @Test
@@ -119,80 +96,84 @@ class ReflexMetricFactoryTest {
                 attributeValidator);
 
         configResolver.nextConfig = disabled(MetricKind.COUNTER);
-        CounterMetric counter = factory.counter("orders-created", MetricDefinition.of("orders.created").build());
+        CounterMetric counter = factory.counter("orders-created");
         counter.add(1);
         counter.increment();
 
         configResolver.nextConfig = disabled(MetricKind.GAUGE);
-        GaugeMetric gauge = factory.gauge("queue-depth", MetricDefinition.of("queue.depth").build());
+        GaugeMetric gauge = factory.gauge("queue-depth");
         gauge.set(12);
 
         configResolver.nextConfig = disabled(MetricKind.UP_DOWN_COUNTER);
-        UpDownCounterMetric upDownCounter = factory.upDownCounter(
-                "workers-active",
-                MetricDefinition.of("workers.active").build());
+        UpDownCounterMetric upDownCounter = factory.upDownCounter("workers-active");
         upDownCounter.add(-1);
 
         configResolver.nextConfig = disabled(MetricKind.HISTOGRAM);
-        HistogramMetric histogram = factory.histogram(
-                "request-latency",
-                MetricDefinition.of("request.latency").build());
+        HistogramMetric histogram = factory.histogram("request-latency");
         histogram.record(12.5d);
     }
 
-    private static ResolvedManualMetricConfig resolved(MetricKind kind, SeriesOverflowPolicy overflowPolicy) {
-        return resolved(kind, null, null, overflowPolicy);
-    }
-
-    private static ResolvedManualMetricConfig resolved(
+    private static ResolvedMetricConfig resolved(
             MetricKind kind,
             String description,
             String unit,
             SeriesOverflowPolicy overflowPolicy) {
-        return new ResolvedManualMetricConfig(
+        return new ResolvedMetricConfig(
                 "orders-created",
+                ReflexTelemetryProperties.MetricSourceType.MANUAL,
                 true,
                 "reflex.orders.created",
                 "orders.created",
                 ReflexMetricScopes.MANUAL,
-                kind,
                 description,
                 unit,
-                MetricDefinition.of("orders.created").build().attributes(),
+                AttributesSchema.empty(),
+                null,
+                kind,
+                null,
+                null,
+                null,
+                null,
                 500,
-                overflowPolicy);
+                overflowPolicy,
+                List.of());
     }
 
-    private static ResolvedManualMetricConfig disabled(MetricKind kind) {
-        return new ResolvedManualMetricConfig(
+    private static ResolvedMetricConfig disabled(MetricKind kind) {
+        return new ResolvedMetricConfig(
                 "orders-created",
+                ReflexTelemetryProperties.MetricSourceType.MANUAL,
                 false,
                 "reflex.orders.created",
                 "orders.created",
                 ReflexMetricScopes.MANUAL,
+                null,
+                null,
+                AttributesSchema.empty(),
+                null,
                 kind,
                 null,
                 null,
-                MetricDefinition.of("orders.created").build().attributes(),
+                null,
+                null,
                 500,
-                SeriesOverflowPolicy.FAIL);
+                SeriesOverflowPolicy.FAIL,
+                List.of());
     }
 
-    private static final class RecordingConfigResolver extends ManualMetricConfigResolver {
-        private ResolvedManualMetricConfig nextConfig;
+    private static final class RecordingConfigResolver extends MetricConfigResolver {
+        private ResolvedMetricConfig nextConfig;
         private String metricId;
         private MetricKind kind;
-        private MetricDefinition definition;
 
         private RecordingConfigResolver() {
             super(new ReflexTelemetryProperties(), new ReflexTelemetryNamingPolicy(null));
         }
 
         @Override
-        public ResolvedManualMetricConfig resolve(String metricId, MetricKind kind, MetricDefinition definition) {
+        public ResolvedMetricConfig resolveManual(String metricId, MetricKind expectedKind) {
             this.metricId = metricId;
-            this.kind = kind;
-            this.definition = definition;
+            this.kind = expectedKind;
             return nextConfig;
         }
     }

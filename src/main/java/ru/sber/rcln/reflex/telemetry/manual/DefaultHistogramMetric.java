@@ -1,7 +1,7 @@
 package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.HistogramMetric;
-import ru.sber.rcln.reflex.telemetry.config.ResolvedManualMetricConfig;
+import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.internal.HandledExceptionLogging;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -15,13 +15,13 @@ public class DefaultHistogramMetric implements HistogramMetric {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultHistogramMetric.class);
 
-    private final ResolvedManualMetricConfig config;
+    private final ResolvedMetricConfig config;
     private final DoubleHistogram instrument;
     private final AttributeValidator attributeValidator;
     private final ManualSeriesTracker seriesTracker;
 
     public DefaultHistogramMetric(
-            @NonNull ResolvedManualMetricConfig config,
+            @NonNull ResolvedMetricConfig config,
             @NonNull DoubleHistogram instrument,
             @NonNull AttributeValidator attributeValidator) {
         this.config = config;
