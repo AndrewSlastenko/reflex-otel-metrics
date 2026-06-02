@@ -32,7 +32,7 @@ class MetricConfigResolverTest {
         assertThat(resolved.metricId()).isEqualTo("documents-by-status");
         assertThat(resolved.source()).isEqualTo(ReflexTelemetryProperties.MetricSourceType.JDBC);
         assertThat(resolved.enabled()).isTrue();
-        assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.by-status");
+        assertThat(resolved.exportedMetricName()).isEqualTo("ci05414726.documents.by-status");
         assertThat(resolved.scope()).isEqualTo("business");
         assertThat(resolved.dataSourceRef()).isEqualTo("businessReplicaDataSource");
         assertThat(resolved.metricKind()).isEqualTo(MetricKind.GAUGE);
@@ -50,7 +50,7 @@ class MetricConfigResolverTest {
                 .resolveManual("transaction-send-duration", MetricKind.HISTOGRAM);
 
         assertThat(resolved.source()).isEqualTo(ReflexTelemetryProperties.MetricSourceType.MANUAL);
-        assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.transaction.send.duration");
+        assertThat(resolved.exportedMetricName()).isEqualTo("ci05414726.transaction.send.duration");
         assertThat(resolved.unit()).isEqualTo("s");
         assertThat(resolved.attributes().required()).containsExactly("target_system", "result");
         assertThat(resolved.attributes().optional()).containsExactly("http_status");
@@ -137,7 +137,7 @@ class MetricConfigResolverTest {
                 .withProperty("reflex.telemetry.metrics.temporality-preference", "CUMULATIVE")
                 .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.source", "MANUAL")
                 .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.kind", "HISTOGRAM")
-                .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.suffix", "transaction.send.duration")
+                .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.name", "transaction.send.duration")
                 .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.unit", "s")
                 .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.attributes.required[0]", "target_system")
                 .withProperty("reflex.telemetry.metrics.definitions.transaction-send-duration.histogram.buckets[0]", "1")
@@ -175,7 +175,7 @@ class MetricConfigResolverTest {
                 new ReflexTelemetryProperties.MetricDefinitionProperties();
         definition.setSource(ReflexTelemetryProperties.MetricSourceType.JDBC);
         definition.setKind(MetricKind.GAUGE);
-        definition.setSuffix("documents.by-status");
+        definition.setName("documents.by-status");
         definition.setScope("business");
         definition.setDataSourceRef("businessReplicaDataSource");
         definition.setOverflowPolicy(SeriesOverflowPolicy.FAIL);
@@ -187,7 +187,7 @@ class MetricConfigResolverTest {
                 new ReflexTelemetryProperties.MetricDefinitionProperties();
         definition.setSource(ReflexTelemetryProperties.MetricSourceType.MANUAL);
         definition.setKind(MetricKind.HISTOGRAM);
-        definition.setSuffix("transaction.send.duration");
+        definition.setName("transaction.send.duration");
         definition.setScope("business");
         definition.setDescription("Transaction send duration");
         definition.setUnit("s");

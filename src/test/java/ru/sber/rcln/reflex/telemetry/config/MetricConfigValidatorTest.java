@@ -19,8 +19,8 @@ class MetricConfigValidatorTest {
                 config.metricId(),
                 config.source(),
                 config.enabled(),
-                config.fullMetricName(),
-                config.suffix(),
+                config.exportedMetricName(),
+                config.name(),
                 config.scope(),
                 config.description(),
                 config.unit(),
@@ -51,7 +51,7 @@ class MetricConfigValidatorTest {
     void shouldRejectManualMetricWithAggregateToOtherOverflowPolicy() {
         ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.MANUAL, MetricKind.COUNTER);
         config = new ResolvedMetricConfig(
-                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.metricId(), config.source(), config.enabled(), config.exportedMetricName(), config.name(),
                 config.scope(), config.description(), config.unit(), config.attributes(), null,
                 config.metricKind(), config.schedule(), config.timeout(), config.lockAtMostFor(), config.lockAtLeastFor(),
                 config.maxSeries(), SeriesOverflowPolicy.AGGREGATE_TO_OTHER, config.histogramBuckets());
@@ -187,7 +187,7 @@ class MetricConfigValidatorTest {
     private static ResolvedMetricConfig withSchedule(MetricScheduleSettings schedule) {
         ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.GAUGE);
         return new ResolvedMetricConfig(
-                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.metricId(), config.source(), config.enabled(), config.exportedMetricName(), config.name(),
                 config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
                 config.metricKind(), schedule, config.timeout(), config.lockAtMostFor(), config.lockAtLeastFor(),
                 config.maxSeries(), config.overflowPolicy(), config.histogramBuckets());
@@ -196,7 +196,7 @@ class MetricConfigValidatorTest {
     private static ResolvedMetricConfig withLocks(Duration lockAtMostFor, Duration lockAtLeastFor) {
         ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.GAUGE);
         return new ResolvedMetricConfig(
-                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.metricId(), config.source(), config.enabled(), config.exportedMetricName(), config.name(),
                 config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
                 config.metricKind(), config.schedule(), config.timeout(), lockAtMostFor, lockAtLeastFor,
                 config.maxSeries(), config.overflowPolicy(), config.histogramBuckets());
@@ -205,7 +205,7 @@ class MetricConfigValidatorTest {
     private static ResolvedMetricConfig withHistogramBuckets(List<Double> buckets) {
         ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.HISTOGRAM);
         return new ResolvedMetricConfig(
-                config.metricId(), config.source(), config.enabled(), config.fullMetricName(), config.suffix(),
+                config.metricId(), config.source(), config.enabled(), config.exportedMetricName(), config.name(),
                 config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
                 config.metricKind(), config.schedule(), config.timeout(), config.lockAtMostFor(), config.lockAtLeastFor(),
                 config.maxSeries(), config.overflowPolicy(), buckets);

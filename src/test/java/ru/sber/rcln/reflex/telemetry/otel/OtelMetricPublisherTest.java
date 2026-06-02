@@ -26,7 +26,7 @@ class OtelMetricPublisherTest {
         MetricInstrumentWriter writer = mock(MetricInstrumentWriter.class);
         ResolvedMetricConfig config = config(MetricKind.COUNTER);
         when(registry.getOrCreateWriter(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 MetricKind.COUNTER,
                 config.description(),
                 config.unit())).thenReturn(writer);
@@ -48,7 +48,7 @@ class OtelMetricPublisherTest {
         ResolvedMetricConfig config = config(MetricKind.HISTOGRAM);
         MetricPoint point = MetricPoint.histogram(9.75d, Map.of("scope", "business"));
         when(registry.getOrCreateWriter(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 MetricKind.HISTOGRAM,
                 config.description(),
                 config.unit())).thenReturn(writer);

@@ -17,7 +17,7 @@ public class OtelMetricPublisher {
     public void publish(@NonNull ResolvedMetricConfig config, @NonNull List<MetricPoint> points) {
 
         MetricInstrumentWriter writer = registry.getOrCreateWriter(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 config.metricKind(),
                 config.description(),
                 config.unit());

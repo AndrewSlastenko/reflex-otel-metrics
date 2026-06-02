@@ -293,13 +293,13 @@ public class ReflexTelemetryAutoConfiguration {
             ReflexTelemetryNamingPolicy namingPolicy) {
         properties.getMetrics().getDefinitions().values().stream()
                 .filter(definition -> definition.getKind() == ru.sber.rcln.reflex.telemetry.api.MetricKind.HISTOGRAM)
-                .filter(definition -> hasText(definition.getSuffix()))
+                .filter(definition -> hasText(definition.getName()))
                 .filter(definition -> definition.getHistogram() != null
                         && definition.getHistogram().getBuckets() != null
                         && !definition.getHistogram().getBuckets().isEmpty())
                 .forEach(definition -> builder.registerView(
                         InstrumentSelector.builder()
-                                .setName(namingPolicy.metricName(definition.getSuffix()))
+                                .setName(namingPolicy.metricName(definition.getName()))
                                 .build(),
                         View.builder()
                                 .setAggregation(Aggregation.explicitBucketHistogram(

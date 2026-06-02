@@ -95,7 +95,7 @@ public class ReflexTelemetryProperties {
         private MetricSourceType source;
         private MetricKind kind;
         private Boolean enabled;
-        private String suffix;
+        private String name;
         private String scope;
         private String description;
         private String unit;

@@ -17,8 +17,8 @@ public class MetricConfigValidator {
         if (config.metricKind() == null) {
             errors.add("Metric '" + config.metricId() + "' requires kind");
         }
-        if (config.suffix() == null || config.suffix().isBlank()) {
-            errors.add("Metric '" + config.metricId() + "' requires suffix");
+        if (config.name() == null || config.name().isBlank()) {
+            errors.add("Metric '" + config.metricId() + "' requires name");
         }
         if (config.scope() == null || config.scope().isBlank()) {
             errors.add("Metric '" + config.metricId() + "' requires scope");

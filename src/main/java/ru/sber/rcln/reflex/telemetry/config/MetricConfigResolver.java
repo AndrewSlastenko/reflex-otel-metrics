@@ -48,7 +48,7 @@ public class MetricConfigResolver {
             throw new IllegalArgumentException("Metric '" + metricId + "' is not configured under reflex.telemetry.metrics.definitions");
         }
 
-        String suffix = definition.getSuffix();
+        String name = definition.getName();
         String scope = definition.getScope() != null ? definition.getScope() : defaultScope(definition.getSource());
         boolean enabled = properties.isEnabled()
                 && properties.getMetrics().isEnabled()
@@ -59,8 +59,8 @@ public class MetricConfigResolver {
                 metricId,
                 definition.getSource(),
                 enabled,
-                hasText(suffix) ? namingPolicy.metricName(suffix) : null,
-                suffix,
+                hasText(name) ? namingPolicy.metricName(name) : null,
+                name,
                 scope,
                 definition.getDescription(),
                 definition.getUnit(),

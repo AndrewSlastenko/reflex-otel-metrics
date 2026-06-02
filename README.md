@@ -67,7 +67,7 @@ reflex:
           source: MANUAL
           kind: HISTOGRAM
           enabled: true
-          suffix: transaction.send.duration
+          name: transaction.send.duration
           scope: business
           description: Transaction send duration
           unit: s
@@ -82,7 +82,7 @@ reflex:
           source: JDBC
           kind: GAUGE
           enabled: true
-          suffix: documents.by-status
+          name: documents.by-status
           scope: business
           data-source-ref: businessReplicaDataSource
           schedule:
@@ -126,7 +126,7 @@ reflex:
 | -------- | ----------- | ---------- |
 | `source` | да | `MANUAL` или `JDBC` |
 | `kind` | да | `COUNTER`, `GAUGE`, `UP_DOWN_COUNTER`, `HISTOGRAM` |
-| `suffix` | да | Суффикс итогового имени `<system-code>.<suffix>` |
+| `name` | да | Имя метрики без платформенного префикса; итоговое имя будет `<system-code>.<name>` |
 | `enabled` | нет | Выключатель конкретной метрики |
 | `scope` | нет | Логическая группа для `metrics.scopes.<scope>.enabled` |
 | `description` | нет | Description OTel instrument |
@@ -150,7 +150,7 @@ reflex:
 `service.system-code` — единственный платформенный префикс для имен метрик.
 
 ```text
-<system-code>.<suffix>
+<system-code>.<name>
 ```
 
 Пример:
@@ -161,7 +161,7 @@ service:
 metrics:
   definitions:
     orders-created:
-      suffix: orders.created
+      name: orders.created
 ```
 
 Итоговое имя метрики: `ci05414726.orders.created`.
@@ -222,7 +222,7 @@ reflex:
         transaction-send-duration:
           source: MANUAL
           kind: HISTOGRAM
-          suffix: transaction.send.duration
+          name: transaction.send.duration
           unit: s
           histogram:
             buckets: [1, 2, 5, 10, 30, 60, 120, 300]
@@ -291,7 +291,7 @@ reflex:
         documents-by-status:
           source: JDBC
           kind: GAUGE
-          suffix: documents.by-status
+          name: documents.by-status
           data-source-ref: businessReplicaDataSource
           attributes:
             required: [client, status]
@@ -324,7 +324,7 @@ reflex:
         orders-created:
           source: MANUAL
           kind: COUNTER
-          suffix: orders.created
+          name: orders.created
           description: Orders created by client and channel
           unit: "{order}"
           attributes:
@@ -368,7 +368,7 @@ reflex:
         transaction-send-duration:
           source: MANUAL
           kind: HISTOGRAM
-          suffix: transaction.send.duration
+          name: transaction.send.duration
           description: Duration from transaction creation to external system response
           unit: s
           attributes:
@@ -506,7 +506,7 @@ reflex:
         document-library-sync-started:
           source: MANUAL
           kind: COUNTER
-          suffix: document.library.sync.started
+          name: document.library.sync.started
           scope: document-library
           attributes:
             required: [source]
@@ -531,7 +531,7 @@ Manual metrics не бросают ошибки в бизнес-код при:
 
 1. Проверьте, что definition существует в `reflex.telemetry.metrics.definitions.<metric-id>`.
 2. Проверьте `source` и `kind`: Java `factory.histogram("id")` требует `source: MANUAL` и `kind: HISTOGRAM`.
-3. Проверьте итоговое имя: `<service.system-code>.<suffix>`.
+3. Проверьте итоговое имя: `<service.system-code>.<name>`.
 4. Проверьте лог `Reflex telemetry OTLP metrics temporality preference: ...`.
 5. Для histogram проверьте buckets в YAML и unit (`ms`, `s`, `{item}`).
 6. На collector/debug exporter проверьте temporality и наличие нужных attributes.

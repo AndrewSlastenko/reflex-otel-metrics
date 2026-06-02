@@ -45,7 +45,7 @@ public class ReflexMetricFactory {
         }
 
         LongCounter instrument = (LongCounter) requireInstrumentRegistry().getOrCreate(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 MetricKind.COUNTER,
                 config.description(),
                 config.unit());
@@ -60,7 +60,7 @@ public class ReflexMetricFactory {
         }
 
         LongGauge instrument = (LongGauge) requireInstrumentRegistry().getOrCreate(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 MetricKind.GAUGE,
                 config.description(),
                 config.unit());
@@ -75,7 +75,7 @@ public class ReflexMetricFactory {
         }
 
         LongUpDownCounter instrument = (LongUpDownCounter) requireInstrumentRegistry().getOrCreate(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 MetricKind.UP_DOWN_COUNTER,
                 config.description(),
                 config.unit());
@@ -90,7 +90,7 @@ public class ReflexMetricFactory {
         }
 
         DoubleHistogram instrument = (DoubleHistogram) requireInstrumentRegistry().getOrCreate(
-                config.fullMetricName(),
+                config.exportedMetricName(),
                 MetricKind.HISTOGRAM,
                 config.description(),
                 config.unit());

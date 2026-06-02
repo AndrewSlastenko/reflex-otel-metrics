@@ -100,7 +100,7 @@ class ReflexTelemetryAutoConfigurationTest {
                         "reflex.telemetry.metrics.export-interval=PT1M",
                         "reflex.telemetry.metrics.definitions.documents-by-status.source=JDBC",
                         "reflex.telemetry.metrics.definitions.documents-by-status.kind=GAUGE",
-                        "reflex.telemetry.metrics.definitions.documents-by-status.suffix=documents.current",
+                        "reflex.telemetry.metrics.definitions.documents-by-status.name=documents.current",
                         "reflex.telemetry.metrics.definitions.documents-by-status.data-source-ref=businessReplicaDataSource")
                 .run(context -> {
                     ReflexTelemetryProperties properties = context.getBean(ReflexTelemetryProperties.class);
@@ -112,8 +112,8 @@ class ReflexTelemetryAutoConfigurationTest {
                     assertThat(properties.getService().getInstrumentationScopeName()).isEqualTo("com.example.metrics");
                     assertThat(properties.getService().getName()).isEqualTo("contracts-api");
                     assertThat(properties.getMetrics().getDefinitions()).containsKey("documents-by-status");
-                    assertThat(resolved.suffix()).isEqualTo("documents.current");
-                    assertThat(resolved.fullMetricName()).isEqualTo("ci05414726.documents.current");
+                    assertThat(resolved.name()).isEqualTo("documents.current");
+                    assertThat(resolved.exportedMetricName()).isEqualTo("ci05414726.documents.current");
                 });
     }
 
@@ -260,12 +260,12 @@ class ReflexTelemetryAutoConfigurationTest {
                 .withPropertyValues(
                         "reflex.telemetry.metrics.definitions.orders-created.source=MANUAL",
                         "reflex.telemetry.metrics.definitions.orders-created.kind=COUNTER",
-                        "reflex.telemetry.metrics.definitions.orders-created.suffix=orders.created",
+                        "reflex.telemetry.metrics.definitions.orders-created.name=orders.created",
                         "reflex.telemetry.metrics.definitions.orders-created.description=Orders created",
                         "reflex.telemetry.metrics.definitions.orders-created.unit=1",
                         "reflex.telemetry.metrics.definitions.orders-failed.source=MANUAL",
                         "reflex.telemetry.metrics.definitions.orders-failed.kind=COUNTER",
-                        "reflex.telemetry.metrics.definitions.orders-failed.suffix=orders.failed",
+                        "reflex.telemetry.metrics.definitions.orders-failed.name=orders.failed",
                         "reflex.telemetry.metrics.definitions.orders-failed.description=Orders failed",
                         "reflex.telemetry.metrics.definitions.orders-failed.unit=1")
                 .withUserConfiguration(ManualCounterMetricConfiguration.class)
@@ -321,7 +321,7 @@ class ReflexTelemetryAutoConfigurationTest {
                 .withPropertyValues(
                         "reflex.telemetry.metrics.definitions.test-library-operation-started.source=MANUAL",
                         "reflex.telemetry.metrics.definitions.test-library-operation-started.kind=COUNTER",
-                        "reflex.telemetry.metrics.definitions.test-library-operation-started.suffix=test.library.operation.started",
+                        "reflex.telemetry.metrics.definitions.test-library-operation-started.name=test.library.operation.started",
                         "reflex.telemetry.metrics.definitions.test-library-operation-started.scope=test-library",
                         "reflex.telemetry.metrics.definitions.test-library-operation-started.description=Started test library operations",
                         "reflex.telemetry.metrics.definitions.test-library-operation-started.unit=1",
