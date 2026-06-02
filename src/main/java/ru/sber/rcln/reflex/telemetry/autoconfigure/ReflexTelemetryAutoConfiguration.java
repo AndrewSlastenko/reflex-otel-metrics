@@ -27,11 +27,14 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
+import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
@@ -45,6 +48,8 @@ import org.springframework.context.annotation.Conditional;
 @AutoConfiguration
 @EnableConfigurationProperties(ReflexTelemetryProperties.class)
 public class ReflexTelemetryAutoConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(ReflexTelemetryAutoConfiguration.class);
 
     @Bean
     @ConditionalOnMissingBean
@@ -103,9 +108,12 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, OpenTelemetry.class})
     OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexTelemetryProperties properties) {
+        log.info("Reflex telemetry OTLP metrics temporality preference: {}",
+                properties.getOtlp().getMetricsTemporalityPreference());
         return OtlpGrpcMetricExporter.builder()
                 .setEndpoint(properties.getOtlp().getMetricsEndpoint())
                 .setTimeout(properties.getOtlp().getExportTimeout())
+                .setAggregationTemporalitySelector(metricsTemporalitySelector(properties))
                 .build();
     }
 
@@ -270,5 +278,13 @@ public class ReflexTelemetryAutoConfiguration {
 
         return java.util.Optional.of(Resource.create(
                 Attributes.of(AttributeKey.stringKey("service.name"), serviceName)));
+    }
+
+    private static AggregationTemporalitySelector metricsTemporalitySelector(ReflexTelemetryProperties properties) {
+        return switch (properties.getOtlp().getMetricsTemporalityPreference()) {
+            case DELTA -> AggregationTemporalitySelector.deltaPreferred();
+            case CUMULATIVE -> AggregationTemporalitySelector.alwaysCumulative();
+            case LOW_MEMORY -> AggregationTemporalitySelector.lowMemory();
+        };
     }
 }

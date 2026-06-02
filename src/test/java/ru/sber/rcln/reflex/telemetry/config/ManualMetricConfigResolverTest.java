@@ -221,6 +221,7 @@ class ManualMetricConfigResolverTest {
                 .withProperty("reflex.telemetry.enabled", "false")
                 .withProperty("reflex.telemetry.instrumentation-scope-name", "custom.scope")
                 .withProperty("reflex.telemetry.otlp.traces-endpoint", "http://collector:4317")
+                .withProperty("reflex.telemetry.otlp.metrics-temporality-preference", "CUMULATIVE")
                 .withProperty("reflex.telemetry.metrics.enabled", "false")
                 .withProperty("reflex.telemetry.system-code", "ci05414726")
                 .withProperty("reflex.telemetry.metrics.manual.orders-created.suffix", "orders.created")
@@ -233,6 +234,8 @@ class ManualMetricConfigResolverTest {
         assertThat(properties.isEnabled()).isFalse();
         assertThat(properties.getInstrumentationScopeName()).isEqualTo("custom.scope");
         assertThat(properties.getOtlp().getTracesEndpoint()).isEqualTo("http://collector:4317");
+        assertThat(properties.getOtlp().getMetricsTemporalityPreference())
+                .isEqualTo(ReflexTelemetryProperties.MetricsTemporalityPreference.CUMULATIVE);
         assertThat(properties.getMetrics().isEnabled()).isFalse();
         assertThat(properties.getSystemCode()).isEqualTo("ci05414726");
         assertThat(properties.getMetrics().getManual().get("orders-created").getSuffix()).isEqualTo("orders.created");

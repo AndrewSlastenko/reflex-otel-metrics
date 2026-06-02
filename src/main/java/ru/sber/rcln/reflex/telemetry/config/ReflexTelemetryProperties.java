@@ -72,6 +72,13 @@ public class ReflexTelemetryProperties {
         private String tracesEndpoint = "http://localhost:4317";
         private Duration exportTimeout = Duration.ofSeconds(10);
         private Duration exportInterval = Duration.ofMinutes(1);
+        private MetricsTemporalityPreference metricsTemporalityPreference = MetricsTemporalityPreference.DELTA;
+    }
+
+    public enum MetricsTemporalityPreference {
+        DELTA,
+        CUMULATIVE,
+        LOW_MEMORY
     }
 
     @Getter

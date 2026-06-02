@@ -60,6 +60,7 @@ reflex:
       traces-endpoint: http://localhost:4317
       export-timeout: 10s
       export-interval: 1m
+      metrics-temporality-preference: DELTA
     traces:
       enabled: true
     metrics:
@@ -113,6 +114,7 @@ reflex:
 - `otlp.traces-endpoint`
 - `otlp.export-timeout`
 - `otlp.export-interval`
+- `otlp.metrics-temporality-preference`
 - `reflex.telemetry.traces.enabled`
 - `metrics.enabled`
 - `scopes.<scope>.enabled`
@@ -198,6 +200,37 @@ reflex:
 ```
 
 Используйте это, чтобы не экспортировать слишком часто, когда polling базы происходит чаще, чем нужно downstream-потребителям.
+
+## Metrics temporality
+
+Starter создает `OtlpGrpcMetricExporter` внутри приложения и по умолчанию включает delta temporality для OTLP-метрик:
+
+```yaml
+reflex:
+  telemetry:
+    otlp:
+      metrics-temporality-preference: DELTA
+```
+
+Поддерживаемые значения:
+
+- `DELTA` — default; предпочтительный режим для отказоустойчивой отправки через общий адрес нескольких collector-инстансов.
+- `CUMULATIVE` — кумулятивная temporality, если downstream явно требует значения с начала жизни процесса.
+- `LOW_MEMORY` — OpenTelemetry low-memory selector.
+
+Настройка применяется к exporter-у, который создает этот starter. Если приложение предоставляет собственный `OpenTelemetry`, `SdkMeterProvider` или `OtlpGrpcMetricExporter`, starter отступает и не управляет temporality; в таком приложении temporality нужно настроить в его собственной OTel-конфигурации, например через `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=DELTA` при использовании стандартной OTel autoconfigure.
+
+При старте приложения starter пишет выбранный режим в лог:
+
+```text
+Reflex telemetry OTLP metrics temporality preference: DELTA
+```
+
+Для проверки на стороне collector временно включите debug exporter для metrics и проверьте OTLP payload проблемной метрики. Для counter/histogram ожидается:
+
+```text
+aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA
+```
 
 ## Instrumentation Scope
 

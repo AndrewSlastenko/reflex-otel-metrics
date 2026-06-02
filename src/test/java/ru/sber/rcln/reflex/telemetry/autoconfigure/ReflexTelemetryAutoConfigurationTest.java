@@ -32,7 +32,9 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
@@ -133,6 +135,23 @@ class ReflexTelemetryAutoConfigurationTest {
                     assertThat(context.getBean(ReflexTelemetryNamingPolicy.class).metricName("orders.created"))
                             .isEqualTo("ci05414726.orders.created");
                 });
+    }
+
+    @Test
+    void shouldUseDeltaMetricsTemporalityByDefault() {
+        contextRunner
+                .run(context -> assertThat(context.getBean(OtlpGrpcMetricExporter.class)
+                        .getAggregationTemporality(InstrumentType.HISTOGRAM))
+                        .isEqualTo(AggregationTemporality.DELTA));
+    }
+
+    @Test
+    void shouldApplyConfiguredMetricsTemporalityPreference() {
+        contextRunner
+                .withPropertyValues("reflex.telemetry.otlp.metrics-temporality-preference=CUMULATIVE")
+                .run(context -> assertThat(context.getBean(OtlpGrpcMetricExporter.class)
+                        .getAggregationTemporality(InstrumentType.HISTOGRAM))
+                        .isEqualTo(AggregationTemporality.CUMULATIVE));
     }
 
     @Test
