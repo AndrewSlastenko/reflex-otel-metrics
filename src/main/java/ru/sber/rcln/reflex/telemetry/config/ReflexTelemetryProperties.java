@@ -54,7 +54,8 @@ public class ReflexTelemetryProperties {
     @Setter
     public static class OtlpProperties {
 
-        private String endpoint = "http://localhost:4317";
+        private OtlpProtocol protocol = OtlpProtocol.HTTP_PROTOBUF;
+        private String endpoint = "http://localhost:4318";
         private Duration exportTimeout = Duration.ofSeconds(10);
     }
 
@@ -182,5 +183,10 @@ public class ReflexTelemetryProperties {
 
     public enum TracePropagation {
         W3C
+    }
+
+    public enum OtlpProtocol {
+        GRPC,
+        HTTP_PROTOBUF
     }
 }

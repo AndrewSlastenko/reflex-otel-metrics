@@ -8,7 +8,7 @@ Starter рассчитан на:
 - Spring Boot 3.5.x
 - Maven Wrapper (`.\mvnw.cmd`)
 - OpenTelemetry 1.60.x
-- OTLP/gRPC export
+- OTLP HTTP/protobuf export по умолчанию, OTLP/gRPC по настройке
 - fail-safe emission: ошибки метрик не ломают бизнес-код
 
 ## Что настраивает starter
@@ -16,8 +16,8 @@ Starter рассчитан на:
 Starter поднимает общую инфраструктуру:
 
 - binding `ReflexTelemetryProperties` под префиксом `reflex.telemetry`
-- `OpenTelemetry`, `Meter`, `Tracer`, `SdkMeterProvider`, `SdkTracerProvider`, если приложение не предоставило свои bean-ы
-- OTLP metric exporter с настраиваемой temporality
+- `OpenTelemetry`, `Meter`, `Tracer`, `SdkMeterProvider`, `SdkTracerProvider`, если приложение не предоставило конфликтующие bean-ы
+- OTLP metric exporter с настраиваемой temporality и protocol
 - OTLP trace exporter
 - `ReflexMetricFactory` для ручных метрик
 - JDBC runtime для планового сбора метрик
@@ -66,11 +66,11 @@ reflex:
       name: contracts-api
       instrumentation-scope-name: ru.sber.rcln.reflex.telemetry
     otlp:
-      endpoint: http://collector:4317
+      protocol: http-protobuf
+      endpoint: http://collector:4318
       export-timeout: 10s
     metrics:
       enabled: true
-      endpoint: http://collector:4317
       export-interval: 1m
       temporality-preference: DELTA
       scopes:
@@ -110,11 +110,11 @@ reflex:
           overflow-policy: AGGREGATE_TO_OTHER
     traces:
       enabled: true
-      endpoint: http://collector:4317
       propagation: W3C
 ```
 
 Если `metrics.endpoint` или `traces.endpoint` не заданы, используется общий `otlp.endpoint`.
+Для `grpc` он используется как есть. Для `http-protobuf` к общему endpoint автоматически добавляются signal paths: `/v1/metrics` и `/v1/traces`.
 
 ### Основные блоки
 
@@ -124,7 +124,8 @@ reflex:
 | `service.system-code` | empty | Префикс имен метрик |
 | `service.name` | empty | `service.name` resource attribute |
 | `service.instrumentation-scope-name` | `ru.sber.rcln.reflex.telemetry` | OTel scope для `Meter` и `Tracer` |
-| `otlp.endpoint` | `http://localhost:4317` | Общий endpoint по умолчанию |
+| `otlp.protocol` | `HTTP_PROTOBUF` | OTLP transport: `http-protobuf` или `grpc` |
+| `otlp.endpoint` | `http://localhost:4318` | Общий endpoint по умолчанию |
 | `otlp.export-timeout` | `10s` | Timeout OTLP exporters |
 | `metrics.enabled` | `true` | Выключатель метрик |
 | `metrics.endpoint` | empty | Endpoint только для метрик |
@@ -133,6 +134,43 @@ reflex:
 | `traces.enabled` | `true` | Выключатель tracing |
 | `traces.endpoint` | empty | Endpoint только для traces |
 | `traces.propagation` | `W3C` | Propagation mode |
+
+## OTLP protocol
+
+По умолчанию starter использует OTLP HTTP/protobuf:
+
+```yaml
+reflex:
+  telemetry:
+    otlp:
+      protocol: http-protobuf
+      endpoint: http://collector:4318
+```
+
+При общем `otlp.endpoint` starter сам отправит метрики на `http://collector:4318/v1/metrics`, а traces на `http://collector:4318/v1/traces`.
+
+Если окружение явно поддерживает gRPC/HTTP2 до collector-а, можно переключить exporter на OTLP/gRPC:
+
+```yaml
+reflex:
+  telemetry:
+    otlp:
+      protocol: grpc
+      endpoint: http://collector:4317
+```
+
+Signal-specific endpoint-ы используются без изменения. Если задаете их отдельно, указывайте полный OTLP HTTP путь:
+
+```yaml
+reflex:
+  telemetry:
+    otlp:
+      protocol: http-protobuf
+    metrics:
+      endpoint: http://collector:4318/v1/metrics
+    traces:
+      endpoint: http://collector:4318/v1/traces
+```
 
 ### Metric definition
 
@@ -199,7 +237,7 @@ reflex:
 
 ## Temporality
 
-Starter создает `OtlpGrpcMetricExporter` внутри приложения и по умолчанию ставит delta temporality:
+Starter создает metric exporter внутри приложения и по умолчанию ставит delta temporality:
 
 ```yaml
 reflex:
@@ -214,7 +252,7 @@ reflex:
 - `CUMULATIVE` — значения с начала жизни процесса; использовать только если downstream явно этого требует.
 - `LOW_MEMORY` — low-memory selector OpenTelemetry SDK.
 
-Настройка применяется к exporter-у, который создает эта библиотека. Если приложение само предоставляет `OpenTelemetry`, `SdkMeterProvider` или `OtlpGrpcMetricExporter`, библиотека отступает, и temporality нужно настроить в приложении или стандартной OTel autoconfigure.
+Настройка применяется к exporter-у, который создает эта библиотека. Если приложение само предоставляет `Meter`, `SdkMeterProvider` или `MetricExporter`, библиотека отступает от своей metrics pipeline, и temporality нужно настроить в приложении или стандартной OTel autoconfigure. Один только пользовательский `OpenTelemetry` bean не выключает metrics pipeline starter-а.
 
 При старте логируется выбранный режим:
 
@@ -548,6 +586,8 @@ Fail-safe поведение применяется к публикации уж
 1. Проверьте, что definition существует в `reflex.telemetry.metrics.definitions.<metric-id>`.
 2. Проверьте `source` и `kind`: Java `factory.histogram("id")` требует `source: MANUAL` и `kind: HISTOGRAM`.
 3. Проверьте итоговое имя: `<service.system-code>.<name>`.
-4. Проверьте лог `Reflex telemetry OTLP metrics temporality preference: ...`.
-5. Для histogram проверьте buckets в YAML и unit (`ms`, `s`, `{item}`).
-6. На collector/debug exporter проверьте temporality и наличие нужных attributes.
+4. Проверьте `reflex.telemetry.otlp.protocol`: дефолт `http-protobuf`; `grpc` включайте явно только если весь маршрут поддерживает gRPC/HTTP2.
+5. Проверьте endpoint: для `http-protobuf` общий `otlp.endpoint` дополняется `/v1/metrics`, а `metrics.endpoint` должен быть полным URL.
+6. Проверьте лог `Reflex telemetry OTLP metrics temporality preference: ...`.
+7. Для histogram проверьте buckets в YAML и unit (`ms`, `s`, `{item}`).
+8. На collector/debug exporter проверьте temporality и наличие нужных attributes.

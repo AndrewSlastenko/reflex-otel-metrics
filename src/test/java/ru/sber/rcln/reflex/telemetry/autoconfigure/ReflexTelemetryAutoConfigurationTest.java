@@ -11,6 +11,7 @@ import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties.OtlpProtocol;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
@@ -22,6 +23,8 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -102,7 +105,7 @@ class ReflexTelemetryAutoConfigurationTest {
                         "reflex.telemetry.traces.enabled=false")
                 .withBean(OpenTelemetry.class, () -> openTelemetry)
                 .run(context -> {
-                    assertThat(context).hasSingleBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).hasSingleBean(OtlpHttpMetricExporter.class);
                     assertThat(context).hasSingleBean(SdkMeterProvider.class);
                     assertThat(context).hasSingleBean(Meter.class);
                     assertThat(context).hasSingleBean(OtelInstrumentRegistry.class);
@@ -152,7 +155,7 @@ class ReflexTelemetryAutoConfigurationTest {
     @Test
     void shouldUseDeltaMetricsTemporalityByDefault() {
         contextRunner
-                .run(context -> assertThat(context.getBean(OtlpGrpcMetricExporter.class)
+                .run(context -> assertThat(context.getBean(OtlpHttpMetricExporter.class)
                         .getAggregationTemporality(InstrumentType.HISTOGRAM))
                         .isEqualTo(AggregationTemporality.DELTA));
     }
@@ -161,9 +164,68 @@ class ReflexTelemetryAutoConfigurationTest {
     void shouldApplyConfiguredMetricsTemporalityPreference() {
         contextRunner
                 .withPropertyValues("reflex.telemetry.metrics.temporality-preference=CUMULATIVE")
-                .run(context -> assertThat(context.getBean(OtlpGrpcMetricExporter.class)
+                .run(context -> assertThat(context.getBean(OtlpHttpMetricExporter.class)
                         .getAggregationTemporality(InstrumentType.HISTOGRAM))
                         .isEqualTo(AggregationTemporality.CUMULATIVE));
+    }
+
+    @Test
+    void shouldCreateGrpcExportersWhenConfigured() {
+        contextRunner
+                .withPropertyValues(
+                        "reflex.telemetry.otlp.protocol=grpc",
+                        "reflex.telemetry.otlp.endpoint=http://collector:4317")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).hasSingleBean(OtlpGrpcSpanExporter.class);
+                    assertThat(context).doesNotHaveBean(OtlpHttpMetricExporter.class);
+                    assertThat(context).doesNotHaveBean(OtlpHttpSpanExporter.class);
+                    assertThat(context.getBean(ReflexTelemetryProperties.class).getOtlp().getProtocol())
+                            .isEqualTo(OtlpProtocol.GRPC);
+                });
+    }
+
+    @Test
+    void shouldUseHttpProtobufExportersByDefault() {
+        contextRunner
+                .run(context -> {
+                    assertThat(context).hasSingleBean(OtlpHttpMetricExporter.class);
+                    assertThat(context).hasSingleBean(OtlpHttpSpanExporter.class);
+                    assertThat(context).doesNotHaveBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).doesNotHaveBean(OtlpGrpcSpanExporter.class);
+
+                    ReflexTelemetryProperties properties = context.getBean(ReflexTelemetryProperties.class);
+                    assertThat(properties.getOtlp().getProtocol()).isEqualTo(OtlpProtocol.HTTP_PROTOBUF);
+                    assertThat(properties.getOtlp().getEndpoint()).isEqualTo("http://localhost:4318");
+                });
+    }
+
+    @Test
+    void shouldCreateHttpProtobufExportersWhenConfigured() {
+        contextRunner
+                .withPropertyValues(
+                        "reflex.telemetry.otlp.protocol=http-protobuf",
+                        "reflex.telemetry.otlp.endpoint=http://collector:4318")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(OtlpHttpMetricExporter.class);
+                    assertThat(context).hasSingleBean(OtlpHttpSpanExporter.class);
+                    assertThat(context).doesNotHaveBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).doesNotHaveBean(OtlpGrpcSpanExporter.class);
+                    assertThat(context).hasSingleBean(SdkMeterProvider.class);
+                    assertThat(context).hasSingleBean(SdkTracerProvider.class);
+                    assertThat(context.getBean(ReflexTelemetryProperties.class).getOtlp().getProtocol())
+                            .isEqualTo(OtlpProtocol.HTTP_PROTOBUF);
+                });
+    }
+
+    @Test
+    void shouldAppendHttpProtobufSignalPathsToBaseEndpoint() {
+        assertThat(ReflexTelemetryAutoConfiguration.httpProtobufEndpoint("http://collector:4318", "v1/metrics"))
+                .isEqualTo("http://collector:4318/v1/metrics");
+        assertThat(ReflexTelemetryAutoConfiguration.httpProtobufEndpoint("http://collector:4318/base/", "/v1/traces"))
+                .isEqualTo("http://collector:4318/base/v1/traces");
+        assertThat(ReflexTelemetryAutoConfiguration.httpProtobufEndpoint("http://collector:4318/v1/metrics", "v1/metrics"))
+                .isEqualTo("http://collector:4318/v1/metrics");
     }
 
     @Test

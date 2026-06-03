@@ -5,6 +5,7 @@ import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties.OtlpProtocol;
 import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
@@ -18,6 +19,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.context.propagation.ContextPropagators;
@@ -30,22 +33,30 @@ import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
+import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 
 @AutoConfiguration
 @EnableConfigurationProperties(ReflexTelemetryProperties.class)
@@ -100,7 +111,8 @@ public class ReflexTelemetryAutoConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, Meter.class})
+    @Conditional(GrpcOtlpProtocolCondition.class)
+    @ConditionalOnMissingBean({MetricExporter.class, Meter.class})
     OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexTelemetryProperties properties) {
         log.info("Reflex telemetry OTLP metrics temporality preference: {}",
                 properties.getMetrics().getTemporalityPreference());
@@ -113,8 +125,24 @@ public class ReflexTelemetryAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @Conditional(HttpProtobufOtlpProtocolCondition.class)
+    @ConditionalOnMissingBean({MetricExporter.class, Meter.class})
+    OtlpHttpMetricExporter otlpHttpMetricExporter(ReflexTelemetryProperties properties) {
+        log.info("Reflex telemetry OTLP metrics temporality preference: {}",
+                properties.getMetrics().getTemporalityPreference());
+        return OtlpHttpMetricExporter.builder()
+                .setEndpoint(httpMetricsEndpoint(properties))
+                .setTimeout(properties.getOtlp().getExportTimeout())
+                .setAggregationTemporalitySelector(metricsTemporalitySelector(properties))
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnMissingBean({OtlpGrpcSpanExporter.class, OpenTelemetry.class})
+    @Conditional(GrpcOtlpProtocolCondition.class)
+    @ConditionalOnMissingBean({SpanExporter.class, OpenTelemetry.class})
     OtlpGrpcSpanExporter otlpGrpcSpanExporter(ReflexTelemetryProperties properties) {
         return OtlpGrpcSpanExporter.builder()
                 .setEndpoint(endpoint(properties.getTraces().getEndpoint(), properties))
@@ -124,10 +152,22 @@ public class ReflexTelemetryAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
+    @Conditional(HttpProtobufOtlpProtocolCondition.class)
+    @ConditionalOnMissingBean({SpanExporter.class, OpenTelemetry.class})
+    OtlpHttpSpanExporter otlpHttpSpanExporter(ReflexTelemetryProperties properties) {
+        return OtlpHttpSpanExporter.builder()
+                .setEndpoint(httpTracesEndpoint(properties))
+                .setTimeout(properties.getOtlp().getExportTimeout())
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkMeterProvider.class, Meter.class})
     SdkMeterProvider sdkMeterProvider(
-            OtlpGrpcMetricExporter exporter,
+            MetricExporter exporter,
             ReflexTelemetryProperties properties,
             ReflexTelemetryNamingPolicy namingPolicy) {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
@@ -144,7 +184,7 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry.traces", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean({SdkTracerProvider.class, OpenTelemetry.class})
     SdkTracerProvider sdkTracerProvider(
-            OtlpGrpcSpanExporter exporter,
+            SpanExporter exporter,
             ReflexTelemetryProperties properties,
             ReflexTelemetryNamingPolicy namingPolicy) {
         SdkTracerProviderBuilder builder = SdkTracerProvider.builder();
@@ -257,6 +297,40 @@ public class ReflexTelemetryAutoConfiguration {
         }
     }
 
+    static final class GrpcOtlpProtocolCondition extends OtlpProtocolCondition {
+
+        GrpcOtlpProtocolCondition() {
+            super(OtlpProtocol.GRPC);
+        }
+    }
+
+    static final class HttpProtobufOtlpProtocolCondition extends OtlpProtocolCondition {
+
+        HttpProtobufOtlpProtocolCondition() {
+            super(OtlpProtocol.HTTP_PROTOBUF);
+        }
+    }
+
+    abstract static class OtlpProtocolCondition extends SpringBootCondition {
+
+        private final OtlpProtocol expected;
+
+        OtlpProtocolCondition(OtlpProtocol expected) {
+            this.expected = expected;
+        }
+
+        @Override
+        public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+            OtlpProtocol actual = Binder.get(context.getEnvironment())
+                    .bind("reflex.telemetry.otlp.protocol", Bindable.of(OtlpProtocol.class))
+                    .orElse(OtlpProtocol.HTTP_PROTOBUF);
+            if (actual == expected) {
+                return ConditionOutcome.match("reflex.telemetry.otlp.protocol is " + actual);
+            }
+            return ConditionOutcome.noMatch("reflex.telemetry.otlp.protocol is " + actual);
+        }
+    }
+
     private static void applyServiceNameResource(
             SdkMeterProviderBuilder builder,
             ReflexTelemetryProperties properties,
@@ -293,6 +367,29 @@ public class ReflexTelemetryAutoConfiguration {
 
     private static String endpoint(String signalEndpoint, ReflexTelemetryProperties properties) {
         return hasText(signalEndpoint) ? signalEndpoint : properties.getOtlp().getEndpoint();
+    }
+
+    static String httpProtobufEndpoint(String baseEndpoint, String signalPath) {
+        String endpoint = baseEndpoint.trim();
+        String path = signalPath.startsWith("/") ? signalPath.substring(1) : signalPath;
+        if (endpoint.endsWith("/" + path)) {
+            return endpoint;
+        }
+        return endpoint.replaceAll("/+$", "") + "/" + path;
+    }
+
+    private static String httpMetricsEndpoint(ReflexTelemetryProperties properties) {
+        if (hasText(properties.getMetrics().getEndpoint())) {
+            return properties.getMetrics().getEndpoint();
+        }
+        return httpProtobufEndpoint(properties.getOtlp().getEndpoint(), "v1/metrics");
+    }
+
+    private static String httpTracesEndpoint(ReflexTelemetryProperties properties) {
+        if (hasText(properties.getTraces().getEndpoint())) {
+            return properties.getTraces().getEndpoint();
+        }
+        return httpProtobufEndpoint(properties.getOtlp().getEndpoint(), "v1/traces");
     }
 
     private static void registerHistogramViews(
