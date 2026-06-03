@@ -330,6 +330,8 @@ public RowMapper<MetricPoint> rowMapper() {
 
 Manual metric объявляется в YAML и создается в Java по `metricId`.
 
+`ReflexMetricFactory` валидирует definition при создании metric handle. Отсутствующий `metricId`, несовпадение `source`/`kind` или некорректная конфигурация считаются ошибкой конфигурации и могут сломать старт приложения.
+
 ```yaml
 reflex:
   telemetry:
@@ -537,7 +539,7 @@ Manual metrics не бросают ошибки в бизнес-код при:
 - превышении `max-series`;
 - ошибке OpenTelemetry instrument.
 
-Ошибки логируются и emission пропускается. JDBC runtime также изолирует ошибку одного запуска и пишет internal telemetry.
+Fail-safe поведение применяется к публикации уже созданной метрики. Ошибки логируются и emission пропускается. JDBC runtime также изолирует ошибку одного запуска и пишет internal telemetry.
 
 Для manual metrics используйте `FAIL` или `TRUNCATE` как `overflow-policy`. `AGGREGATE_TO_OTHER` поддержан только в JDBC batch pipeline для non-histogram метрик.
 

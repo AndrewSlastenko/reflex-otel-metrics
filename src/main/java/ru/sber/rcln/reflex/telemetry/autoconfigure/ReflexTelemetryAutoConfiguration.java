@@ -100,7 +100,7 @@ public class ReflexTelemetryAutoConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, OpenTelemetry.class})
+    @ConditionalOnMissingBean({OtlpGrpcMetricExporter.class, Meter.class})
     OtlpGrpcMetricExporter otlpGrpcMetricExporter(ReflexTelemetryProperties properties) {
         log.info("Reflex telemetry OTLP metrics temporality preference: {}",
                 properties.getMetrics().getTemporalityPreference());
@@ -125,7 +125,7 @@ public class ReflexTelemetryAutoConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnMissingBean({SdkMeterProvider.class, OpenTelemetry.class})
+    @ConditionalOnMissingBean({SdkMeterProvider.class, Meter.class})
     SdkMeterProvider sdkMeterProvider(
             OtlpGrpcMetricExporter exporter,
             ReflexTelemetryProperties properties,
@@ -178,8 +178,16 @@ public class ReflexTelemetryAutoConfiguration {
     @ConditionalOnProperty(prefix = "reflex.telemetry", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnProperty(prefix = "reflex.telemetry.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean
-    Meter meter(OpenTelemetry openTelemetry, ReflexTelemetryProperties properties) {
-        return openTelemetry.getMeter(properties.getService().getInstrumentationScopeName());
+    Meter meter(
+            ObjectProvider<SdkMeterProvider> sdkMeterProvider,
+            ObjectProvider<OpenTelemetry> openTelemetry,
+            ReflexTelemetryProperties properties) {
+        String scopeName = properties.getService().getInstrumentationScopeName();
+        SdkMeterProvider starterMeterProvider = sdkMeterProvider.getIfAvailable();
+        if (starterMeterProvider != null) {
+            return starterMeterProvider.get(scopeName);
+        }
+        return openTelemetry.getObject().getMeter(scopeName);
     }
 
     @Bean

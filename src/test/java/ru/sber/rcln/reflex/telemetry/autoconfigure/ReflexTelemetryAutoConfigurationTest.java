@@ -47,6 +47,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -69,23 +70,43 @@ class ReflexTelemetryAutoConfigurationTest {
     }
 
     @Test
-    void shouldBackOffSdkBeansWhenOpenTelemetryIsProvidedByTheApplication() {
+    void shouldBackOffMetricsPipelineWhenMeterIsProvidedByTheApplication() {
         OpenTelemetry openTelemetry = mock(OpenTelemetry.class);
         Meter meter = mock(Meter.class);
         Tracer tracer = mock(Tracer.class);
-        when(openTelemetry.getMeter("custom.scope")).thenReturn(meter);
         when(openTelemetry.getTracer("custom.scope")).thenReturn(tracer);
 
         contextRunner
                 .withPropertyValues("reflex.telemetry.service.instrumentation-scope-name=custom.scope")
                 .withBean(OpenTelemetry.class, () -> openTelemetry)
+                .withBean(Meter.class, () -> meter)
                 .run(context -> {
                     assertThat(context).hasSingleBean(OpenTelemetry.class);
                     assertThat(context).hasSingleBean(Meter.class);
                     assertThat(context).hasSingleBean(Tracer.class);
+                    assertThat(context.getBean(Meter.class)).isSameAs(meter);
                     assertThat(context).doesNotHaveBean(OpenTelemetrySdk.class);
-                    verify(openTelemetry).getMeter("custom.scope");
+                    assertThat(context).doesNotHaveBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).doesNotHaveBean(SdkMeterProvider.class);
                     verify(openTelemetry).getTracer("custom.scope");
+                });
+    }
+
+    @Test
+    void shouldCreateMetricsPipelineWhenOnlyOpenTelemetryIsProvidedByTheApplication() {
+        OpenTelemetry openTelemetry = mock(OpenTelemetry.class);
+
+        contextRunner
+                .withPropertyValues(
+                        "reflex.telemetry.service.instrumentation-scope-name=custom.scope",
+                        "reflex.telemetry.traces.enabled=false")
+                .withBean(OpenTelemetry.class, () -> openTelemetry)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(OtlpGrpcMetricExporter.class);
+                    assertThat(context).hasSingleBean(SdkMeterProvider.class);
+                    assertThat(context).hasSingleBean(Meter.class);
+                    assertThat(context).hasSingleBean(OtelInstrumentRegistry.class);
+                    verify(openTelemetry, never()).getMeter("custom.scope");
                 });
     }
 
