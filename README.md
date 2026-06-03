@@ -27,6 +27,12 @@ Starter поднимает общую инфраструктуру:
 
 Код приложения отвечает за call-sites: где вызвать manual metric, какой SQL выполнить для JDBC metric и как замаппить строки в `MetricPoint`.
 
+## Зависимости приложения
+
+Базовое подключение starter-а достаточно для manual metrics и tracing helpers.
+
+JDBC polling metrics требуют JDBC-инфраструктуру в приложении. Если приложение использует JDBC definitions или реализует `JdbcMetricSource`, в приложении должны быть доступны `spring-jdbc` и, при использовании распределённых lock-ов, ShedLock JDBC provider. Эти зависимости не подтягиваются транзитивно как обязательные, чтобы manual/tracing-потребители не получали лишние автоконфигурации и classpath side effects.
+
 ## Сборка и тесты
 
 ```powershell
@@ -38,6 +44,14 @@ Starter поднимает общую инфраструктуру:
 ```powershell
 .\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
+
+В тестах приложений-потребителей, где telemetry не является предметом проверки, рекомендуется явно выключать starter:
+
+```properties
+reflex.telemetry.enabled=false
+```
+
+Например, в `src/test/resources/application.properties` или в test profile. API-бины вроде `ReflexMetricFactory` и `TraceOperations` при этом остаются доступны, но работают в disabled/noop-режиме и не поднимают OTLP exporters.
 
 ## Конфигурация
 
