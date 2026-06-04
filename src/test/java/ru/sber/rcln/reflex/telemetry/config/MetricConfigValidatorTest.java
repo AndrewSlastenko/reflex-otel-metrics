@@ -99,6 +99,14 @@ class MetricConfigValidatorTest {
     }
 
     @Test
+    void shouldRejectNonPositiveJdbcTimeout() {
+        ResolvedMetricConfig config = withTimeout(Duration.ZERO);
+
+        assertThat(new MetricConfigValidator().validate(config))
+                .containsExactly("Metric 'documents-by-status' requires timeout to be positive");
+    }
+
+    @Test
     void shouldRejectHistogramAggregateOverflowPolicy() {
         ResolvedMetricConfig config = new ResolvedMetricConfig(
                 "documents-latency",
@@ -199,6 +207,15 @@ class MetricConfigValidatorTest {
                 config.metricId(), config.source(), config.enabled(), config.exportedMetricName(), config.name(),
                 config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
                 config.metricKind(), config.schedule(), config.timeout(), lockAtMostFor, lockAtLeastFor,
+                config.maxSeries(), config.overflowPolicy(), config.histogramBuckets());
+    }
+
+    private static ResolvedMetricConfig withTimeout(Duration timeout) {
+        ResolvedMetricConfig config = baseConfig(ReflexTelemetryProperties.MetricSourceType.JDBC, MetricKind.GAUGE);
+        return new ResolvedMetricConfig(
+                config.metricId(), config.source(), config.enabled(), config.exportedMetricName(), config.name(),
+                config.scope(), config.description(), config.unit(), config.attributes(), config.dataSourceRef(),
+                config.metricKind(), config.schedule(), timeout, config.lockAtMostFor(), config.lockAtLeastFor(),
                 config.maxSeries(), config.overflowPolicy(), config.histogramBuckets());
     }
 

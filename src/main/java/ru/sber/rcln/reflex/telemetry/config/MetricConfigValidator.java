@@ -90,6 +90,7 @@ public class MetricConfigValidator {
             errors.add("Metric '" + config.metricId() + "' must not set fixedDelay for CRON mode");
         }
 
+        validateTimeout(config, errors);
         validateLockDuration("lockAtMostFor", config.metricId(), config.lockAtMostFor(), errors);
         validateLockDuration("lockAtLeastFor", config.metricId(), config.lockAtLeastFor(), errors);
 
@@ -99,6 +100,17 @@ public class MetricConfigValidator {
                 && !config.lockAtLeastFor().isNegative()
                 && config.lockAtLeastFor().compareTo(config.lockAtMostFor()) > 0) {
             errors.add("Metric '" + config.metricId() + "' requires lockAtLeastFor to be less than or equal to lockAtMostFor");
+        }
+    }
+
+    private static void validateTimeout(ResolvedMetricConfig config, List<String> errors) {
+        if (config.timeout() == null) {
+            errors.add("Metric '" + config.metricId() + "' requires timeout");
+            return;
+        }
+
+        if (config.timeout().isZero() || config.timeout().isNegative()) {
+            errors.add("Metric '" + config.metricId() + "' requires timeout to be positive");
         }
     }
 

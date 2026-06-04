@@ -189,7 +189,7 @@ reflex:
 | `histogram.buckets` | для custom buckets | Explicit buckets только для `HISTOGRAM` |
 | `data-source-ref` | для JDBC | Имя Spring `DataSource` bean-а |
 | `schedule` | для JDBC | Расписание polling |
-| `timeout` | для JDBC | Timeout одного запуска |
+| `timeout` | для JDBC | JDBC query timeout одного запуска |
 | `lock-at-most-for` | для JDBC | ShedLock lock-at-most |
 | `lock-at-least-for` | для JDBC | ShedLock lock-at-least |
 | `max-series` | нет | Лимит кардинальности |
@@ -294,6 +294,311 @@ JDBC metric состоит из двух частей:
 
 - YAML definition: имя, kind, datasource, schedule, attributes, limits.
 - Java `JdbcMetricSource`: `metricId`, SQL и `RowMapper<MetricPoint>`.
+
+### Настройка JDBC DataSource и ShedLock в приложении
+
+`data-source-ref` — это не JDBC URL. Это имя Spring bean-а типа `DataSource`, через который библиотека должна выполнить SQL конкретной JDBC-метрики. URL, credentials и pool-настройки задаются в конфигурации приложения обычным Spring Boot способом, а metric definition только ссылается на готовый bean.
+
+В примерах ниже `app.metrics-datasources.documents` — это property prefix для настройки подключения, а не `metricId` и не имя metric bean-а. Имя `DataSource` bean-а задается в Java-конфигурации через `@Bean("documentsMetricsDataSource")`, и именно это имя указывается в `data-source-ref`.
+
+Пример нескольких источников данных для метрик:
+
+```yaml
+app:
+  metrics-datasources:
+    documents:
+      url: jdbc:postgresql://db-docs:5432/docs
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 3
+        minimum-idle: 0
+    payments:
+      url: jdbc:postgresql://db-payments:5432/payments
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 3
+        minimum-idle: 0
+    telemetry-lock:
+      url: jdbc:postgresql://db-common:5432/telemetry
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 2
+        minimum-idle: 0
+```
+
+```java
+package com.example.metrics;
+
+import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration(proxyBeanMethods = false)
+public class MetricsDataSourceConfig {
+
+    @Bean
+    @ConfigurationProperties("app.metrics-datasources.documents")
+    DataSourceProperties documentsMetricsDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean("documentsMetricsDataSource")
+    @ConfigurationProperties("app.metrics-datasources.documents.hikari")
+    DataSource documentsMetricsDataSource(
+            @Qualifier("documentsMetricsDataSourceProperties") DataSourceProperties properties) {
+        return properties.initializeDataSourceBuilder()
+                .type(HikariDataSource.class)
+                .build();
+    }
+
+    @Bean
+    @ConfigurationProperties("app.metrics-datasources.payments")
+    DataSourceProperties paymentsMetricsDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean("paymentsMetricsDataSource")
+    @ConfigurationProperties("app.metrics-datasources.payments.hikari")
+    DataSource paymentsMetricsDataSource(
+            @Qualifier("paymentsMetricsDataSourceProperties") DataSourceProperties properties) {
+        return properties.initializeDataSourceBuilder()
+                .type(HikariDataSource.class)
+                .build();
+    }
+
+    @Bean
+    @ConfigurationProperties("app.metrics-datasources.telemetry-lock")
+    DataSourceProperties telemetryLockDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean("telemetryLockDataSource")
+    @ConfigurationProperties("app.metrics-datasources.telemetry-lock.hikari")
+    DataSource telemetryLockDataSource(
+            @Qualifier("telemetryLockDataSourceProperties") DataSourceProperties properties) {
+        return properties.initializeDataSourceBuilder()
+                .type(HikariDataSource.class)
+                .build();
+    }
+}
+```
+
+После этого JDBC metric definitions ссылаются на имена этих bean-ов:
+
+```yaml
+reflex:
+  telemetry:
+    metrics:
+      definitions:
+        documents-by-status:
+          source: JDBC
+          kind: GAUGE
+          name: documents.by-status
+          data-source-ref: documentsMetricsDataSource
+          schedule:
+            mode: FIXED_DELAY
+            fixed-delay: 5m
+        payments-by-state:
+          source: JDBC
+          kind: GAUGE
+          name: payments.by-state
+          data-source-ref: paymentsMetricsDataSource
+          schedule:
+            mode: FIXED_DELAY
+            fixed-delay: 5m
+```
+
+Несколько JDBC-метрик могут использовать один и тот же `DataSource` bean, если они читают из одной базы:
+
+```yaml
+reflex:
+  telemetry:
+    metrics:
+      definitions:
+        documents-by-status:
+          source: JDBC
+          kind: GAUGE
+          name: documents.by-status
+          data-source-ref: documentsMetricsDataSource
+        documents-by-type:
+          source: JDBC
+          kind: GAUGE
+          name: documents.by-type
+          data-source-ref: documentsMetricsDataSource
+```
+
+Если метрики читаются из той же бизнесовой базы, что и приложение, есть два рабочих варианта:
+
+- использовать уже существующий business `DataSource` bean и указать его имя в `data-source-ref`;
+- завести отдельный metrics `DataSource` на тот же JDBC URL, но с отдельным маленьким пулом и, по возможности, read-only пользователем.
+
+Отдельный metrics `DataSource` обычно предпочтительнее для production: JDBC polling не конкурирует с бизнесовыми запросами за один и тот же Hikari pool, а лимиты пула, credentials и права доступа можно настроить отдельно. Цена такого решения — дополнительные подключения к той же базе, поэтому pool для metrics обычно держат небольшим.
+
+Для JDBC-метрики `timeout` применяется как `JdbcTemplate` query timeout. Значение задается на metric definition, например `timeout: 30s`; если указаны миллисекунды, они округляются вверх до секунд, потому что JDBC query timeout работает в секундах. Ожидание свободного connection в пуле регулируется отдельно настройкой Hikari `connection-timeout` на соответствующем `DataSource`.
+
+Если credentials приходят из Secman/Vault, не храните username/password в `application.yml` или `application-reflex.yml`. Разделите конфигурацию на не-секретную topology и secret properties:
+
+- `application-reflex.yml`: какие metric DataSource-ы нужны, их URL, pool-настройки, `reflex.telemetry.metrics.definitions.*`.
+- Secman/Vault-generated `.properties`: username/password для тех же property prefixes.
+
+Например, не-секретный файл `application-reflex.yml`:
+
+```yaml
+app:
+  metrics-datasources:
+    documents:
+      url: jdbc:postgresql://db-docs:5432/docs
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 3
+        minimum-idle: 0
+    payments:
+      url: jdbc:postgresql://db-payments:5432/payments
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 3
+        minimum-idle: 0
+    telemetry-lock:
+      url: jdbc:postgresql://db-common:5432/telemetry
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 2
+        minimum-idle: 0
+
+reflex:
+  telemetry:
+    metrics:
+      definitions:
+        documents-by-status:
+          source: JDBC
+          kind: GAUGE
+          name: documents.by-status
+          data-source-ref: documentsMetricsDataSource
+          schedule:
+            mode: FIXED_DELAY
+            fixed-delay: 5m
+        payments-by-state:
+          source: JDBC
+          kind: GAUGE
+          name: payments.by-state
+          data-source-ref: paymentsMetricsDataSource
+          schedule:
+            mode: FIXED_DELAY
+            fixed-delay: 5m
+```
+
+Secman/Vault template может сгенерировать отдельный mounted файл, например `/mnt/secrets/reflex-metrics-secrets.properties`:
+
+```properties
+app.metrics-datasources.documents.username=${DOCUMENTS_DB_USER}
+app.metrics-datasources.documents.password=${DOCUMENTS_DB_PASSWORD}
+app.metrics-datasources.payments.username=${PAYMENTS_DB_USER}
+app.metrics-datasources.payments.password=${PAYMENTS_DB_PASSWORD}
+app.metrics-datasources.telemetry-lock.username=${TELEMETRY_LOCK_DB_USER}
+app.metrics-datasources.telemetry-lock.password=${TELEMETRY_LOCK_DB_PASSWORD}
+```
+
+Отдельный файл не обязателен. Если в приложении уже монтируется общий workflow secret properties, можно добавить эти строки туда же рядом с существующими `spring.datasource.*.username/password`:
+
+```properties
+spring.datasource.username=...
+spring.datasource.password=...
+spring.datasource.primary.username=...
+spring.datasource.primary.password=...
+
+app.metrics-datasources.documents.username=...
+app.metrics-datasources.documents.password=...
+app.metrics-datasources.payments.username=...
+app.metrics-datasources.payments.password=...
+app.metrics-datasources.telemetry-lock.username=...
+app.metrics-datasources.telemetry-lock.password=...
+```
+
+В реальном Vault Agent template вместо `${...}` или `...` будут значения из `secret .Data`, как в существующих `spring.datasource.*.username/password` templates. Важно, чтобы ключи совпадали с prefixes, на которые подписаны `DataSourceProperties`: `app.metrics-datasources.documents.*`, `app.metrics-datasources.payments.*`, `app.metrics-datasources.telemetry-lock.*`.
+
+Подключить mounted файлы можно через Config Data import в основном `application.yml`:
+
+```yaml
+spring:
+  config:
+    import:
+      - optional:file:/mnt/config/application-reflex.yml
+      - optional:file:/mnt/secrets/reflex-metrics-secrets.properties
+```
+
+Альтернатива для Kubernetes deployment — передать external locations через environment/args, не меняя основной `application.yml`:
+
+```yaml
+env:
+  - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+    value: optional:file:/mnt/config/application-reflex.yml,optional:file:/mnt/secrets/reflex-metrics-secrets.properties
+```
+
+Для нескольких баз правило одинаковое: на каждый источник метрик заводится свой prefix, свой `DataSourceProperties` bean и свой `DataSource` bean; в metric definition указывается только имя нужного `DataSource` bean-а. Lock DataSource настраивается отдельно и должен быть общим для всех pod-ов/плеч, которые должны видеть один и тот же ShedLock.
+
+ShedLock использует отдельный `LockProvider`. Его DataSource может совпадать с одним из metric DataSource-ов, но в production обычно удобнее держать lock-таблицу в общей технической БД, доступной всем pod-ам/плечам, которые конкурируют за запуск одной и той же метрики.
+
+```java
+package com.example.metrics;
+
+import javax.sql.DataSource;
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
+import ru.sber.rcln.reflex.telemetry.locking.MetricLockManager;
+import ru.sber.rcln.reflex.telemetry.locking.ShedLockMetricLockManager;
+
+@Configuration(proxyBeanMethods = false)
+public class MetricsLockConfig {
+
+    @Bean
+    LockProvider lockProvider(@Qualifier("telemetryLockDataSource") DataSource dataSource) {
+        return new JdbcTemplateLockProvider(
+                JdbcTemplateLockProvider.Configuration.builder()
+                        .withJdbcTemplate(new JdbcTemplate(dataSource))
+                        .withTableName("telemetry.shedlock")
+                        .usingDbTime()
+                        .build());
+    }
+
+    @Bean
+    MetricLockManager metricLockManager(LockProvider lockProvider) {
+        return new ShedLockMetricLockManager(lockProvider);
+    }
+}
+```
+
+Таблица ShedLock создается миграцией приложения, сам ShedLock ее не разворачивает:
+
+```sql
+CREATE TABLE telemetry.shedlock (
+    name VARCHAR(255) NOT NULL,
+    lock_until TIMESTAMP NOT NULL,
+    locked_at TIMESTAMP NOT NULL,
+    locked_by VARCHAR(255) NOT NULL,
+    PRIMARY KEY (name)
+);
+```
+
+Для JDBC-метрик lock name формируется как `reflex-otel-metric:<metric-id>`. На одну метрику создается одна строка, а при следующих запусках ShedLock обновляет `lock_until`, `locked_at` и `locked_by`. Если другой pod видит, что `lock_until` еще в будущем, он не выполняет сбор этой метрики. Не удаляйте строки из `shedlock` вручную во время работы приложения: ShedLock кэширует известные lock-и в памяти.
+
+Проверочный список для приложения:
+
+1. В classpath есть `spring-jdbc`.
+2. Для распределенных запусков есть `shedlock-provider-jdbc-template`.
+3. Все `data-source-ref` указывают на реальные `DataSource` bean-ы.
+4. Есть bean `LockProvider`.
+5. Есть bean `MetricLockManager`.
+6. Таблица `shedlock` создана в общей lock-БД.
+7. После старта появляются строки вида `reflex-otel-metric:documents-by-status`.
+8. Все pod-ы/плечи, которые должны конкурировать, используют одну и ту же lock-таблицу.
 
 ```java
 package com.example.metrics;
