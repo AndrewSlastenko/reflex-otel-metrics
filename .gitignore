@@ -1,5 +1,6 @@
 .worktrees/
 .superpowers/
+.codex-remote-attachments/
 target/
 .idea/
 *.iml

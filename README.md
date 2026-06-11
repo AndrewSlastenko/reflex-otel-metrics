@@ -73,6 +73,8 @@ reflex:
       enabled: true
       export-interval: 1m
       temporality-preference: DELTA
+      jdbc:
+        enabled: true
       scopes:
         business:
           enabled: true
@@ -131,6 +133,8 @@ reflex:
 | `metrics.endpoint` | empty | Endpoint только для метрик |
 | `metrics.export-interval` | `1m` | Период OTLP export |
 | `metrics.temporality-preference` | `DELTA` | Temporality selector для OTLP metrics |
+| `metrics.jdbc.enabled` | `true` | Выключатель JDBC polling runtime |
+| `metrics.jdbc.lock-provider-ref` | empty | Имя `LockProvider` bean-а для JDBC polling, если в контексте несколько ShedLock providers |
 | `traces.enabled` | `true` | Выключатель tracing |
 | `traces.endpoint` | empty | Endpoint только для traces |
 | `traces.propagation` | `W3C` | Propagation mode |
@@ -439,6 +443,10 @@ reflex:
 Отдельный metrics `DataSource` обычно предпочтительнее для production: JDBC polling не конкурирует с бизнесовыми запросами за один и тот же Hikari pool, а лимиты пула, credentials и права доступа можно настроить отдельно. Цена такого решения — дополнительные подключения к той же базе, поэтому pool для metrics обычно держат небольшим.
 
 Для JDBC-метрики `timeout` применяется как `JdbcTemplate` query timeout. Значение задается на metric definition, например `timeout: 30s`; если указаны миллисекунды, они округляются вверх до секунд, потому что JDBC query timeout работает в секундах. Ожидание свободного connection в пуле регулируется отдельно настройкой Hikari `connection-timeout` на соответствующем `DataSource`.
+
+JDBC runtime включается только если на classpath есть `spring-jdbc`, в контексте есть хотя бы один `JdbcMetricSource`, метрики включены глобально и `reflex.telemetry.metrics.jdbc.enabled=true`. Starter не создает `DataSource`: он берет уже готовый Spring bean по имени из `data-source-ref`.
+
+ShedLock используется только если приложение уже предоставило `LockProvider`. Если `LockProvider` нет, JDBC polling выполняется локально без распределенного lock-а. Если `LockProvider` несколько, задайте `reflex.telemetry.metrics.jdbc.lock-provider-ref` или объявите свой `MetricLockManager`, иначе starter не будет угадывать нужный provider.
 
 Если credentials приходят из Secman/Vault, не храните username/password в `application.yml` или `application-reflex.yml`. Разделите конфигурацию на не-секретную topology и secret properties:
 

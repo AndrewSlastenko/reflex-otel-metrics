@@ -1,1 +1,2 @@
 ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexTelemetryAutoConfiguration
+ru.sber.rcln.reflex.telemetry.autoconfigure.ReflexJdbcTelemetryAutoConfiguration

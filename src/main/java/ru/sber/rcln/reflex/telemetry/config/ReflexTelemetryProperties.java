@@ -67,9 +67,14 @@ public class ReflexTelemetryProperties {
         private String endpoint;
         private Duration exportInterval = Duration.ofMinutes(1);
         private MetricsTemporalityPreference temporalityPreference = MetricsTemporalityPreference.DELTA;
+        private JdbcProperties jdbc = new JdbcProperties();
         private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
         @Setter(AccessLevel.NONE)
         private Map<String, MetricDefinitionProperties> definitions = new LinkedHashMap<>();
+
+        public void setJdbc(JdbcProperties jdbc) {
+            this.jdbc = jdbc != null ? jdbc : new JdbcProperties();
+        }
 
         public void setScopes(Map<String, ScopeProperties> scopes) {
             this.scopes = scopes != null ? scopes : new LinkedHashMap<>();
@@ -78,6 +83,14 @@ public class ReflexTelemetryProperties {
         public void setDefinitions(Map<String, MetricDefinitionProperties> definitions) {
             this.definitions = definitions != null ? definitions : new LinkedHashMap<>();
         }
+    }
+
+    @Getter
+    @Setter
+    public static class JdbcProperties {
+
+        private boolean enabled = true;
+        private String lockProviderRef;
     }
 
     @Getter
