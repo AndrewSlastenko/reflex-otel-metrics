@@ -15,12 +15,12 @@ import org.springframework.context.annotation.Profile;
 @Profile("local")
 public class LocalDemoSchemaConfig {
 
-  @Bean
-  DataSourceScriptDatabaseInitializer demoSchemaInitializer(
-      @Qualifier("documentsMetricsDataSource") DataSource dataSource) {
-    DatabaseInitializationSettings settings = new DatabaseInitializationSettings();
-    settings.setSchemaLocations(List.of("classpath:db/local/demo-schema.sql"));
-    settings.setMode(DatabaseInitializationMode.ALWAYS);
-    return new DataSourceScriptDatabaseInitializer(dataSource, settings);
-  }
+    @Bean
+    DataSourceScriptDatabaseInitializer demoSchemaInitializer(
+            @Qualifier("documentsMetricsDataSource") DataSource dataSource) {
+        DatabaseInitializationSettings settings = new DatabaseInitializationSettings();
+        settings.setSchemaLocations(List.of("classpath:db/local/demo-schema.sql"));
+        settings.setMode(DatabaseInitializationMode.ALWAYS);
+        return new DataSourceScriptDatabaseInitializer(dataSource, settings);
+    }
 }

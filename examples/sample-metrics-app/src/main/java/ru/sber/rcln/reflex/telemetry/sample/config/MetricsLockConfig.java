@@ -15,20 +15,20 @@ import ru.sber.rcln.reflex.telemetry.locking.ShedLockMetricLockManager;
 @EnableConfigurationProperties(MetricsLockProperties.class)
 public class MetricsLockConfig {
 
-  @Bean
-  LockProvider lockProvider(
-      @Qualifier("telemetryLockDataSource") DataSource dataSource,
-      MetricsLockProperties properties) {
-    return new JdbcTemplateLockProvider(
-        JdbcTemplateLockProvider.Configuration.builder()
-            .withJdbcTemplate(new JdbcTemplate(dataSource))
-            .withTableName(properties.tableName())
-            .usingDbTime()
-            .build());
-  }
+    @Bean
+    LockProvider lockProvider(
+            @Qualifier("telemetryLockDataSource") DataSource dataSource,
+            MetricsLockProperties properties) {
+        return new JdbcTemplateLockProvider(
+                JdbcTemplateLockProvider.Configuration.builder()
+                        .withJdbcTemplate(new JdbcTemplate(dataSource))
+                        .withTableName(properties.tableName())
+                        .usingDbTime()
+                        .build());
+    }
 
-  @Bean
-  MetricLockManager metricLockManager(LockProvider lockProvider) {
-    return new ShedLockMetricLockManager(lockProvider);
-  }
+    @Bean
+    MetricLockManager metricLockManager(LockProvider lockProvider) {
+        return new ShedLockMetricLockManager(lockProvider);
+    }
 }

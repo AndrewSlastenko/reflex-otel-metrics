@@ -9,20 +9,20 @@ import ru.sber.rcln.reflex.telemetry.sample.config.MetricsLockProperties;
  */
 public final class ShedlockSchemaSupport {
 
-  private ShedlockSchemaSupport() {}
+    private ShedlockSchemaSupport() {}
 
-  public static void ensureSchema(DataSource dataSource, MetricsLockProperties properties) {
-    String schema = properties.validatedSchema();
-    JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-    jdbc.execute("CREATE SCHEMA IF NOT EXISTS " + schema);
-    jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS "
-            + schema
-            + ".shedlock ("
-            + "name VARCHAR(64) NOT NULL PRIMARY KEY, "
-            + "lock_until TIMESTAMP NOT NULL, "
-            + "locked_at TIMESTAMP NOT NULL, "
-            + "locked_by VARCHAR(255) NOT NULL"
-            + ")");
-  }
+    public static void ensureSchema(DataSource dataSource, MetricsLockProperties properties) {
+        String schema = properties.validatedSchema();
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        jdbc.execute("CREATE SCHEMA IF NOT EXISTS " + schema);
+        jdbc.execute(
+                "CREATE TABLE IF NOT EXISTS "
+                        + schema
+                        + ".shedlock ("
+                        + "name VARCHAR(64) NOT NULL PRIMARY KEY, "
+                        + "lock_until TIMESTAMP NOT NULL, "
+                        + "locked_at TIMESTAMP NOT NULL, "
+                        + "locked_by VARCHAR(255) NOT NULL"
+                        + ")");
+    }
 }
