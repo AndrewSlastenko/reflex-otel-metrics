@@ -1,0 +1,51 @@
+reflex:
+  telemetry:
+    enabled: true
+    service:
+      system-code: ci00000000
+      name: sample-metrics-app
+    otlp:
+      protocol: http-protobuf
+      endpoint: http://localhost:4318
+    metrics:
+      enabled: true
+      export-interval: 1m
+      jdbc:
+        enabled: true
+      definitions:
+        documents-by-status:
+          source: JDBC
+          kind: GAUGE
+          enabled: true
+          name: documents.by-status
+          data-source-ref: documentsMetricsDataSource
+          query:
+            schema: documents
+          attributes:
+            required: [client, status]
+          schedule:
+            mode: FIXED_DELAY
+            fixed-delay: 5m
+            initial-delay: 30s
+          timeout: 30s
+          lock-at-most-for: 2m
+          max-series: 500
+          overflow-policy: AGGREGATE_TO_OTHER
+        payments-by-state:
+          source: JDBC
+          kind: GAUGE
+          enabled: true
+          name: payments.by-state
+          data-source-ref: paymentsMetricsDataSource
+          query:
+            schema: payments
+          attributes:
+            required: [state]
+          schedule:
+            mode: FIXED_DELAY
+            fixed-delay: 5m
+            initial-delay: 30s
+          timeout: 30s
+          lock-at-most-for: 2m
+          max-series: 500
+          overflow-policy: AGGREGATE_TO_OTHER

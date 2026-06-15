@@ -35,7 +35,7 @@
 | `api`           | Публичные контракты: `JdbcMetricSource`, `MetricSource`, виды метрик, схемы атрибутов, точки метрик, tracing API |
 | `autoconfigure` | `ReflexTelemetryAutoConfiguration`, регистрация бинов OTel и стартера                                               |
 | `config`        | `ReflexTelemetryProperties`, резолверы/валидаторы конфигурации JDBC и manual                                        |
-| `jdbc`          | Сбор JDBC-метрик (`JdbcMetricCollector` и фабрика)                                                                    |
+| `jdbc`          | Сбор JDBC-метрик: `JdbcMetricCollector` и фабрика, `JdbcMetricQuerySettings` (доступ к `query.*` из YAML), `AbstractJdbcMetricSource` (база для приклад-источников) |
 | `manual`        | `ReflexMetricFactory`, реализации counter/gauge/up-down-counter, валидация атрибутов, трекер серий                    |
 | `otel`          | Реестр инструментов, публикация в OTel API                                                                            |
 | `runtime`       | Планировщик, задачи выполнения, реестр источников, лимиты серий                                                       |
@@ -47,16 +47,28 @@
 
 ## Команды
 
-Из корня репозитория:
+Из корня репозитория (multi-module reactor):
 
 ```powershell
 .\mvnw.cmd test
 ```
 
+Только библиотека:
+
+```powershell
+.\mvnw.cmd -pl rcln-reflex-telemetry test
+```
+
+Пример приклад-потребителя (`examples/sample-metrics-app`):
+
+```powershell
+.\mvnw.cmd -pl examples/sample-metrics-app test
+```
+
 Точечный прогон (пример):
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
+.\mvnw.cmd -pl rcln-reflex-telemetry -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
 
 Перед тем как утверждать, что правки готовы, прогоните релевантные тесты (по крайней мере затронутые модули или полный `test`).
@@ -66,6 +78,7 @@
 Префикс свойств: `**reflex.telemetry**`.
 
 - Определения JDBC и ручных метрик: `reflex.telemetry.metrics.definitions.<metric-id>`
+- Параметры SQL JDBC-метрики (вынесенные из кода в YAML): `reflex.telemetry.metrics.definitions.<metric-id>.query.*`, сейчас — только `query.schema` (имя БД-схемы, валидируется как простой SQL identifier). Источник читает его через `JdbcMetricQuerySettings` или базовый `AbstractJdbcMetricSource`; для `MANUAL` блок `query.*` запрещён.
 - Глобальный флаг: `reflex.telemetry.enabled`
 - Сервисные настройки: `reflex.telemetry.service.*`
 - Общие OTLP-настройки: `reflex.telemetry.otlp.*`
@@ -76,7 +89,7 @@
 
 ## Инварианты для изменений кода
 
-1. **Публичный API** — в основном пакет `api` и типы, которые явно предназначены для приложений-потребителей (`JdbcMetricSource`, фабрика/метрики в `manual`). Внутренности `internal` не рассматривать как стабильный контракт без необходимости.
+1. **Публичный API** — в основном пакет `api` и типы, которые явно предназначены для приложений-потребителей (`JdbcMetricSource`, фабрика/метрики в `manual`), а также инфраструктурные хелперы из `jdbc`, которые приклад инжектит/наследует (`JdbcMetricQuerySettings`, `AbstractJdbcMetricSource`). Внутренности `internal` не рассматривать как стабильный контракт без необходимости.
 2. **Обратная совместимость**: новые поля в `@ConfigurationProperties` — с разумными default и документацией в метаданных (при необходимости обновить binding, тесты резолвера/валидатора).
 3. **Тесты только на поддерживаемое поведение**: не добавлять тесты на несуществующий или не обещанный контракт (например, старые/ошибочные форматы properties), если команда явно не решила поддерживать обратную совместимость.
 4. **Ручные метрики**: ограничения по overflow (например, отсутствие `AGGREGATE_TO_OTHER` для manual) задокументированы в README — не ломать семантику без обновления документации и тестов.

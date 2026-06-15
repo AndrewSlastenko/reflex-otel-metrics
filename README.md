@@ -20,7 +20,7 @@ Starter поднимает общую инфраструктуру:
 - OTLP metric exporter с настраиваемой temporality и protocol
 - OTLP trace exporter
 - `ReflexMetricFactory` для ручных метрик
-- JDBC runtime для планового сбора метрик
+- JDBC runtime для планового сбора метрик и `JdbcMetricQuerySettings` для доступа из приклада к `query.*` (например, `query.schema`) из YAML
 - `TraceOperations` для span lifecycle и W3C propagation
 - ограничение кардинальности серий и overflow policies
 - histogram bucket views из YAML
@@ -35,15 +35,36 @@ JDBC polling metrics требуют JDBC-инфраструктуру в при�
 
 ## Сборка и тесты
 
+Репозиторий — Maven multi-module reactor:
+
+| Модуль | Назначение |
+| ------ | ---------- |
+| `rcln-reflex-telemetry/` | Библиотека (starter JAR) |
+| `examples/sample-metrics-app/` | Пример приклад-потребителя: несколько `DataSource`, ShedLock, JDBC metrics, тесты |
+
 ```powershell
 .\mvnw.cmd test
+```
+
+Только библиотека:
+
+```powershell
+.\mvnw.cmd -pl rcln-reflex-telemetry test
+```
+
+Пример приложения:
+
+```powershell
+.\mvnw.cmd -pl examples/sample-metrics-app test
 ```
 
 Точечный прогон:
 
 ```powershell
-.\mvnw.cmd -Dtest=ReflexTelemetryAutoConfigurationTest test
+.\mvnw.cmd -pl rcln-reflex-telemetry -Dtest=ReflexTelemetryAutoConfigurationTest test
 ```
+
+Подробности примера — в [examples/sample-metrics-app/README.md](examples/sample-metrics-app/README.md).
 
 В тестах приложений-потребителей, где telemetry не является предметом проверки, рекомендуется явно выключать starter:
 
@@ -101,6 +122,8 @@ reflex:
           name: documents.by-status
           scope: business
           data-source-ref: businessReplicaDataSource
+          query:
+            schema: documents
           schedule:
             mode: FIXED_DELAY
             fixed-delay: 5m
@@ -192,6 +215,7 @@ reflex:
 | `attributes.reject-unknown` | нет | По умолчанию `true` |
 | `histogram.buckets` | для custom buckets | Explicit buckets только для `HISTOGRAM` |
 | `data-source-ref` | для JDBC | Имя Spring `DataSource` bean-а |
+| `query.schema` | нет (JDBC) | Имя БД-схемы. Читается приложением через `JdbcMetricQuerySettings#schema(metricId)` или `AbstractJdbcMetricSource`. Валидируется как простой SQL identifier `[A-Za-z_][A-Za-z0-9_]*`. На MANUAL запрещено. |
 | `schedule` | для JDBC | Расписание polling |
 | `timeout` | для JDBC | JDBC query timeout одного запуска |
 | `lock-at-most-for` | для JDBC | ShedLock lock-at-most |
@@ -296,8 +320,8 @@ reflex:
 
 JDBC metric состоит из двух частей:
 
-- YAML definition: имя, kind, datasource, schedule, attributes, limits.
-- Java `JdbcMetricSource`: `metricId`, SQL и `RowMapper<MetricPoint>`.
+- YAML definition: имя, kind, datasource, schedule, attributes, limits, плюс опциональный блок `query` для параметров SQL (сейчас — только `schema`).
+- Java `JdbcMetricSource`: `metricId`, SQL и `RowMapper<MetricPoint>`. Для параметров из YAML удобнее наследовать `AbstractJdbcMetricSource` и инжектить `JdbcMetricQuerySettings`: `metricId` задаётся один раз в конструкторе, `query.schema` читается из resolved definition при сборке SQL.
 
 ### Настройка JDBC DataSource и ShedLock в приложении
 
@@ -314,21 +338,54 @@ app:
       url: jdbc:postgresql://db-docs:5432/docs
       driver-class-name: org.postgresql.Driver
       hikari:
+        pool-name: documents-metrics-pool
         maximum-pool-size: 3
         minimum-idle: 0
+        connection-timeout: 10000           # 10s
+        idle-timeout: 300000                # 5m
+        max-lifetime: 1800000               # 30m
+        keepalive-time: 60000               # 1m
+        leak-detection-threshold: 60000     # 1m
+        read-only: true
+        auto-commit: true
     payments:
       url: jdbc:postgresql://db-payments:5432/payments
       driver-class-name: org.postgresql.Driver
       hikari:
+        pool-name: payments-metrics-pool
         maximum-pool-size: 3
         minimum-idle: 0
+        connection-timeout: 10000
+        idle-timeout: 300000
+        max-lifetime: 1800000
+        keepalive-time: 60000
+        leak-detection-threshold: 60000
+        read-only: true
+        auto-commit: true
     telemetry-lock:
       url: jdbc:postgresql://db-common:5432/telemetry
       driver-class-name: org.postgresql.Driver
       hikari:
+        pool-name: telemetry-lock-pool
         maximum-pool-size: 2
         minimum-idle: 0
+        connection-timeout: 5000            # 5s
+        idle-timeout: 300000
+        max-lifetime: 1800000
+        read-only: false
+        auto-commit: true
 ```
+
+Hikari-значения биндятся напрямую на setter-ы `HikariDataSource`, которые принимают `long` в миллисекундах. Spring Boot `Duration` (`10s`, `30m`) при таком прямом биндинге не парсится — поэтому в YAML здесь стоят целые числа в ms. Стандартные `spring.datasource.hikari.*` поддерживают `Duration` через специальную обёртку, но при изолированных metric-DataSource-ах вы получаете bean напрямую.
+
+Параметры выше задают именно те оси, которые важны для metric-pipeline:
+
+- `pool-name` — попадает в логи Hikari и в имена JMX/observability метрик. Разные имена для documents/payments/lock делают видимым, какой пул реально нагружен.
+- `maximum-pool-size` / `minimum-idle` — метрики не должны конкурировать с бизнес-нагрузкой; держите пулы маленькими, `minimum-idle: 0` отдаёт connection-ы обратно в БД, когда метрика молчит.
+- `connection-timeout` — ожидание свободного connection в пуле, не связано с `JdbcTemplate` query timeout. Query timeout настраивается отдельно через `reflex.telemetry.metrics.definitions.<id>.timeout`.
+- `idle-timeout` / `max-lifetime` / `keepalive-time` — против stale connection (например, если PgBouncer/балансер режет idle через какое-то время).
+- `leak-detection-threshold` — на metric-DS полезно: SQL метрик короткий, любое долгое удержание подключения — повод посмотреть на источник.
+- `read-only: true` для metric-DS, если пользователь действительно read-only (и роли в БД это поддерживают). `read-only: false` для lock-DS, потому что ShedLock делает INSERT/UPDATE в `shedlock`.
 
 ```java
 package com.example.metrics;
@@ -403,6 +460,8 @@ reflex:
           kind: GAUGE
           name: documents.by-status
           data-source-ref: documentsMetricsDataSource
+          query:
+            schema: documents
           schedule:
             mode: FIXED_DELAY
             fixed-delay: 5m
@@ -411,6 +470,8 @@ reflex:
           kind: GAUGE
           name: payments.by-state
           data-source-ref: paymentsMetricsDataSource
+          query:
+            schema: payments
           schedule:
             mode: FIXED_DELAY
             fixed-delay: 5m
@@ -428,11 +489,15 @@ reflex:
           kind: GAUGE
           name: documents.by-status
           data-source-ref: documentsMetricsDataSource
+          query:
+            schema: documents
         documents-by-type:
           source: JDBC
           kind: GAUGE
           name: documents.by-type
           data-source-ref: documentsMetricsDataSource
+          query:
+            schema: documents
 ```
 
 Если метрики читаются из той же бизнесовой базы, что и приложение, есть два рабочих варианта:
@@ -462,20 +527,42 @@ app:
       url: jdbc:postgresql://db-docs:5432/docs
       driver-class-name: org.postgresql.Driver
       hikari:
+        pool-name: documents-metrics-pool
         maximum-pool-size: 3
         minimum-idle: 0
+        connection-timeout: 10000           # ms
+        idle-timeout: 300000
+        max-lifetime: 1800000
+        keepalive-time: 60000
+        leak-detection-threshold: 60000
+        read-only: true
+        auto-commit: true
     payments:
       url: jdbc:postgresql://db-payments:5432/payments
       driver-class-name: org.postgresql.Driver
       hikari:
+        pool-name: payments-metrics-pool
         maximum-pool-size: 3
         minimum-idle: 0
+        connection-timeout: 10000
+        idle-timeout: 300000
+        max-lifetime: 1800000
+        keepalive-time: 60000
+        leak-detection-threshold: 60000
+        read-only: true
+        auto-commit: true
     telemetry-lock:
       url: jdbc:postgresql://db-common:5432/telemetry
       driver-class-name: org.postgresql.Driver
       hikari:
+        pool-name: telemetry-lock-pool
         maximum-pool-size: 2
         minimum-idle: 0
+        connection-timeout: 5000
+        idle-timeout: 300000
+        max-lifetime: 1800000
+        read-only: false
+        auto-commit: true
 
 reflex:
   telemetry:
@@ -486,6 +573,8 @@ reflex:
           kind: GAUGE
           name: documents.by-status
           data-source-ref: documentsMetricsDataSource
+          query:
+            schema: documents
           schedule:
             mode: FIXED_DELAY
             fixed-delay: 5m
@@ -494,6 +583,8 @@ reflex:
           kind: GAUGE
           name: payments.by-state
           data-source-ref: paymentsMetricsDataSource
+          query:
+            schema: payments
           schedule:
             mode: FIXED_DELAY
             fixed-delay: 5m
@@ -611,28 +702,28 @@ CREATE TABLE telemetry.shedlock (
 ```java
 package com.example.metrics;
 
-import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
+import ru.sber.rcln.reflex.telemetry.jdbc.AbstractJdbcMetricSource;
+import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricQuerySettings;
 import java.util.Map;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DocumentsByStatusMetricSource implements JdbcMetricSource {
+public class DocumentsByStatusMetricSource extends AbstractJdbcMetricSource {
 
-    @Override
-    public String metricId() {
-        return "documents-by-status";
+    public DocumentsByStatusMetricSource(JdbcMetricQuerySettings querySettings) {
+        super("documents-by-status", querySettings);
     }
 
     @Override
-    public QueryDefinition queryDefinition() {
+    protected QueryDefinition buildQuery(String schema) {
         return new QueryDefinition("""
                 select client_code, document_status, count(*) as value
-                from transaction_view
+                from %s.transaction_view
                 group by client_code, document_status
-                """);
+                """.formatted(schema));
     }
 
     @Override
@@ -658,6 +749,8 @@ reflex:
           kind: GAUGE
           name: documents.by-status
           data-source-ref: businessReplicaDataSource
+          query:
+            schema: documents
           attributes:
             required: [client, status]
           schedule:
@@ -665,6 +758,10 @@ reflex:
             fixed-delay: 5m
             initial-delay: 30s
 ```
+
+`metricId` в Java и ключ definition в YAML должны совпадать. Схема задаётся только в YAML; источник читает её через `JdbcMetricQuerySettings`, без дублирования id в сообщениях об ошибках.
+
+Если SQL не зависит от внешней схемы, можно реализовать `JdbcMetricSource` напрямую и не задавать `query.schema`.
 
 Для JDBC histogram возвращайте `MetricPoint.histogram(...)`:
 

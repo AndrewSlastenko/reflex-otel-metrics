@@ -1,0 +1,64 @@
+spring:
+  config:
+    activate:
+      on-profile: metrics-it
+    import: optional:classpath:application-reflex.yml
+  sql:
+    init:
+      mode: never
+
+app:
+  metrics-datasources:
+    documents:
+      url: jdbc:h2:mem:metrics-it;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
+      hikari:
+        pool-name: documents-metrics-it-pool
+        maximum-pool-size: 1
+        minimum-idle: 0
+        connection-timeout: 2000            # 2s
+        read-only: false
+    payments:
+      url: jdbc:h2:mem:metrics-it;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
+      hikari:
+        pool-name: payments-metrics-it-pool
+        maximum-pool-size: 1
+        minimum-idle: 0
+        connection-timeout: 2000            # 2s
+        read-only: false
+    telemetry-lock:
+      url: jdbc:h2:mem:metrics-it;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
+      hikari:
+        pool-name: telemetry-lock-it-pool
+        maximum-pool-size: 1
+        minimum-idle: 0
+        connection-timeout: 2000            # 2s
+        read-only: false
+
+reflex:
+  telemetry:
+    enabled: true
+    otlp:
+      endpoint: http://127.0.0.1:9
+    metrics:
+      enabled: true
+      jdbc:
+        enabled: true
+      export-interval: 1h
+      definitions:
+        documents-by-status:
+          schedule:
+            initial-delay: PT0S
+            fixed-delay: PT1H
+        payments-by-state:
+          schedule:
+            initial-delay: PT0S
+            fixed-delay: PT1H
