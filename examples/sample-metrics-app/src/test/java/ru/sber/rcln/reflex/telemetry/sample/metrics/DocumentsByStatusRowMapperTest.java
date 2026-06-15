@@ -6,12 +6,17 @@ import java.sql.ResultSet;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
+import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
+import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
+import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricQuerySettings;
 
 class DocumentsByStatusRowMapperTest {
 
     private final DocumentsByStatusMetricSource source =
-            new DocumentsByStatusMetricSource(MetricsJdbcQueryTestSupport.querySettings("documents-by-status", "documents"));
+            new DocumentsByStatusMetricSource(querySettings());
 
     @Test
     void queryDefinition_usesConfiguredSchema() {
@@ -31,5 +36,20 @@ class DocumentsByStatusRowMapperTest {
         assertThat(point.attributes()).isEqualTo(Map.of(
                 "client", "A",
                 "status", "CREATED"));
+    }
+
+    private static JdbcMetricQuerySettings querySettings() {
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
+        properties.getService().setSystemCode("test");
+        ReflexTelemetryProperties.MetricDefinitionProperties definition =
+                new ReflexTelemetryProperties.MetricDefinitionProperties();
+        definition.setSource(ReflexTelemetryProperties.MetricSourceType.JDBC);
+        definition.setKind(MetricKind.GAUGE);
+        definition.setName("test.metric");
+        definition.setDataSourceRef("testDataSource");
+        definition.setOverflowPolicy(SeriesOverflowPolicy.FAIL);
+        definition.getQuery().setSchema("documents");
+        properties.getMetrics().getDefinitions().put("documents-by-status", definition);
+        return new JdbcMetricQuerySettings(new MetricConfigResolver(properties));
     }
 }

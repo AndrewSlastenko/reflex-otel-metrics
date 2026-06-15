@@ -28,7 +28,7 @@ import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
 @Import({
     MetricsDataSourceConfig.class,
     DocumentsByStatusMetricSource.class,
-    MetricsJdbcQueryTestSupport.DocumentsQuerySettingsConfig.class
+    JdbcSliceTelemetryConfig.class
 })
 class DocumentsByStatusMetricJdbcTest {
 

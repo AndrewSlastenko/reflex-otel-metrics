@@ -28,7 +28,7 @@ import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
 @Import({
     MetricsDataSourceConfig.class,
     PaymentsByStateMetricSource.class,
-    MetricsJdbcQueryTestSupport.PaymentsQuerySettingsConfig.class
+    JdbcSliceTelemetryConfig.class
 })
 class PaymentsByStateMetricJdbcTest {
 

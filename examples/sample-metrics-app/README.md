@@ -55,4 +55,4 @@ Use `-am` (also-make) so the reactor builds `rcln-reflex-telemetry` first.
 | `MetricsWiringTest` | `@SpringBootTest` + `metrics-it` |
 | `SampleMetricsApplicationTest` | Context load; default `local` profile, telemetry disabled in test properties |
 
-Integration tests use profile `metrics-it` (`application-metrics-it.yml`): same bean names and `query.schema` as the demo; H2 URLs and idle-friendly schedules. `@JdbcTest` slices use `MetricsJdbcQueryTestSupport` without starting the scheduler.
+Integration tests use profile `metrics-it` (`application-metrics-it.yml`): same bean names and `query.schema` as the demo; H2 URLs and idle-friendly schedules. `@JdbcTest` slices import `JdbcSliceTelemetryConfig`, which loads the real `reflex.telemetry.*` properties (via `application-reflex.yml`) and exposes `JdbcMetricQuerySettings` without starting the scheduler.
