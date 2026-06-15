@@ -1,0 +1,56 @@
+# In-memory H2 demo (active via spring.profiles.default=local in application.yml).
+spring:
+  config:
+    activate:
+      on-profile: local
+
+# Hikari time-based values are bound directly to HikariDataSource setters,
+# which accept long milliseconds (no Duration parsing). Keep numeric ms here.
+app:
+  metrics-datasources:
+    documents:
+      url: jdbc:h2:mem:sample-metrics;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
+      hikari:
+        pool-name: documents-metrics-pool
+        maximum-pool-size: 3
+        minimum-idle: 0
+        connection-timeout: 10000           # 10s
+        idle-timeout: 300000                # 5m
+        max-lifetime: 1800000               # 30m
+        keepalive-time: 60000               # 1m
+        leak-detection-threshold: 60000     # 1m
+        read-only: true
+        auto-commit: true
+    payments:
+      url: jdbc:h2:mem:sample-metrics;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
+      hikari:
+        pool-name: payments-metrics-pool
+        maximum-pool-size: 3
+        minimum-idle: 0
+        connection-timeout: 10000           # 10s
+        idle-timeout: 300000                # 5m
+        max-lifetime: 1800000               # 30m
+        keepalive-time: 60000               # 1m
+        leak-detection-threshold: 60000     # 1m
+        read-only: true
+        auto-commit: true
+    telemetry-lock:
+      url: jdbc:h2:mem:sample-metrics;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+      driver-class-name: org.h2.Driver
+      username: sa
+      password:
+      hikari:
+        pool-name: telemetry-lock-pool
+        maximum-pool-size: 2
+        minimum-idle: 0
+        connection-timeout: 5000            # 5s
+        idle-timeout: 300000                # 5m
+        max-lifetime: 1800000               # 30m
+        read-only: false
+        auto-commit: true

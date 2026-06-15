@@ -1,16 +1,35 @@
 # sample-metrics-app
 
-Reference consumer application for `rcln-reflex-telemetry`: multiple metric `DataSource` beans, ShedLock, JDBC metric sources (`AbstractJdbcMetricSource` + `query.schema`) and layered tests.
+Reference consumer for `rcln-reflex-telemetry`: local in-memory demo, layered tests, and wiring patterns to copy into real services.
+
+This module is **not** a production deployment artifact. Kubernetes (or any real environment) supplies its own `ConfigMap` / env vars; the JAR only ships shared defaults and the `local` demo profile.
+
+## Profiles
+
+| Profile | Purpose |
+| ------- | ------- |
+| `local` (default) | In-memory H2, demo DDL via `LocalDemoSchemaConfig` |
+| `metrics-it` | Integration tests only (`src/test/resources`) |
+
+`application.yml` sets `spring.profiles.default: local` so `spring-boot:run` and `java -jar` work without extra flags.
+
+**Deployment:** set `SPRING_PROFILES_ACTIVE` to your environment profile (anything except `local`) and provide `app.metrics-datasources.*`, `reflex.telemetry.*`, etc. from ConfigMap. Demo DDL runs only when `local` is active.
 
 ## Layout
 
 | Package / path | Purpose |
 | -------------- | ------- |
 | `config/MetricsDataSourceConfig` | `documentsMetricsDataSource`, `paymentsMetricsDataSource`, `telemetryLockDataSource` |
-| `config/MetricsLockConfig` | ShedLock `LockProvider` on `telemetry.shedlock` |
+| `config/MetricsLockConfig` | ShedLock on `{app.metrics-lock.schema}.shedlock` (table must exist; no runtime DDL on prod) |
+| `config/MetricsLockProperties` | `app.metrics-lock.schema` (default `telemetry`) |
+| `config/LocalDemoSchemaConfig` | `DataSourceScriptDatabaseInitializer` for H2 demo (`local` profile only) |
 | `metrics/*MetricSource` | `AbstractJdbcMetricSource` + `JdbcMetricQuerySettings` |
-| `application.yml` | DataSource URLs and pool settings (`app.metrics-datasources.*`) |
+| `application.yml` | App name, default profile `local`, `spring.sql.init.mode: never` |
+| `application-local.yml` | H2 DataSource URLs and pools (all three pools share one `jdbc:h2:mem:sample-metrics` DB) |
 | `application-reflex.yml` | Metric definitions including `query.schema` |
+| `db/local/demo-schema.sql` | Demo DDL + seed data |
+
+`LocalDemoSchemaConfig` seeds via `documentsMetricsDataSource` only. That is enough for the demo because all three pools point at the same in-memory database. If each pool used a different JDBC URL, you would need one initializer per distinct database.
 
 ## Run locally
 
@@ -18,7 +37,7 @@ Reference consumer application for `rcln-reflex-telemetry`: multiple metric `Dat
 ..\..\mvnw.cmd -pl examples/sample-metrics-app -am spring-boot:run
 ```
 
-H2 in-memory database is pre-seeded via `schema.sql`. OTLP export targets `http://localhost:4318` (collector optional).
+H2 is pre-seeded via `db/local/demo-schema.sql`. OTLP export targets `http://localhost:4318` (collector optional).
 
 ## Tests
 
@@ -31,11 +50,9 @@ Use `-am` (also-make) so the reactor builds `rcln-reflex-telemetry` first.
 | Test | Scope |
 | ---- | ----- |
 | `DocumentsByStatusRowMapperTest` | Unit: `rowMapper()` + `queryDefinition()` schema |
-| `DocumentsByStatusMetricJdbcTest` | `@JdbcTest`: SQL + `documentsMetricsDataSource` |
-| `PaymentsByStateMetricJdbcTest` | `@JdbcTest`: SQL + `paymentsMetricsDataSource` |
-| `MetricsWiringTest` | `@SpringBootTest` + `metrics-it`: beans, `data-source-ref`, `query.schema`, ShedLock |
-| `SampleMetricsApplicationTest` | Default test profile: `reflex.telemetry.enabled=false` |
+| `DocumentsByStatusMetricJdbcTest` | `@JdbcTest` + `metrics-it` |
+| `PaymentsByStateMetricJdbcTest` | `@JdbcTest` + `metrics-it` |
+| `MetricsWiringTest` | `@SpringBootTest` + `metrics-it` |
+| `SampleMetricsApplicationTest` | Context load; default `local` profile, telemetry disabled in test properties |
 
-Test classes use the `*Test` suffix so Maven Surefire picks them up in a plain `mvn test` run (`*IT` requires Failsafe).
-
-Integration tests use profile `metrics-it` (`application-metrics-it.yml`): same bean names, `data-source-ref` and `query.schema` as production; H2 URLs and idle-friendly schedules. `@JdbcTest` slices use `MetricsJdbcQueryTestSupport` to supply `JdbcMetricQuerySettings` without starting the full scheduler.
+Integration tests use profile `metrics-it` (`application-metrics-it.yml`): same bean names and `query.schema` as the demo; H2 URLs and idle-friendly schedules. `@JdbcTest` slices use `MetricsJdbcQueryTestSupport` without starting the scheduler.

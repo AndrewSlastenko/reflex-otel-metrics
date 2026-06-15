@@ -17,6 +17,7 @@ import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.locking.MetricLockManager;
+import ru.sber.rcln.reflex.telemetry.sample.config.MetricsLockProperties;
 import ru.sber.rcln.reflex.telemetry.sample.metrics.DocumentsByStatusMetricSource;
 import ru.sber.rcln.reflex.telemetry.sample.metrics.PaymentsByStateMetricSource;
 import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
@@ -55,9 +56,12 @@ class MetricsWiringTest {
     @Autowired
     MetricLockManager metricLockManager;
 
+    @Autowired
+    MetricsLockProperties metricsLockProperties;
+
     @BeforeEach
     void ensureSchema() {
-        MetricsItSchemaSupport.ensureSchema(telemetryLockDataSource);
+        MetricsItSchemaSupport.ensureSchema(telemetryLockDataSource, metricsLockProperties);
     }
 
     @Test
@@ -96,7 +100,8 @@ class MetricsWiringTest {
         assertThat(metricLockManager).isNotNull();
 
         assertThatCode(() -> new JdbcTemplate(telemetryLockDataSource)
-                .queryForObject("SELECT COUNT(*) FROM telemetry.shedlock", Integer.class))
+                .queryForObject(
+                        "SELECT COUNT(*) FROM " + metricsLockProperties.tableName(), Integer.class))
                 .doesNotThrowAnyException();
     }
 

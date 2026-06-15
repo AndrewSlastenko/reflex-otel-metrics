@@ -1,3 +1,4 @@
+-- Local H2 demo only (profile: local). ShedLock schema must match app.metrics-lock.schema.
 CREATE SCHEMA IF NOT EXISTS documents;
 CREATE SCHEMA IF NOT EXISTS payments;
 CREATE SCHEMA IF NOT EXISTS telemetry;
