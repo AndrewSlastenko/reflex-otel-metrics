@@ -1,12 +1,10 @@
-package ru.sber.rcln.reflex.telemetry.sample.support;
+package ru.sber.rcln.monitoring.loro.cred.support;
 
 import javax.sql.DataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.sber.rcln.reflex.telemetry.sample.config.MetricsLockProperties;
+import ru.sber.rcln.monitoring.loro.cred.config.MetricsLockProperties;
 
-/**
- * Test-only helper to provision ShedLock DDL in H2. Production schema is owned by DB migrations.
- */
+/** Тестовый хелпер: DDL ShedLock в H2. В проде схему создают миграции. */
 public final class ShedlockSchemaSupport {
 
     private ShedlockSchemaSupport() {}

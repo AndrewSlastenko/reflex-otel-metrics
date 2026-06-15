@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.config;
+package ru.sber.rcln.monitoring.loro.cred.config;
 
 import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockProvider;
@@ -17,7 +17,7 @@ public class MetricsLockConfig {
 
     @Bean
     LockProvider lockProvider(
-            @Qualifier("telemetryLockDataSource") DataSource dataSource,
+            @Qualifier("telemetryDataSource") DataSource dataSource,
             MetricsLockProperties properties) {
         return new JdbcTemplateLockProvider(
                 JdbcTemplateLockProvider.Configuration.builder()

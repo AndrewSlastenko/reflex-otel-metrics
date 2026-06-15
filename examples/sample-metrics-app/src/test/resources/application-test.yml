@@ -1,7 +1,7 @@
 spring:
   config:
     activate:
-      on-profile: metrics-it
+      on-profile: test
     import: optional:classpath:application-reflex.yml
   sql:
     init:
@@ -9,38 +9,38 @@ spring:
 
 app:
   metrics-datasources:
-    documents:
-      url: jdbc:h2:mem:metrics-it;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    business:
+      url: jdbc:h2:mem:sample-metrics-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
       driver-class-name: org.h2.Driver
       username: sa
       password:
       hikari:
-        pool-name: documents-metrics-it-pool
+        pool-name: business-metrics-test-pool
         maximum-pool-size: 1
         minimum-idle: 0
-        connection-timeout: 2000            # 2s
+        connection-timeout: 2000            # 2 с
         read-only: false
-    payments:
-      url: jdbc:h2:mem:metrics-it;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    workflow:
+      url: jdbc:h2:mem:sample-metrics-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
       driver-class-name: org.h2.Driver
       username: sa
       password:
       hikari:
-        pool-name: payments-metrics-it-pool
+        pool-name: workflow-metrics-test-pool
         maximum-pool-size: 1
         minimum-idle: 0
-        connection-timeout: 2000            # 2s
+        connection-timeout: 2000            # 2 с
         read-only: false
-    telemetry-lock:
-      url: jdbc:h2:mem:metrics-it;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    telemetry:
+      url: jdbc:h2:mem:sample-metrics-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
       driver-class-name: org.h2.Driver
       username: sa
       password:
       hikari:
-        pool-name: telemetry-lock-it-pool
+        pool-name: telemetry-test-pool
         maximum-pool-size: 1
         minimum-idle: 0
-        connection-timeout: 2000            # 2s
+        connection-timeout: 2000            # 2 с
         read-only: false
 
 reflex:

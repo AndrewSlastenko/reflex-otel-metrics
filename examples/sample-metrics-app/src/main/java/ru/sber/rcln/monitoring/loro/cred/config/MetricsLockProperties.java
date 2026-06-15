@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.config;
+package ru.sber.rcln.monitoring.loro.cred.config;
 
 import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -8,9 +8,7 @@ public class MetricsLockProperties {
 
     private static final Pattern SCHEMA_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
-    /**
-     * Database schema that holds the ShedLock table ({@code <schema>.shedlock}).
-     */
+    /** Схема БД, в которой лежит таблица ShedLock ({@code <schema>.shedlock}). */
     private String schema = "telemetry";
 
     public String getSchema() {

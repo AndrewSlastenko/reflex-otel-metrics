@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.metrics;
+package ru.sber.rcln.monitoring.loro.cred.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,13 +16,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import ru.sber.rcln.monitoring.loro.cred.config.JdbcSliceTelemetryConfig;
+import ru.sber.rcln.monitoring.loro.cred.config.MetricsDataSourceConfig;
+import ru.sber.rcln.monitoring.loro.cred.support.TestSchemaSupport;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricCollector;
-import ru.sber.rcln.reflex.telemetry.sample.config.MetricsDataSourceConfig;
-import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
 
 @JdbcTest
-@ActiveProfiles("metrics-it")
+@ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
@@ -33,30 +34,30 @@ import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
 class DocumentsByStatusMetricJdbcTest {
 
     @Autowired
-    @Qualifier("documentsMetricsDataSource")
-    DataSource documentsDataSource;
+    @Qualifier("businessMetricsDataSource")
+    DataSource businessDataSource;
 
     @Autowired
     DocumentsByStatusMetricSource source;
 
     @BeforeEach
     void seedDocuments() {
-        MetricsItSchemaSupport.ensureSchema(documentsDataSource);
-        JdbcTemplate jdbc = new JdbcTemplate(documentsDataSource);
-        jdbc.update("DELETE FROM documents.transaction_view");
-        jdbc.update("INSERT INTO documents.transaction_view (client_code, document_status) VALUES ('A', 'CREATED')");
-        jdbc.update("INSERT INTO documents.transaction_view (client_code, document_status) VALUES ('A', 'CREATED')");
-        jdbc.update("INSERT INTO documents.transaction_view (client_code, document_status) VALUES ('B', 'SENT')");
+        TestSchemaSupport.ensureSchema(businessDataSource);
+        JdbcTemplate jdbc = new JdbcTemplate(businessDataSource);
+        jdbc.update("DELETE FROM business.transaction_view");
+        jdbc.update("INSERT INTO business.transaction_view (client_code, document_status) VALUES ('A', 'CREATED')");
+        jdbc.update("INSERT INTO business.transaction_view (client_code, document_status) VALUES ('A', 'CREATED')");
+        jdbc.update("INSERT INTO business.transaction_view (client_code, document_status) VALUES ('B', 'SENT')");
     }
 
     @Test
-    void queryDefinition_usesSchemaFromTestSettings() {
-        assertThat(source.queryDefinition().sql()).contains("documents.transaction_view");
+    void queryDefinition_usesSchemaFromYaml() {
+        assertThat(source.queryDefinition().sql()).contains("business.transaction_view");
     }
 
     @Test
-    void collect_readsFromDocumentsDataSource() {
-        JdbcMetricCollector collector = new JdbcMetricCollector(new JdbcTemplate(documentsDataSource));
+    void collect_readsFromBusinessDataSource() {
+        JdbcMetricCollector collector = new JdbcMetricCollector(new JdbcTemplate(businessDataSource));
 
         List<MetricPoint> points = collector.collect(source.queryDefinition(), source.rowMapper());
 

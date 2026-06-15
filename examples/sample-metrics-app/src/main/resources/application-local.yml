@@ -1,56 +1,55 @@
-# In-memory H2 demo (active via spring.profiles.default=local in application.yml).
+# In-memory H2 для spring-boot:run (профиль local из application.yml).
 spring:
   config:
     activate:
       on-profile: local
 
-# Hikari time-based values are bound directly to HikariDataSource setters,
-# which accept long milliseconds (no Duration parsing). Keep numeric ms here.
+# Значения Hikari — миллисекунды (long), не Duration.
 app:
   metrics-datasources:
-    documents:
+    business:
       url: jdbc:h2:mem:sample-metrics;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
       driver-class-name: org.h2.Driver
       username: sa
       password:
       hikari:
-        pool-name: documents-metrics-pool
+        pool-name: business-metrics-pool
         maximum-pool-size: 3
         minimum-idle: 0
-        connection-timeout: 10000           # 10s
-        idle-timeout: 300000                # 5m
-        max-lifetime: 1800000               # 30m
-        keepalive-time: 60000               # 1m
-        leak-detection-threshold: 60000     # 1m
+        connection-timeout: 10000           # 10 с
+        idle-timeout: 300000                # 5 мин
+        max-lifetime: 1800000               # 30 мин
+        keepalive-time: 60000               # 1 мин
+        leak-detection-threshold: 60000     # 1 мин
         read-only: true
         auto-commit: true
-    payments:
+    workflow:
       url: jdbc:h2:mem:sample-metrics;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
       driver-class-name: org.h2.Driver
       username: sa
       password:
       hikari:
-        pool-name: payments-metrics-pool
+        pool-name: workflow-metrics-pool
         maximum-pool-size: 3
         minimum-idle: 0
-        connection-timeout: 10000           # 10s
-        idle-timeout: 300000                # 5m
-        max-lifetime: 1800000               # 30m
-        keepalive-time: 60000               # 1m
-        leak-detection-threshold: 60000     # 1m
+        connection-timeout: 10000           # 10 с
+        idle-timeout: 300000                # 5 мин
+        max-lifetime: 1800000               # 30 мин
+        keepalive-time: 60000               # 1 мин
+        leak-detection-threshold: 60000     # 1 мин
         read-only: true
         auto-commit: true
-    telemetry-lock:
+    telemetry:
       url: jdbc:h2:mem:sample-metrics;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
       driver-class-name: org.h2.Driver
       username: sa
       password:
       hikari:
-        pool-name: telemetry-lock-pool
+        pool-name: telemetry-pool
         maximum-pool-size: 2
         minimum-idle: 0
-        connection-timeout: 5000            # 5s
-        idle-timeout: 300000                # 5m
-        max-lifetime: 1800000               # 30m
+        connection-timeout: 5000            # 5 с
+        idle-timeout: 300000                # 5 мин
+        max-lifetime: 1800000               # 30 мин
         read-only: false
         auto-commit: true

@@ -2,7 +2,7 @@ spring:
   application:
     name: sample-metrics-app
   profiles:
-    # Demo defaults to in-memory H2. Override in deployment, e.g. SPRING_PROFILES_ACTIVE=prod.
+    # Демо по умолчанию на in-memory H2. В деплое переопределить, напр. SPRING_PROFILES_ACTIVE=prod.
     default: local
   config:
     import: optional:classpath:application-reflex.yml

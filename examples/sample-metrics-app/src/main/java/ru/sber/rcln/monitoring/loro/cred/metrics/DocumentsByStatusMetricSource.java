@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.metrics;
+package ru.sber.rcln.monitoring.loro.cred.metrics;
 
 import java.util.Map;
 import org.springframework.jdbc.core.RowMapper;

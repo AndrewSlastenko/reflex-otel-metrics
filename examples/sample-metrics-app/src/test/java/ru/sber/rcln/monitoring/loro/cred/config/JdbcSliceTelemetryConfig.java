@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.metrics;
+package ru.sber.rcln.monitoring.loro.cred.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -8,13 +8,12 @@ import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricQuerySettings;
 
 /**
- * Provides {@link JdbcMetricQuerySettings} for {@code @JdbcTest} slices using the real
- * {@code reflex.telemetry.*} configuration from {@code application-reflex.yml}, so {@code query.schema}
- * is not duplicated in test code.
+ * Подключает {@link JdbcMetricQuerySettings} для {@code @JdbcTest}-слайсов из {@code application-reflex.yml},
+ * чтобы {@code query.schema} не дублировать в тестовом коде.
  */
 @TestConfiguration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ReflexTelemetryProperties.class)
-class JdbcSliceTelemetryConfig {
+public class JdbcSliceTelemetryConfig {
 
     @Bean
     MetricConfigResolver metricConfigResolver(ReflexTelemetryProperties properties) {

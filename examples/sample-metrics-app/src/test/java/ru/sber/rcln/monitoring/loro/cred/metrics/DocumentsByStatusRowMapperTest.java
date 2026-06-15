@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.metrics;
+package ru.sber.rcln.monitoring.loro.cred.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,7 +20,7 @@ class DocumentsByStatusRowMapperTest {
 
     @Test
     void queryDefinition_usesConfiguredSchema() {
-        assertThat(source.queryDefinition().sql()).contains("documents.transaction_view");
+        assertThat(source.queryDefinition().sql()).contains("business.transaction_view");
     }
 
     @Test
@@ -48,7 +48,7 @@ class DocumentsByStatusRowMapperTest {
         definition.setName("test.metric");
         definition.setDataSourceRef("testDataSource");
         definition.setOverflowPolicy(SeriesOverflowPolicy.FAIL);
-        definition.getQuery().setSchema("documents");
+        definition.getQuery().setSchema("business");
         properties.getMetrics().getDefinitions().put("documents-by-status", definition);
         return new JdbcMetricQuerySettings(new MetricConfigResolver(properties));
     }

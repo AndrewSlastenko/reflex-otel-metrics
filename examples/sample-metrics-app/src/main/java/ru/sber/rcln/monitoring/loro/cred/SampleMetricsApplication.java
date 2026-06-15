@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample;
+package ru.sber.rcln.monitoring.loro.cred;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

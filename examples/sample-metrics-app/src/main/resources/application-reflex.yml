@@ -18,9 +18,9 @@ reflex:
           kind: GAUGE
           enabled: true
           name: documents.by-status
-          data-source-ref: documentsMetricsDataSource
+          data-source-ref: businessMetricsDataSource
           query:
-            schema: documents
+            schema: business
           attributes:
             required: [client, status]
           schedule:
@@ -36,9 +36,9 @@ reflex:
           kind: GAUGE
           enabled: true
           name: payments.by-state
-          data-source-ref: paymentsMetricsDataSource
+          data-source-ref: workflowMetricsDataSource
           query:
-            schema: payments
+            schema: workflow
           attributes:
             required: [state]
           schedule:

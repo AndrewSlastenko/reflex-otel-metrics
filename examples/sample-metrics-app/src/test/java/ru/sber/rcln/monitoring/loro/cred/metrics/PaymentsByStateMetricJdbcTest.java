@@ -1,4 +1,4 @@
-package ru.sber.rcln.reflex.telemetry.sample.metrics;
+package ru.sber.rcln.monitoring.loro.cred.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,13 +16,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import ru.sber.rcln.monitoring.loro.cred.config.JdbcSliceTelemetryConfig;
+import ru.sber.rcln.monitoring.loro.cred.config.MetricsDataSourceConfig;
+import ru.sber.rcln.monitoring.loro.cred.support.TestSchemaSupport;
 import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricCollector;
-import ru.sber.rcln.reflex.telemetry.sample.config.MetricsDataSourceConfig;
-import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
 
 @JdbcTest
-@ActiveProfiles("metrics-it")
+@ActiveProfiles("test")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
@@ -33,30 +34,30 @@ import ru.sber.rcln.reflex.telemetry.sample.support.MetricsItSchemaSupport;
 class PaymentsByStateMetricJdbcTest {
 
     @Autowired
-    @Qualifier("paymentsMetricsDataSource")
-    DataSource paymentsDataSource;
+    @Qualifier("workflowMetricsDataSource")
+    DataSource workflowDataSource;
 
     @Autowired
     PaymentsByStateMetricSource source;
 
     @BeforeEach
     void seedPayments() {
-        MetricsItSchemaSupport.ensureSchema(paymentsDataSource);
-        JdbcTemplate jdbc = new JdbcTemplate(paymentsDataSource);
-        jdbc.update("DELETE FROM payments.payment_view");
-        jdbc.update("INSERT INTO payments.payment_view (payment_state) VALUES ('NEW')");
-        jdbc.update("INSERT INTO payments.payment_view (payment_state) VALUES ('NEW')");
-        jdbc.update("INSERT INTO payments.payment_view (payment_state) VALUES ('PAID')");
+        TestSchemaSupport.ensureSchema(workflowDataSource);
+        JdbcTemplate jdbc = new JdbcTemplate(workflowDataSource);
+        jdbc.update("DELETE FROM workflow.payment_view");
+        jdbc.update("INSERT INTO workflow.payment_view (payment_state) VALUES ('NEW')");
+        jdbc.update("INSERT INTO workflow.payment_view (payment_state) VALUES ('NEW')");
+        jdbc.update("INSERT INTO workflow.payment_view (payment_state) VALUES ('PAID')");
     }
 
     @Test
-    void queryDefinition_usesSchemaFromTestSettings() {
-        assertThat(source.queryDefinition().sql()).contains("payments.payment_view");
+    void queryDefinition_usesSchemaFromYaml() {
+        assertThat(source.queryDefinition().sql()).contains("workflow.payment_view");
     }
 
     @Test
-    void collect_readsFromPaymentsDataSource() {
-        JdbcMetricCollector collector = new JdbcMetricCollector(new JdbcTemplate(paymentsDataSource));
+    void collect_readsFromWorkflowDataSource() {
+        JdbcMetricCollector collector = new JdbcMetricCollector(new JdbcTemplate(workflowDataSource));
 
         List<MetricPoint> points = collector.collect(source.queryDefinition(), source.rowMapper());
 
