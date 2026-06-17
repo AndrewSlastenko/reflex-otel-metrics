@@ -7,10 +7,10 @@ import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.UpDownCounterMetric;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.otel.MetricInstrumentWriter;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import java.util.function.Supplier;
 import lombok.NonNull;
@@ -59,12 +59,12 @@ public class ReflexMetricFactory {
             };
         }
 
-        LongGauge instrument = (LongGauge) requireInstrumentRegistry().getOrCreate(
+        MetricInstrumentWriter writer = requireInstrumentRegistry().getOrCreateWriter(
                 config.exportedMetricName(),
                 MetricKind.GAUGE,
                 config.description(),
                 config.unit());
-        return new DefaultGaugeMetric(config, instrument, attributeValidator);
+        return new DefaultGaugeMetric(config, writer, attributeValidator);
     }
 
     public UpDownCounterMetric upDownCounter(String metricId) {

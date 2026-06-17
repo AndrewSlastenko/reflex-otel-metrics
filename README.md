@@ -225,6 +225,8 @@ reflex:
 
 `AGGREGATE_TO_OTHER` нельзя использовать для `MANUAL` source и для `HISTOGRAM`: manual emission не имеет batch-а overflow points, а histogram observations нельзя корректно склеить в synthetic `other` series без искажения распределения.
 
+Итоговые export-имена метрик должны быть уникальны между всеми definitions (после применения naming policy, включая `service.system-code`). Если два разных `metric-id` приводят к одному имени, конфигурация считается невалидной и старт будет отклонен.
+
 ## Naming
 
 `service.system-code` — единственный платформенный префикс для имен метрик.
@@ -247,6 +249,8 @@ metrics:
 Итоговое имя метрики: `ci05414726.orders.created`.
 
 `service.name` — это OTel resource attribute `service.name`. Он не участвует в имени метрики.
+
+Пример конфликта имен: `orders-created` с `name: orders.created` и `orders-created-v2` с тем же `name`, при одинаковом `service.system-code`, дадут один export name `ci05414726.orders.created` и будут отклонены валидатором.
 
 ## Metric scopes
 
@@ -687,6 +691,12 @@ CREATE TABLE telemetry.shedlock (
 ```
 
 Для JDBC-метрик lock name формируется как `reflex-otel-metric:<metric-id>`. На одну метрику создается одна строка, а при следующих запусках ShedLock обновляет `lock_until`, `locked_at` и `locked_by`. Если другой pod видит, что `lock_until` еще в будущем, он не выполняет сбор этой метрики. Не удаляйте строки из `shedlock` вручную во время работы приложения: ShedLock кэширует известные lock-и в памяти.
+
+Для JDBC `GAUGE` публикация работает как snapshot pipeline: источник собирает полный набор серий за запуск, а при успешной публикации этот snapshot целиком заменяет предыдущий (`replace snapshot`), без поэлементного merge.
+
+В multi-pod режиме с ShedLock pod, который получил `SKIPPED` (lock не взят), очищает локальный gauge snapshot. Это предотвращает export устаревших значений с non-leader pod-а между циклами.
+
+Продвинутым пользователям internal API: для `GAUGE` не используйте synchronous путь через `OtelInstrumentRegistry.getOrCreate(..., GAUGE)` и `set`. Gauge path обслуживается через writer/observable модель (`getOrCreateWriter(...)` + snapshot store).
 
 Проверочный список для приложения:
 

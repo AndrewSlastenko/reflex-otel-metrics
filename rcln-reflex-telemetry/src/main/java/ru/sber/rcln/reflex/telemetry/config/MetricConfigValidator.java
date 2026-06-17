@@ -5,6 +5,7 @@ import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class MetricConfigValidator {
@@ -68,6 +69,18 @@ public class MetricConfigValidator {
                     + "' does not support AGGREGATE_TO_OTHER overflow policy for HISTOGRAM kind; use FAIL or TRUNCATE");
         }
 
+        return errors;
+    }
+
+    public List<String> validateDuplicateExportedNames(Map<String, List<String>> exportedNameToMetricIds) {
+        List<String> errors = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : exportedNameToMetricIds.entrySet()) {
+            List<String> metricIds = entry.getValue();
+            if (metricIds.size() > 1) {
+                errors.add("Exported metric name '" + entry.getKey() + "' is used by multiple definitions: "
+                        + String.join(", ", metricIds));
+            }
+        }
         return errors;
     }
 

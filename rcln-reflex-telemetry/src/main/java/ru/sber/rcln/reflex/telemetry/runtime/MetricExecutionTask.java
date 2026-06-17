@@ -37,6 +37,7 @@ public class MetricExecutionTask {
             });
 
             if (!executed) {
+                publisher.clear(config);
                 telemetryRecorder.recordSkipped(config);
                 return MetricRunOutcome.SKIPPED;
             }

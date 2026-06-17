@@ -13,8 +13,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,6 +60,42 @@ class OtelMetricPublisherTest {
         verify(writer).record(eq(point), eq(io.opentelemetry.api.common.Attributes.of(
                 io.opentelemetry.api.common.AttributeKey.stringKey("scope"), "business"
         )));
+    }
+
+    @Test
+    void publishesGaugeSnapshotViaRegistry() {
+        OtelInstrumentRegistry registry = mock(OtelInstrumentRegistry.class);
+        ResolvedMetricConfig config = config(MetricKind.GAUGE);
+        MetricPoint point = new MetricPoint(42L, Map.of("status", "created"));
+
+        new OtelMetricPublisher(registry).publish(config, List.of(point));
+
+        verify(registry).getOrCreateWriter(
+                config.exportedMetricName(),
+                MetricKind.GAUGE,
+                config.description(),
+                config.unit());
+        verify(registry).replaceGaugeSnapshot(config.exportedMetricName(), List.of(point));
+    }
+
+    @Test
+    void clearsGaugeSnapshotViaRegistry() {
+        OtelInstrumentRegistry registry = mock(OtelInstrumentRegistry.class);
+        ResolvedMetricConfig config = config(MetricKind.GAUGE);
+
+        new OtelMetricPublisher(registry).clear(config);
+
+        verify(registry).clearGauge(config.exportedMetricName());
+    }
+
+    @Test
+    void clearIsNoOpForNonGaugeMetrics() {
+        OtelInstrumentRegistry registry = mock(OtelInstrumentRegistry.class);
+        ResolvedMetricConfig config = config(MetricKind.COUNTER);
+
+        new OtelMetricPublisher(registry).clear(config);
+
+        verify(registry, never()).clearGauge(any());
     }
 
     private static ResolvedMetricConfig config(MetricKind metricKind) {

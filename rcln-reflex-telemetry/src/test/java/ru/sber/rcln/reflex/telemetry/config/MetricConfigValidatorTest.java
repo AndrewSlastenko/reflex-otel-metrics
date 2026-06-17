@@ -5,11 +5,35 @@ import ru.sber.rcln.reflex.telemetry.api.MetricKind;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MetricConfigValidatorTest {
+
+    @Test
+    void shouldRejectDuplicateExportedMetricNames() {
+        Map<String, List<String>> exportedNames = Map.of(
+                "ci05414726.documents.by-status", List.of("documents-by-status", "documents-by-status-manual")
+        );
+
+        assertThat(new MetricConfigValidator().validateDuplicateExportedNames(exportedNames))
+                .containsExactly(
+                        "Exported metric name 'ci05414726.documents.by-status' is used by multiple definitions: "
+                                + "documents-by-status, documents-by-status-manual"
+                );
+    }
+
+    @Test
+    void shouldAcceptUniqueExportedMetricNames() {
+        Map<String, List<String>> exportedNames = Map.of(
+                "ci05414726.documents.by-status", List.of("documents-by-status"),
+                "ci05414726.orders.created", List.of("orders-created")
+        );
+
+        assertThat(new MetricConfigValidator().validateDuplicateExportedNames(exportedNames)).isEmpty();
+    }
 
     @Test
     void shouldRejectJdbcMetricWithoutDataSourceRef() {

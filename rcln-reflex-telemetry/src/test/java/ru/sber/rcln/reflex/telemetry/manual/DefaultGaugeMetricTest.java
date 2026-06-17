@@ -6,10 +6,10 @@ import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
+import ru.sber.rcln.reflex.telemetry.otel.MetricInstrumentWriter;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongGauge;
-import io.opentelemetry.context.Context;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -18,66 +18,66 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 class DefaultGaugeMetricTest {
 
-    private final RecordingLongGauge instrument = new RecordingLongGauge();
+    private final RecordingGaugeWriter writer = new RecordingGaugeWriter();
     private final AttributeValidator attributeValidator = new AttributeValidator();
 
     @Test
     void publishesGaugeValueToLongGauge() {
         DefaultGaugeMetric metric = new DefaultGaugeMetric(
                 resolved(true, AttributesSchema.builder().required("queue").build(), 500),
-                instrument,
+                writer,
                 attributeValidator);
 
         metric.set(-7, Map.of("queue", "primary"));
 
-        assertThat(instrument.callCount).isEqualTo(1);
-        assertThat(instrument.value).isEqualTo(-7);
-        assertThat(instrument.attributes.get(AttributeKey.stringKey("queue"))).isEqualTo("primary");
+        assertThat(writer.callCount).isEqualTo(1);
+        assertThat(writer.point.value()).isEqualTo(-7);
+        assertThat(writer.attributes.get(AttributeKey.stringKey("queue"))).isEqualTo("primary");
     }
 
     @Test
     void disabledMetricIsNoOp() {
         DefaultGaugeMetric metric = new DefaultGaugeMetric(
                 resolved(false, AttributesSchema.builder().required("queue").build(), 500),
-                instrument,
+                writer,
                 attributeValidator);
 
         metric.set(1, Map.of());
 
-        assertThat(instrument.callCount).isZero();
+        assertThat(writer.callCount).isZero();
     }
 
     @Test
     void skipsInvalidAttributes() {
         DefaultGaugeMetric metric = new DefaultGaugeMetric(
                 resolved(true, AttributesSchema.builder().required("queue").build(), 500),
-                instrument,
+                writer,
                 attributeValidator);
 
         metric.set(1, Map.of());
 
-        assertThat(instrument.callCount).isZero();
+        assertThat(writer.callCount).isZero();
     }
 
     @Test
     void skipsNewSeriesAfterLimitIsReached() {
         DefaultGaugeMetric metric = new DefaultGaugeMetric(
                 resolved(true, AttributesSchema.builder().required("queue").build(), 1),
-                instrument,
+                writer,
                 attributeValidator);
 
         metric.set(1, Map.of("queue", "primary"));
         metric.set(2, Map.of("queue", "secondary"));
 
-        assertThat(instrument.callCount).isEqualTo(1);
-        assertThat(instrument.value).isEqualTo(1);
+        assertThat(writer.callCount).isEqualTo(1);
+        assertThat(writer.point.value()).isEqualTo(1);
     }
 
     @Test
     void publishExceptionDoesNotEscape() {
         DefaultGaugeMetric metric = new DefaultGaugeMetric(
                 resolved(true, AttributesSchema.empty(), 500),
-                new ThrowingLongGauge(),
+                new ThrowingGaugeWriter(),
                 attributeValidator);
 
         assertThatCode(() -> metric.set(1, Map.of())).doesNotThrowAnyException();
@@ -87,12 +87,12 @@ class DefaultGaugeMetricTest {
     void validatorExceptionDoesNotEscapeAndSkipsPublish() {
         DefaultGaugeMetric metric = new DefaultGaugeMetric(
                 resolved(true, AttributesSchema.builder().required("queue").build(), 500),
-                instrument,
+                writer,
                 new ThrowingAttributeValidator());
 
         assertThatCode(() -> metric.set(1, Map.of("queue", "primary"))).doesNotThrowAnyException();
 
-        assertThat(instrument.callCount).isZero();
+        assertThat(writer.callCount).isZero();
     }
 
     private static ResolvedMetricConfig resolved(boolean enabled, AttributesSchema attributes, int maxSeries) {
@@ -117,44 +117,24 @@ class DefaultGaugeMetricTest {
                 java.util.List.of());
     }
 
-    private static final class RecordingLongGauge implements LongGauge {
+    private static final class RecordingGaugeWriter implements MetricInstrumentWriter {
         private int callCount;
-        private long value;
+        private MetricPoint point;
         private Attributes attributes;
 
         @Override
-        public void set(long value) {
-            set(value, Attributes.empty());
-        }
-
-        @Override
-        public void set(long value, Attributes attributes) {
+        public void record(MetricPoint point, Attributes attributes) {
             this.callCount++;
-            this.value = value;
+            this.point = point;
             this.attributes = attributes;
-        }
-
-        @Override
-        public void set(long value, Attributes attributes, Context context) {
-            set(value, attributes);
         }
     }
 
-    private static final class ThrowingLongGauge implements LongGauge {
+    private static final class ThrowingGaugeWriter implements MetricInstrumentWriter {
 
         @Override
-        public void set(long value) {
-            set(value, Attributes.empty());
-        }
-
-        @Override
-        public void set(long value, Attributes attributes) {
+        public void record(MetricPoint point, Attributes attributes) {
             throw new RuntimeException("publish failed");
-        }
-
-        @Override
-        public void set(long value, Attributes attributes, Context context) {
-            set(value, attributes);
         }
     }
 

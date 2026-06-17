@@ -6,7 +6,6 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
-import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongGaugeBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGaugeBuilder;
@@ -16,6 +15,7 @@ import org.mockito.InOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -88,10 +88,9 @@ class OtelInstrumentRegistryTest {
         Meter meter = mock(Meter.class);
         DoubleGaugeBuilder gaugeBuilder = mock(DoubleGaugeBuilder.class);
         LongGaugeBuilder longGaugeBuilder = mock(LongGaugeBuilder.class);
-        LongGauge gauge = mock(LongGauge.class);
         when(meter.gaugeBuilder("documents.current")).thenReturn(gaugeBuilder);
         when(gaugeBuilder.ofLongs()).thenReturn(longGaugeBuilder);
-        when(longGaugeBuilder.build()).thenReturn(gauge);
+        when(longGaugeBuilder.buildWithCallback(any())).thenReturn(mock(io.opentelemetry.api.metrics.ObservableLongGauge.class));
 
         OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
 
@@ -100,6 +99,17 @@ class OtelInstrumentRegistryTest {
 
         assertThat(first).isSameAs(second);
         verify(meter).gaugeBuilder("documents.current");
+        verify(longGaugeBuilder).buildWithCallback(any());
+    }
+
+    @Test
+    void shouldRejectGetOrCreateForGauge() {
+        Meter meter = mock(Meter.class);
+        OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
+
+        assertThatThrownBy(() -> registry.getOrCreate("documents.current", MetricKind.GAUGE))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Gauge instruments are observable; use getOrCreateWriter(...)");
     }
 
     @Test
@@ -109,13 +119,13 @@ class OtelInstrumentRegistryTest {
         LongGaugeBuilder longGaugeBuilder = mock(LongGaugeBuilder.class);
         when(meter.gaugeBuilder("documents.current")).thenReturn(gaugeBuilder);
         when(gaugeBuilder.ofLongs()).thenReturn(longGaugeBuilder);
-        when(longGaugeBuilder.build()).thenReturn(mock(LongGauge.class));
+        when(longGaugeBuilder.buildWithCallback(any())).thenReturn(mock(io.opentelemetry.api.metrics.ObservableLongGauge.class));
 
         LongUpDownCounterBuilder upDownCounterBuilder = mock(LongUpDownCounterBuilder.class);
         when(meter.upDownCounterBuilder("documents.current")).thenReturn(upDownCounterBuilder);
 
         OtelInstrumentRegistry registry = new OtelInstrumentRegistry(meter);
-        registry.getOrCreate("documents.current", MetricKind.GAUGE);
+        registry.getOrCreateWriter("documents.current", MetricKind.GAUGE);
 
         assertThatThrownBy(() -> registry.getOrCreate("documents.current", MetricKind.UP_DOWN_COUNTER))
                 .isInstanceOf(IllegalStateException.class)

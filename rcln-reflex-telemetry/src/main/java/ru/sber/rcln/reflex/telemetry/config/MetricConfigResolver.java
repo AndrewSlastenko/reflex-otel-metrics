@@ -7,8 +7,11 @@ import ru.sber.rcln.reflex.telemetry.api.MetricSource;
 import ru.sber.rcln.reflex.telemetry.api.ReflexMetricScopes;
 import ru.sber.rcln.reflex.telemetry.api.SeriesOverflowPolicy;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import lombok.NonNull;
 
 public class MetricConfigResolver {
@@ -159,10 +162,26 @@ public class MetricConfigResolver {
     }
 
     private void validate(ResolvedMetricConfig config) {
-        var errors = validator.validate(config);
+        List<String> errors = new ArrayList<>(validator.validate(config));
+        errors.addAll(validator.validateDuplicateExportedNames(collectExportedNamesByMetricId()));
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException(String.join("; ", errors));
         }
+    }
+
+    private Map<String, List<String>> collectExportedNamesByMetricId() {
+        Map<String, List<String>> exportedNameToMetricIds = new LinkedHashMap<>();
+        for (Map.Entry<String, ReflexTelemetryProperties.MetricDefinitionProperties> entry
+                : properties.getMetrics().getDefinitions().entrySet()) {
+            String name = entry.getValue().getName();
+            if (!hasText(name)) {
+                continue;
+            }
+            exportedNameToMetricIds
+                    .computeIfAbsent(namingPolicy.metricName(name), ignored -> new ArrayList<>())
+                    .add(entry.getKey());
+        }
+        return exportedNameToMetricIds;
     }
 
     private static boolean hasText(String value) {

@@ -1,11 +1,12 @@
 package ru.sber.rcln.reflex.telemetry.manual;
 
 import ru.sber.rcln.reflex.telemetry.api.GaugeMetric;
+import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.internal.HandledExceptionLogging;
+import ru.sber.rcln.reflex.telemetry.otel.MetricInstrumentWriter;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.metrics.LongGauge;
 import java.util.Map;
 import lombok.NonNull;
 import org.slf4j.Logger;
@@ -16,16 +17,16 @@ public class DefaultGaugeMetric implements GaugeMetric {
     private static final Logger log = LoggerFactory.getLogger(DefaultGaugeMetric.class);
 
     private final ResolvedMetricConfig config;
-    private final LongGauge instrument;
+    private final MetricInstrumentWriter writer;
     private final AttributeValidator attributeValidator;
     private final ManualSeriesTracker seriesTracker;
 
     public DefaultGaugeMetric(
             @NonNull ResolvedMetricConfig config,
-            @NonNull LongGauge instrument,
+            @NonNull MetricInstrumentWriter writer,
             @NonNull AttributeValidator attributeValidator) {
         this.config = config;
-        this.instrument = instrument;
+        this.writer = writer;
         this.attributeValidator = attributeValidator;
         this.seriesTracker = new ManualSeriesTracker(config.maxSeries(), config.overflowPolicy());
     }
@@ -49,7 +50,8 @@ public class DefaultGaugeMetric implements GaugeMetric {
                 return;
             }
 
-            instrument.set(value, toAttributes(tracked.attributes()));
+            Attributes otelAttributes = toAttributes(tracked.attributes());
+            writer.record(new MetricPoint(value, tracked.attributes()), otelAttributes);
         } catch (RuntimeException exception) {
             HandledExceptionLogging.warnSkippedManualPublish(log, config.metricId(), "gauge", exception);
         }

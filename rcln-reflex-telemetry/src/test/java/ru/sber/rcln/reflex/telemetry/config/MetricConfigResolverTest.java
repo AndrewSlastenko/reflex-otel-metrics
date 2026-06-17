@@ -130,6 +130,24 @@ class MetricConfigResolverTest {
     }
 
     @Test
+    void rejectsDuplicateExportedMetricNameAcrossJdbcAndManualDefinitions() {
+        ReflexTelemetryProperties properties = baseProperties();
+        properties.getMetrics().getDefinitions().put("documents-by-status", jdbcDefinition());
+        ReflexTelemetryProperties.MetricDefinitionProperties manual = manualHistogramDefinition();
+        manual.setKind(MetricKind.COUNTER);
+        manual.setName("documents.by-status");
+        properties.getMetrics().getDefinitions().put("documents-by-status-manual", manual);
+
+        MetricConfigResolver resolver = new MetricConfigResolver(properties);
+
+        assertThatThrownBy(() -> resolver.resolve(new TestJdbcMetricSource()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Exported metric name 'ci05414726.documents.by-status' is used by multiple definitions:")
+                .hasMessageContaining("documents-by-status")
+                .hasMessageContaining("documents-by-status-manual");
+    }
+
+    @Test
     void rejectsMissingDefinition() {
         MetricConfigResolver resolver = new MetricConfigResolver(baseProperties());
 

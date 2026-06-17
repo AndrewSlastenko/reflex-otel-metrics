@@ -173,4 +173,53 @@ class MetricExecutionTaskTest {
         verify(publisher, never()).publish(any(), any());
         verify(telemetryRecorder).recordFailure(any(), any());
     }
+
+    @Test
+    void shouldClearGaugeWhenLockIsNotAcquired() {
+        MetricExecutionCoordinator coordinator = mock(MetricExecutionCoordinator.class);
+        ru.sber.rcln.reflex.telemetry.locking.MetricLockManager lockManager = mock(ru.sber.rcln.reflex.telemetry.locking.MetricLockManager.class);
+        OtelMetricPublisher publisher = mock(OtelMetricPublisher.class);
+        InternalTelemetryRecorder telemetryRecorder = mock(InternalTelemetryRecorder.class);
+        SeriesLimiter seriesLimiter = new SeriesLimiter(new OverflowAggregationStrategy());
+        when(lockManager.executeWithLock(any(), any())).thenReturn(false);
+
+        ResolvedMetricConfig config = gaugeConfig();
+        MetricExecutionTask task = new MetricExecutionTask(
+                coordinator,
+                lockManager,
+                publisher,
+                telemetryRecorder,
+                seriesLimiter,
+                config);
+
+        MetricRunOutcome outcome = task.runOnce();
+
+        assertThat(outcome).isEqualTo(MetricRunOutcome.SKIPPED);
+        verify(publisher).clear(config);
+        verify(publisher, never()).publish(any(), any());
+        verify(coordinator, never()).collect();
+        verify(telemetryRecorder).recordSkipped(any());
+    }
+
+    private static ResolvedMetricConfig gaugeConfig() {
+        return new ResolvedMetricConfig(
+                "documents-by-status",
+                ReflexTelemetryProperties.MetricSourceType.JDBC,
+                true,
+                "ci054147.documents.current",
+                "documents.current",
+                "business",
+                "Documents current",
+                "1",
+                AttributesSchema.empty(),
+                "businessReplicaDataSource",
+                MetricKind.GAUGE,
+                MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(5)),
+                Duration.ofSeconds(30),
+                Duration.ofMinutes(10),
+                Duration.ZERO,
+                500,
+                SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
+                List.of());
+    }
 }

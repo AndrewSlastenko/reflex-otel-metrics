@@ -12,6 +12,7 @@ import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
+import ru.sber.rcln.reflex.telemetry.otel.MetricInstrumentWriter;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -186,6 +187,16 @@ class ReflexMetricFactoryTest {
 
         private RecordingInstrumentRegistry() {
             super(OpenTelemetry.noop().getMeter("test"));
+        }
+
+        @Override
+        public MetricInstrumentWriter getOrCreateWriter(String name, MetricKind kind, String description, String unit) {
+            this.name = name;
+            this.kind = kind;
+            this.description = description;
+            this.unit = unit;
+            return (point, attributes) -> {
+            };
         }
 
         @Override
