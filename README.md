@@ -1,6 +1,6 @@
 # rcln-reflex-telemetry
 
-`ru.sber.rcln:rcln-reflex-telemetry` — Spring Boot 3 starter для OpenTelemetry telemetry в Reflex-приложениях: JDBC polling metrics, manual metrics из кода приложения и tracing helpers.
+`ru.sber.rcln:rcln-reflex-telemetry` — Spring Boot 3 starter для телеметрии OpenTelemetry в Reflex-приложениях: плановый сбор JDBC-метрик, ручные метрики из кода приложения и вспомогательный API для tracing.
 
 Starter рассчитан на:
 
@@ -17,21 +17,21 @@ Starter поднимает общую инфраструктуру:
 
 - binding `ReflexTelemetryProperties` под префиксом `reflex.telemetry`
 - `OpenTelemetry`, `Meter`, `Tracer`, `SdkMeterProvider`, `SdkTracerProvider`, если приложение не предоставило конфликтующие bean-ы
-- OTLP metric exporter с настраиваемой temporality и protocol
-- OTLP trace exporter
+- OTLP exporter для метрик с настраиваемыми temporality и protocol
+- OTLP exporter для traces
 - `ReflexMetricFactory` для ручных метрик
 - JDBC runtime для планового сбора метрик и `JdbcMetricQuerySettings` для доступа из приклада к `query.*` (например, `query.schema`) из YAML
 - `TraceOperations` для span lifecycle и W3C propagation
 - ограничение кардинальности серий и overflow policies
 - histogram bucket views из YAML
 
-Код приложения отвечает за call-sites: где вызвать manual metric, какой SQL выполнить для JDBC metric и как замаппить строки в `MetricPoint`.
+Код приложения отвечает за точки вызова: где записать ручную метрику, какой SQL выполнить для JDBC-метрики и как замаппить строки в `MetricPoint`.
 
 ## Зависимости приложения
 
-Базовое подключение starter-а достаточно для manual metrics и tracing helpers.
+Базового подключения starter-а достаточно для ручных метрик и вспомогательного tracing API.
 
-JDBC polling metrics требуют JDBC-инфраструктуру в приложении. Если приложение использует JDBC definitions или реализует `JdbcMetricSource`, в приложении должны быть доступны `spring-jdbc` и, при использовании распределённых lock-ов, ShedLock JDBC provider. Эти зависимости не подтягиваются транзитивно как обязательные, чтобы manual/tracing-потребители не получали лишние автоконфигурации и classpath side effects.
+JDBC polling metrics требуют JDBC-инфраструктуру в приложении. Если приложение использует JDBC definitions или реализует `JdbcMetricSource`, в classpath должны быть `spring-jdbc` и, при использовании распределённых lock-ов, ShedLock JDBC provider. Эти зависимости не подтягиваются транзитивно как обязательные, чтобы потребители только ручных метрик или tracing не получали лишние автоконфигурации и classpath side effects.
 
 ## Сборка и тесты
 
@@ -39,8 +39,8 @@ JDBC polling metrics требуют JDBC-инфраструктуру в при�
 
 | Модуль | Назначение |
 | ------ | ---------- |
-| `rcln-reflex-telemetry/` | Библиотека (starter JAR) |
-| `examples/sample-metrics-app/` | Пример приклад-потребителя: несколько `DataSource`, ShedLock, JDBC metrics, тесты |
+| `rcln-reflex-telemetry/` | Библиотека: starter JAR |
+| `examples/sample-metrics-app/` | Пример приклад-потребителя: несколько `DataSource`, ShedLock, JDBC-метрики, тесты |
 
 ```powershell
 .\mvnw.cmd test
@@ -66,7 +66,7 @@ JDBC polling metrics требуют JDBC-инфраструктуру в при�
 
 Подробности примера — в [examples/sample-metrics-app/README.md](examples/sample-metrics-app/README.md).
 
-В тестах приложений-потребителей, где telemetry не является предметом проверки, рекомендуется явно выключать starter:
+В тестах приложений-потребителей, где телеметрия не является предметом проверки, рекомендуется явно выключать starter:
 
 ```properties
 reflex.telemetry.enabled=false
@@ -76,7 +76,7 @@ reflex.telemetry.enabled=false
 
 ## Конфигурация
 
-Конфигурация YAML-first. Определения метрик находятся только в `reflex.telemetry.metrics.definitions.<metric-id>`.
+Конфигурация YAML-first: определения метрик находятся в `reflex.telemetry.metrics.definitions.<metric-id>`.
 
 ```yaml
 reflex:
@@ -139,15 +139,15 @@ reflex:
 ```
 
 Если `metrics.endpoint` или `traces.endpoint` не заданы, используется общий `otlp.endpoint`.
-Для `grpc` он используется как есть. Для `http-protobuf` к общему endpoint автоматически добавляются signal paths: `/v1/metrics` и `/v1/traces`.
+Для `grpc` он используется как есть. Для `http-protobuf` к общему endpoint автоматически добавляются пути сигналов: `/v1/metrics` и `/v1/traces`.
 
 ### Основные блоки
 
-| Property | Default | Назначение |
+| Свойство | Значение по умолчанию | Назначение |
 | -------- | ------- | ---------- |
 | `reflex.telemetry.enabled` | `true` | Глобальный выключатель starter-а |
 | `service.system-code` | empty | Префикс имен метрик |
-| `service.name` | empty | `service.name` resource attribute |
+| `service.name` | empty | Resource attribute `service.name` |
 | `service.instrumentation-scope-name` | `ru.sber.rcln.reflex.telemetry` | OTel scope для `Meter` и `Tracer` |
 | `otlp.protocol` | `HTTP_PROTOBUF` | OTLP transport: `http-protobuf` или `grpc` |
 | `otlp.endpoint` | `http://localhost:4318` | Общий endpoint по умолчанию |
@@ -155,15 +155,15 @@ reflex:
 | `metrics.enabled` | `true` | Выключатель метрик |
 | `metrics.endpoint` | empty | Endpoint только для метрик |
 | `metrics.export-interval` | `1m` | Период OTLP export |
-| `metrics.temporality-preference` | `DELTA` | Temporality selector для OTLP metrics |
+| `metrics.temporality-preference` | `DELTA` | Temporality selector для OTLP-метрик |
 | `metrics.jdbc.enabled` | `true` | Выключатель JDBC polling runtime |
-| `metrics.jdbc.scheduler.pool-size` | `2` | Number of concurrent JDBC metric runs per JVM; worker queue size is `0`, and one metric id is still protected from local overlap |
+| `metrics.jdbc.scheduler.pool-size` | `2` | Максимум параллельных запусков JDBC-метрик на JVM. Очередь worker-ов равна `0`; один `metricId` всё равно защищён от локального overlap. |
 | `metrics.jdbc.lock-provider-ref` | empty | Имя `LockProvider` bean-а для JDBC polling, если в контексте несколько ShedLock providers |
 | `traces.enabled` | `true` | Выключатель tracing |
 | `traces.endpoint` | empty | Endpoint только для traces |
-| `traces.propagation` | `W3C` | Propagation mode |
+| `traces.propagation` | `W3C` | Режим propagation |
 
-## OTLP protocol
+## Протокол OTLP
 
 По умолчанию starter использует OTLP HTTP/protobuf:
 
@@ -175,7 +175,7 @@ reflex:
       endpoint: http://collector:4318
 ```
 
-При общем `otlp.endpoint` starter сам отправит метрики на `http://collector:4318/v1/metrics`, а traces на `http://collector:4318/v1/traces`.
+При общем `otlp.endpoint` starter сам отправит метрики на `http://collector:4318/v1/metrics`, а traces — на `http://collector:4318/v1/traces`.
 
 Если окружение явно поддерживает gRPC/HTTP2 до collector-а, можно переключить exporter на OTLP/gRPC:
 
@@ -187,7 +187,7 @@ reflex:
       endpoint: http://collector:4317
 ```
 
-Signal-specific endpoint-ы используются без изменения. Если задаете их отдельно, указывайте полный OTLP HTTP путь:
+Endpoint-ы конкретных сигналов используются без изменения. Если задаёте их отдельно, указывайте полный OTLP HTTP-путь:
 
 ```yaml
 reflex:
@@ -200,9 +200,9 @@ reflex:
       endpoint: http://collector:4318/v1/traces
 ```
 
-### Metric definition
+### Определение метрики
 
-| Property | Обязательно | Назначение |
+| Свойство | Обязательно | Назначение |
 | -------- | ----------- | ---------- |
 | `source` | да | `MANUAL` или `JDBC` |
 | `kind` | да | `COUNTER`, `GAUGE`, `UP_DOWN_COUNTER`, `HISTOGRAM` |
@@ -216,7 +216,7 @@ reflex:
 | `attributes.reject-unknown` | нет | По умолчанию `true` |
 | `histogram.buckets` | для custom buckets | Explicit buckets только для `HISTOGRAM` |
 | `data-source-ref` | для JDBC | Имя Spring `DataSource` bean-а |
-| `query.schema` | нет (JDBC) | Имя БД-схемы. Читается приложением через `JdbcMetricQuerySettings#schema(metricId)` или `AbstractJdbcMetricSource`. Валидируется как простой SQL identifier `[A-Za-z_][A-Za-z0-9_]*`. На MANUAL запрещено. |
+| `query.schema` | нет (JDBC) | Имя БД-схемы. Читается приложением через `JdbcMetricQuerySettings#schema(metricId)` или `AbstractJdbcMetricSource`. Валидируется как простой SQL identifier `[A-Za-z_][A-Za-z0-9_]*`. Для MANUAL запрещено. |
 | `schedule` | для JDBC | Расписание polling |
 | `timeout` | для JDBC | JDBC query timeout одного запуска |
 | `lock-at-most-for` | для JDBC | ShedLock lock-at-most |
@@ -224,11 +224,11 @@ reflex:
 | `max-series` | нет | Лимит кардинальности |
 | `overflow-policy` | нет | `FAIL`, `TRUNCATE`, `AGGREGATE_TO_OTHER` |
 
-`AGGREGATE_TO_OTHER` нельзя использовать для `MANUAL` source и для `HISTOGRAM`: manual emission не имеет batch-а overflow points, а histogram observations нельзя корректно склеить в synthetic `other` series без искажения распределения.
+`AGGREGATE_TO_OTHER` нельзя использовать для `MANUAL` source и для `HISTOGRAM`: ручная публикация не имеет batch-а overflow points, а histogram observations нельзя корректно склеить в synthetic `other` series без искажения распределения.
 
-Итоговые export-имена метрик должны быть уникальны между всеми definitions (после применения naming policy, включая `service.system-code`). Если два разных `metric-id` приводят к одному имени, конфигурация считается невалидной и старт будет отклонен.
+Итоговые export-имена метрик должны быть уникальны между всеми definitions после применения naming policy, включая `service.system-code`. Если два разных `metric-id` приводят к одному имени, конфигурация считается невалидной и старт будет отклонён.
 
-## Naming
+## Именование
 
 `service.system-code` — единственный платформенный префикс для имен метрик.
 
@@ -251,9 +251,9 @@ metrics:
 
 `service.name` — это OTel resource attribute `service.name`. Он не участвует в имени метрики.
 
-Пример конфликта имен: `orders-created` с `name: orders.created` и `orders-created-v2` с тем же `name`, при одинаковом `service.system-code`, дадут один export name `ci05414726.orders.created` и будут отклонены валидатором.
+Пример конфликта имён: `orders-created` с `name: orders.created` и `orders-created-v2` с тем же `name`, при одинаковом `service.system-code`, дадут одинаковое export name `ci05414726.orders.created` и будут отклонены валидатором.
 
-## Metric scopes
+## Группы метрик
 
 Scopes — логические группы Reflex, а не OpenTelemetry instrumentation scope.
 
@@ -266,11 +266,11 @@ reflex:
           enabled: false
 ```
 
-Если scope выключен, все метрики этого scope становятся no-op или не планируются. Если `scope` у метрики не задан, default зависит от `source`: `manual` для `MANUAL`, `jdbc` для `JDBC`.
+Если scope выключен, все его метрики становятся no-op или не планируются. Если `scope` у метрики не задан, значение по умолчанию зависит от `source`: `manual` для `MANUAL`, `jdbc` для `JDBC`.
 
-## Temporality
+## Temporality метрик
 
-Starter создает metric exporter внутри приложения и по умолчанию ставит delta temporality:
+Starter создаёт metric exporter внутри приложения и по умолчанию включает delta temporality:
 
 ```yaml
 reflex:
@@ -282,10 +282,10 @@ reflex:
 Поддерживаемые значения:
 
 - `DELTA` — значения за интервал экспорта; рекомендуемый режим для общего адреса нескольких collector-инстансов.
-- `CUMULATIVE` — значения с начала жизни процесса; использовать только если downstream явно этого требует.
+- `CUMULATIVE` — значения с начала жизни процесса; используйте только если downstream явно этого требует.
 - `LOW_MEMORY` — low-memory selector OpenTelemetry SDK.
 
-Настройка применяется к exporter-у, который создает эта библиотека. Если приложение само предоставляет `Meter`, `SdkMeterProvider` или `MetricExporter`, библиотека отступает от своей metrics pipeline, и temporality нужно настроить в приложении или стандартной OTel autoconfigure. Один только пользовательский `OpenTelemetry` bean не выключает metrics pipeline starter-а.
+Настройка применяется к exporter-у, который создаёт эта библиотека. Если приложение само предоставляет `Meter`, `SdkMeterProvider` или `MetricExporter`, библиотека отступает от своей metrics pipeline, и temporality нужно настроить в приложении или стандартной OTel autoconfigure. Один только пользовательский `OpenTelemetry` bean не выключает metrics pipeline starter-а.
 
 При старте логируется выбранный режим:
 
@@ -295,7 +295,7 @@ Reflex telemetry OTLP metrics temporality preference: DELTA
 
 Для проверки включите debug exporter в collector и проверьте OTLP payload: у counter/histogram должна быть `AGGREGATION_TEMPORALITY_DELTA`.
 
-## Histogram buckets
+## Buckets для histogram
 
 Buckets настраиваются на уровне приложения в definition конкретной `HISTOGRAM`-метрики:
 
@@ -321,18 +321,18 @@ reflex:
 - Для процессов в секундах/минутах используйте `unit: s` и buckets вроде `[1, 2, 5, 10, 30, 60, 120, 300]`.
 - Не считайте P95 в коде приложения. Пишите отдельные observations через `HistogramMetric.record(...)`; P95, average, count и bucket rates считает backend по histogram stream.
 
-## JDBC metrics
+## JDBC-метрики
 
-JDBC metric состоит из двух частей:
+JDBC-метрика состоит из двух частей:
 
-- YAML definition: имя, kind, datasource, schedule, attributes, limits, плюс опциональный блок `query` для параметров SQL (сейчас — только `schema`).
+- YAML definition: имя, kind, datasource, schedule, attributes, limits и опциональный блок `query` для параметров SQL (сейчас — только `schema`).
 - Java `JdbcMetricSource`: `metricId`, SQL и `RowMapper<MetricPoint>`. Для параметров из YAML удобнее наследовать `AbstractJdbcMetricSource` и инжектить `JdbcMetricQuerySettings`: `metricId` задаётся один раз в конструкторе, `query.schema` читается из resolved definition при сборке SQL.
 
 ### Настройка JDBC DataSource и ShedLock в приложении
 
-`data-source-ref` — это не JDBC URL. Это имя Spring bean-а типа `DataSource`, через который библиотека должна выполнить SQL конкретной JDBC-метрики. URL, credentials и pool-настройки задаются в конфигурации приложения обычным Spring Boot способом, а metric definition только ссылается на готовый bean.
+`data-source-ref` — это не JDBC URL. Это имя Spring bean-а типа `DataSource`, через который библиотека должна выполнить SQL конкретной JDBC-метрики. URL, credentials и настройки пула задаются в конфигурации приложения обычным Spring Boot способом, а metric definition только ссылается на готовый bean.
 
-В примерах ниже `app.metrics-datasources.documents` — это property prefix для настройки подключения, а не `metricId` и не имя metric bean-а. Имя `DataSource` bean-а задается в Java-конфигурации через `@Bean("documentsMetricsDataSource")`, и именно это имя указывается в `data-source-ref`.
+В примерах ниже `app.metrics-datasources.documents` — это property prefix для настройки подключения, а не `metricId` и не имя metric bean-а. Имя `DataSource` bean-а задаётся в Java-конфигурации через `@Bean("documentsMetricsDataSource")`, и именно оно указывается в `data-source-ref`.
 
 Пример нескольких источников данных для метрик:
 
@@ -381,13 +381,13 @@ app:
         auto-commit: true
 ```
 
-Hikari-значения биндятся напрямую на setter-ы `HikariDataSource`, которые принимают `long` в миллисекундах. Spring Boot `Duration` (`10s`, `30m`) при таком прямом биндинге не парсится — поэтому в YAML здесь стоят целые числа в ms. Стандартные `spring.datasource.hikari.*` поддерживают `Duration` через специальную обёртку, но при изолированных metric-DataSource-ах вы получаете bean напрямую.
+Hikari-значения биндятся напрямую на setter-ы `HikariDataSource`, которые принимают `long` в миллисекундах. Spring Boot `Duration` (`10s`, `30m`) при таком прямом биндинге не парсится, поэтому в YAML здесь стоят целые числа в ms. Стандартные `spring.datasource.hikari.*` поддерживают `Duration` через специальную обёртку, но при изолированных metric-DataSource-ах вы получаете bean напрямую.
 
 Параметры выше задают именно те оси, которые важны для metric-pipeline:
 
-- `pool-name` — попадает в логи Hikari и в имена JMX/observability метрик. Разные имена для documents/payments/lock делают видимым, какой пул реально нагружен.
-- `maximum-pool-size` / `minimum-idle` — метрики не должны конкурировать с бизнес-нагрузкой; держите пулы маленькими, `minimum-idle: 0` отдаёт connection-ы обратно в БД, когда метрика молчит.
-- `connection-timeout` — ожидание свободного connection в пуле, не связано с `JdbcTemplate` query timeout. Query timeout настраивается отдельно через `reflex.telemetry.metrics.definitions.<id>.timeout`.
+- `pool-name` — попадает в логи Hikari и в имена JMX/observability метрик. Разные имена для documents/payments/lock показывают, какой пул реально нагружен.
+- `maximum-pool-size` / `minimum-idle` — метрики не должны конкурировать с бизнес-нагрузкой; держите пулы маленькими, `minimum-idle: 0` возвращает connection-ы в БД, когда метрика молчит.
+- `connection-timeout` — ожидание свободного connection в пуле. Это не `JdbcTemplate` query timeout: query timeout настраивается отдельно через `reflex.telemetry.metrics.definitions.<id>.timeout`.
 - `idle-timeout` / `max-lifetime` / `keepalive-time` — против stale connection (например, если PgBouncer/балансер режет idle через какое-то время).
 - `leak-detection-threshold` — на metric-DS полезно: SQL метрик короткий, любое долгое удержание подключения — повод посмотреть на источник.
 - `read-only: true` для metric-DS, если пользователь действительно read-only (и роли в БД это поддерживают). `read-only: false` для lock-DS, потому что ShedLock делает INSERT/UPDATE в `shedlock`.
@@ -453,7 +453,7 @@ public class MetricsDataSourceConfig {
 }
 ```
 
-После этого JDBC metric definitions ссылаются на имена этих bean-ов:
+После этого definitions JDBC-метрик ссылаются на имена этих bean-ов:
 
 ```yaml
 reflex:
@@ -512,17 +512,17 @@ reflex:
 
 Отдельный metrics `DataSource` обычно предпочтительнее для production: JDBC polling не конкурирует с бизнесовыми запросами за один и тот же Hikari pool, а лимиты пула, credentials и права доступа можно настроить отдельно. Цена такого решения — дополнительные подключения к той же базе, поэтому pool для metrics обычно держат небольшим.
 
-Для JDBC-метрики `timeout` применяется как `JdbcTemplate` query timeout. Значение задается на metric definition, например `timeout: 30s`; если указаны миллисекунды, они округляются вверх до секунд, потому что JDBC query timeout работает в секундах. Ожидание свободного connection в пуле регулируется отдельно настройкой Hikari `connection-timeout` на соответствующем `DataSource`.
+Для JDBC-метрики `timeout` применяется как `JdbcTemplate` query timeout. Значение задаётся в metric definition, например `timeout: 30s`; если указаны миллисекунды, они округляются вверх до секунд, потому что JDBC query timeout работает в секундах. Ожидание свободного connection в пуле регулируется отдельно настройкой Hikari `connection-timeout` на соответствующем `DataSource`.
 
-JDBC runtime включается только если на classpath есть `spring-jdbc`, в контексте есть хотя бы один `JdbcMetricSource`, метрики включены глобально и `reflex.telemetry.metrics.jdbc.enabled=true`. Starter не создает `DataSource`: он берет уже готовый Spring bean по имени из `data-source-ref`.
+JDBC runtime включается только если в classpath есть `spring-jdbc`, в контексте есть хотя бы один `JdbcMetricSource`, метрики включены глобально и `reflex.telemetry.metrics.jdbc.enabled=true`. Starter не создаёт `DataSource`: он берёт уже готовый Spring bean по имени из `data-source-ref`.
 
-JDBC polling uses a scheduler plus a bounded worker pool with no waiting queue. Different metric ids may run concurrently up to `reflex.telemetry.metrics.jdbc.scheduler.pool-size`, but the same metric id is never executed concurrently in the same JVM. If a tick arrives while the previous local run for that metric id is still active, the tick is skipped locally before ShedLock and before gauge clearing. If all workers are busy, the tick is skipped by capacity before `MetricExecutionTask.runOnce()`. Gauge clearing is still performed when the real run starts but this pod does not acquire the distributed ShedLock.
+JDBC polling использует scheduler и ограниченный worker pool без очереди ожидания. Разные `metricId` могут выполняться параллельно до лимита `reflex.telemetry.metrics.jdbc.scheduler.pool-size`, но один и тот же `metricId` никогда не запускается параллельно в одной JVM. Если новый tick приходит, пока предыдущий локальный запуск этой метрики ещё активен, tick пропускается локально до ShedLock и до очистки gauge. Если все worker-ы заняты, tick пропускается по capacity ещё до `MetricExecutionTask.runOnce()`. Очистка gauge всё равно выполняется, когда реальный запуск начался, но pod не получил распределённый ShedLock.
 
-Keep `metrics.jdbc.scheduler.pool-size` aligned with telemetry `DataSource` pool sizes. The worker queue size is `0`, so a tick is not queued when all workers are busy; it is skipped and the next schedule tick can try again.
+Держите `metrics.jdbc.scheduler.pool-size` согласованным с размерами telemetry `DataSource` pools. Размер очереди worker-ов равен `0`, поэтому tick не ставится в очередь, когда все worker-ы заняты: он пропускается, а следующая попытка будет на следующем tick расписания.
 
-ShedLock используется только если приложение уже предоставило `LockProvider`. Если `LockProvider` нет, JDBC polling выполняется локально без распределенного lock-а. Если `LockProvider` несколько, задайте `reflex.telemetry.metrics.jdbc.lock-provider-ref` или объявите свой `MetricLockManager`, иначе starter не будет угадывать нужный provider.
+ShedLock используется только если приложение уже предоставило `LockProvider`. Если `LockProvider` нет, JDBC polling выполняется локально без распределённого lock-а. Если `LockProvider` несколько, задайте `reflex.telemetry.metrics.jdbc.lock-provider-ref` или объявите свой `MetricLockManager`, иначе starter не будет угадывать нужный provider.
 
-Если credentials приходят из Secman/Vault, не храните username/password в `application.yml` или `application-reflex.yml`. Разделите конфигурацию на не-секретную topology и secret properties:
+Если credentials приходят из Secman/Vault, не храните username/password в `application.yml` или `application-reflex.yml`. Разделите конфигурацию на несекретную topology и secret properties:
 
 - `application-reflex.yml`: какие metric DataSource-ы нужны, их URL, pool-настройки, `reflex.telemetry.metrics.definitions.*`.
 - Secman/Vault-generated `.properties`: username/password для тех же property prefixes.
@@ -683,7 +683,7 @@ public class MetricsLockConfig {
 }
 ```
 
-Таблица ShedLock создается миграцией приложения, сам ShedLock ее не разворачивает:
+Таблица ShedLock создаётся миграцией приложения, сам ShedLock её не разворачивает:
 
 ```sql
 CREATE TABLE telemetry.shedlock (
@@ -695,7 +695,7 @@ CREATE TABLE telemetry.shedlock (
 );
 ```
 
-Для JDBC-метрик lock name формируется как `reflex-otel-metric:<metric-id>`. На одну метрику создается одна строка, а при следующих запусках ShedLock обновляет `lock_until`, `locked_at` и `locked_by`. Если другой pod видит, что `lock_until` еще в будущем, он не выполняет сбор этой метрики. Не удаляйте строки из `shedlock` вручную во время работы приложения: ShedLock кэширует известные lock-и в памяти.
+Для JDBC-метрик lock name формируется как `reflex-otel-metric:<metric-id>`. На одну метрику создаётся одна строка, а при следующих запусках ShedLock обновляет `lock_until`, `locked_at` и `locked_by`. Если другой pod видит, что `lock_until` ещё в будущем, он не выполняет сбор этой метрики. Не удаляйте строки из `shedlock` вручную во время работы приложения: ShedLock кэширует известные lock-и в памяти.
 
 Для JDBC `GAUGE` публикация работает как snapshot pipeline: источник собирает полный набор серий за запуск, а при успешной публикации этот snapshot целиком заменяет предыдущий (`replace snapshot`), без поэлементного merge.
 
@@ -789,9 +789,9 @@ public RowMapper<MetricPoint> rowMapper() {
 }
 ```
 
-## Manual metrics
+## Ручные метрики
 
-Manual metric объявляется в YAML и создается в Java по `metricId`.
+Ручная метрика объявляется в YAML и создаётся в Java по `metricId`.
 
 `ReflexMetricFactory` валидирует definition при создании metric handle. Отсутствующий `metricId`, несовпадение `source`/`kind` или некорректная конфигурация считаются ошибкой конфигурации и могут сломать старт приложения.
 
@@ -837,7 +837,7 @@ public class OrderMetrics {
 }
 ```
 
-Для duration после отправки во внешнюю систему используйте manual histogram:
+Для duration после отправки во внешнюю систему используйте ручную histogram:
 
 ```yaml
 reflex:
@@ -895,13 +895,13 @@ public class TransactionMetrics {
 | Kind | Когда использовать |
 | ---- | ------------------ |
 | `COUNTER` | События и неотрицательные increments: создано, отправлено, ошибка |
-| `GAUGE` | Snapshot текущего состояния: очередь сейчас, строк сейчас |
+| `GAUGE` | Snapshot текущего состояния: текущий размер очереди, текущее число строк |
 | `UP_DOWN_COUNTER` | Delta, которая может быть положительной или отрицательной |
 | `HISTOGRAM` | Распределения: duration, latency, size |
 
 Не используйте `UP_DOWN_COUNTER` для `select count(*) ...`, если SQL возвращает полный snapshot. Для snapshot нужен `GAUGE`.
 
-## Trace operations
+## Tracing API
 
 `TraceOperations` можно инжектить как обычный bean. Span-ы экспортируются, когда включены `reflex.telemetry.enabled` и `reflex.telemetry.traces.enabled`.
 
@@ -932,7 +932,7 @@ traces.inSpan(
         () -> action.execute(context));
 ```
 
-Propagation правила:
+Правила propagation:
 
 - храните `traceparent` и `tracestate` как opaque strings;
 - не храните span objects в базе;
@@ -993,20 +993,20 @@ reflex:
 
 Автоконфигурация библиотеки должна создавать Reflex-backed bean только при наличии `ReflexMetricFactory`, а иначе давать no-op fallback.
 
-## Fail-safe behavior
+## Fail-safe поведение
 
-Manual metrics не бросают ошибки в бизнес-код при:
+Ручные метрики не бросают ошибки в бизнес-код при:
 
 - выключенной метрике;
 - неверных attributes;
 - превышении `max-series`;
 - ошибке OpenTelemetry instrument.
 
-Fail-safe поведение применяется к публикации уже созданной метрики. Ошибки логируются и emission пропускается. JDBC runtime также изолирует ошибку одного запуска и пишет internal telemetry.
+Fail-safe поведение применяется к публикации уже созданной метрики. Ошибки логируются, emission пропускается. JDBC runtime также изолирует ошибку одного запуска и пишет internal telemetry.
 
-Для manual metrics используйте `FAIL` или `TRUNCATE` как `overflow-policy`. `AGGREGATE_TO_OTHER` поддержан только в JDBC batch pipeline для non-histogram метрик.
+Для ручных метрик используйте `FAIL` или `TRUNCATE` как `overflow-policy`. `AGGREGATE_TO_OTHER` поддержан только в JDBC batch pipeline для non-histogram метрик.
 
-## Debug checklist
+## Проверочный список для отладки
 
 1. Проверьте, что definition существует в `reflex.telemetry.metrics.definitions.<metric-id>`.
 2. Проверьте `source` и `kind`: Java `factory.histogram("id")` требует `source: MANUAL` и `kind: HISTOGRAM`.
