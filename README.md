@@ -157,6 +157,7 @@ reflex:
 | `metrics.export-interval` | `1m` | Период OTLP export |
 | `metrics.temporality-preference` | `DELTA` | Temporality selector для OTLP metrics |
 | `metrics.jdbc.enabled` | `true` | Выключатель JDBC polling runtime |
+| `metrics.jdbc.scheduler.pool-size` | `2` | Number of concurrent JDBC metric runs per JVM; worker queue size is `0`, and one metric id is still protected from local overlap |
 | `metrics.jdbc.lock-provider-ref` | empty | Имя `LockProvider` bean-а для JDBC polling, если в контексте несколько ShedLock providers |
 | `traces.enabled` | `true` | Выключатель tracing |
 | `traces.endpoint` | empty | Endpoint только для traces |
@@ -514,6 +515,10 @@ reflex:
 Для JDBC-метрики `timeout` применяется как `JdbcTemplate` query timeout. Значение задается на metric definition, например `timeout: 30s`; если указаны миллисекунды, они округляются вверх до секунд, потому что JDBC query timeout работает в секундах. Ожидание свободного connection в пуле регулируется отдельно настройкой Hikari `connection-timeout` на соответствующем `DataSource`.
 
 JDBC runtime включается только если на classpath есть `spring-jdbc`, в контексте есть хотя бы один `JdbcMetricSource`, метрики включены глобально и `reflex.telemetry.metrics.jdbc.enabled=true`. Starter не создает `DataSource`: он берет уже готовый Spring bean по имени из `data-source-ref`.
+
+JDBC polling uses a scheduler plus a bounded worker pool with no waiting queue. Different metric ids may run concurrently up to `reflex.telemetry.metrics.jdbc.scheduler.pool-size`, but the same metric id is never executed concurrently in the same JVM. If a tick arrives while the previous local run for that metric id is still active, the tick is skipped locally before ShedLock and before gauge clearing. If all workers are busy, the tick is skipped by capacity before `MetricExecutionTask.runOnce()`. Gauge clearing is still performed when the real run starts but this pod does not acquire the distributed ShedLock.
+
+Keep `metrics.jdbc.scheduler.pool-size` aligned with telemetry `DataSource` pool sizes. The worker queue size is `0`, so a tick is not queued when all workers are busy; it is skipped and the next schedule tick can try again.
 
 ShedLock используется только если приложение уже предоставило `LockProvider`. Если `LockProvider` нет, JDBC polling выполняется локально без распределенного lock-а. Если `LockProvider` несколько, задайте `reflex.telemetry.metrics.jdbc.lock-provider-ref` или объявите свой `MetricLockManager`, иначе starter не будет угадывать нужный provider.
 

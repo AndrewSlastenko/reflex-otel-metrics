@@ -91,6 +91,18 @@ public class ReflexTelemetryProperties {
 
         private boolean enabled = true;
         private String lockProviderRef;
+        private SchedulerProperties scheduler = new SchedulerProperties();
+
+        public void setScheduler(SchedulerProperties scheduler) {
+            this.scheduler = scheduler != null ? scheduler : new SchedulerProperties();
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class SchedulerProperties {
+
+        private int poolSize = 2;
     }
 
     @Getter

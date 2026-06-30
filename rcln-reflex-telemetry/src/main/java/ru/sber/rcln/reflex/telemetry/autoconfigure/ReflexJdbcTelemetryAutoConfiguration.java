@@ -12,6 +12,7 @@ import ru.sber.rcln.reflex.telemetry.locking.MetricLockManager;
 import ru.sber.rcln.reflex.telemetry.locking.ShedLockMetricLockManager;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import ru.sber.rcln.reflex.telemetry.otel.OtelMetricPublisher;
+import ru.sber.rcln.reflex.telemetry.runtime.MetricExecutionDispatcher;
 import ru.sber.rcln.reflex.telemetry.runtime.MetricSchedulerRegistrar;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import net.javacrumbs.shedlock.core.LockProvider;
@@ -30,9 +31,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 
 @AutoConfiguration(after = ReflexTelemetryAutoConfiguration.class)
@@ -75,6 +81,30 @@ public class ReflexJdbcTelemetryAutoConfiguration {
         return new MetricSchedulerRegistrar(scheduledExecutorService);
     }
 
+    @Bean(name = "reflexTelemetryMetricWorkerExecutorService", destroyMethod = "shutdown")
+    @ConditionalOnMissingBean(name = "reflexTelemetryMetricWorkerExecutorService")
+    ExecutorService reflexTelemetryMetricWorkerExecutorService(ReflexTelemetryProperties properties) {
+        int poolSize = properties.getMetrics().getJdbc().getScheduler().getPoolSize();
+        if (poolSize < 1) {
+            throw new IllegalArgumentException("reflex.telemetry.metrics.jdbc.scheduler.pool-size must be at least 1");
+        }
+        return new ThreadPoolExecutor(
+                poolSize,
+                poolSize,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new SynchronousQueue<>(),
+                new ReflexTelemetryWorkerThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    MetricExecutionDispatcher metricExecutionDispatcher(
+            @Qualifier("reflexTelemetryMetricWorkerExecutorService") ExecutorService executorService) {
+        return new MetricExecutionDispatcher(executorService);
+    }
+
     @Bean
     @ConditionalOnMissingBean
     JdbcMetricRuntimeRegistrar jdbcMetricRuntimeRegistrar(
@@ -86,7 +116,8 @@ public class ReflexJdbcTelemetryAutoConfiguration {
             OtelMetricPublisher publisher,
             InternalTelemetryRecorder telemetryRecorder,
             SeriesLimiter seriesLimiter,
-            MetricSchedulerRegistrar schedulerRegistrar) {
+            MetricSchedulerRegistrar schedulerRegistrar,
+            MetricExecutionDispatcher dispatcher) {
         return new JdbcMetricRuntimeRegistrar(
                 sources,
                 beanFactory,
@@ -96,7 +127,22 @@ public class ReflexJdbcTelemetryAutoConfiguration {
                 publisher,
                 telemetryRecorder,
                 seriesLimiter,
-                schedulerRegistrar);
+                schedulerRegistrar,
+                dispatcher);
+    }
+
+    private static final class ReflexTelemetryWorkerThreadFactory implements ThreadFactory {
+
+        private final AtomicInteger threadNumber = new AtomicInteger();
+
+        @Override
+        public Thread newThread(Runnable runnable) {
+            Thread thread = new Thread(
+                    runnable,
+                    "reflex-telemetry-metrics-worker-" + threadNumber.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        }
     }
 
     private static final class ReflexTelemetryThreadFactory implements ThreadFactory {

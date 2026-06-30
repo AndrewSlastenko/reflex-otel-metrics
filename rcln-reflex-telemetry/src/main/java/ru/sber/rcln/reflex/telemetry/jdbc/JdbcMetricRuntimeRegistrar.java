@@ -6,6 +6,7 @@ import ru.sber.rcln.reflex.telemetry.config.ResolvedMetricConfig;
 import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
 import ru.sber.rcln.reflex.telemetry.locking.MetricLockManager;
 import ru.sber.rcln.reflex.telemetry.otel.OtelMetricPublisher;
+import ru.sber.rcln.reflex.telemetry.runtime.MetricExecutionDispatcher;
 import ru.sber.rcln.reflex.telemetry.runtime.MetricExecutionTask;
 import ru.sber.rcln.reflex.telemetry.runtime.MetricSchedulerRegistrar;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
@@ -28,6 +29,7 @@ public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
     private final InternalTelemetryRecorder telemetryRecorder;
     private final SeriesLimiter seriesLimiter;
     private final MetricSchedulerRegistrar schedulerRegistrar;
+    private final MetricExecutionDispatcher dispatcher;
 
     public JdbcMetricRuntimeRegistrar(
             @NonNull List<JdbcMetricSource> sources,
@@ -38,7 +40,8 @@ public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
             @NonNull OtelMetricPublisher publisher,
             @NonNull InternalTelemetryRecorder telemetryRecorder,
             @NonNull SeriesLimiter seriesLimiter,
-            @NonNull MetricSchedulerRegistrar schedulerRegistrar) {
+            @NonNull MetricSchedulerRegistrar schedulerRegistrar,
+            @NonNull MetricExecutionDispatcher dispatcher) {
         this.sources = List.copyOf(sources);
         this.beanFactory = beanFactory;
         this.configResolver = configResolver;
@@ -48,6 +51,7 @@ public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
         this.telemetryRecorder = telemetryRecorder;
         this.seriesLimiter = seriesLimiter;
         this.schedulerRegistrar = schedulerRegistrar;
+        this.dispatcher = dispatcher;
     }
 
     @Override
@@ -67,7 +71,7 @@ public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
                 telemetryRecorder,
                 seriesLimiter,
                 config);
-        schedulerRegistrar.register(config, task::runOnce);
+        schedulerRegistrar.register(config, () -> dispatcher.dispatch(config, task::runOnce));
     }
 
     private DataSource dataSource(ResolvedMetricConfig config) {

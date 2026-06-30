@@ -9,6 +9,7 @@ import ru.sber.rcln.reflex.telemetry.locking.LocalMetricLockManager;
 import ru.sber.rcln.reflex.telemetry.locking.MetricLockManager;
 import ru.sber.rcln.reflex.telemetry.locking.ShedLockMetricLockManager;
 import ru.sber.rcln.reflex.telemetry.otel.OtelMetricPublisher;
+import ru.sber.rcln.reflex.telemetry.runtime.MetricExecutionDispatcher;
 import ru.sber.rcln.reflex.telemetry.runtime.MetricSchedulerRegistrar;
 import net.javacrumbs.shedlock.core.LockProvider;
 import org.junit.jupiter.api.Test;
@@ -20,11 +21,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -56,7 +61,9 @@ class ReflexJdbcTelemetryAutoConfigurationTest {
                 .run(context -> {
                     assertThat(context).hasSingleBean(JdbcMetricCollectorFactory.class);
                     assertThat(context).hasSingleBean(MetricSchedulerRegistrar.class);
+                    assertThat(context).hasSingleBean(MetricExecutionDispatcher.class);
                     assertThat(context).hasSingleBean(JdbcMetricRuntimeRegistrar.class);
+                    assertThat(context).hasBean("reflexTelemetryMetricWorkerExecutorService");
                     assertThat(context).hasSingleBean(MetricLockManager.class);
                     assertThat(context.getBean(MetricLockManager.class)).isInstanceOf(LocalMetricLockManager.class);
 
@@ -66,6 +73,38 @@ class ReflexJdbcTelemetryAutoConfigurationTest {
                             eq(300000L),
                             eq(TimeUnit.MILLISECONDS));
                 });
+    }
+
+    @Test
+    void shouldUseConfiguredJdbcSchedulerPoolSizeForWorkerExecutor() {
+        contextRunner
+                .withPropertyValues("reflex.telemetry.metrics.jdbc.scheduler.pool-size=1")
+                .run(context -> {
+                    ExecutorService executor = context.getBean(
+                            "reflexTelemetryMetricWorkerExecutorService",
+                            ExecutorService.class);
+                    CountDownLatch firstStarted = new CountDownLatch(1);
+                    CountDownLatch releaseFirst = new CountDownLatch(1);
+
+                    executor.execute(() -> {
+                        firstStarted.countDown();
+                        await(releaseFirst);
+                    });
+                    assertThat(firstStarted.await(1, TimeUnit.SECONDS)).isTrue();
+
+                    assertThatThrownBy(() -> executor.execute(() -> { }))
+                            .isInstanceOf(RejectedExecutionException.class);
+
+                    releaseFirst.countDown();
+                });
+    }
+
+    @Test
+    void shouldFailWhenJdbcSchedulerPoolSizeIsInvalid() {
+        contextRunner
+                .withPropertyValues("reflex.telemetry.metrics.jdbc.scheduler.pool-size=0")
+                .run(context -> assertThat(context.getStartupFailure())
+                        .hasMessageContaining("reflex.telemetry.metrics.jdbc.scheduler.pool-size must be at least 1"));
     }
 
     @Test
@@ -213,6 +252,17 @@ class ReflexJdbcTelemetryAutoConfigurationTest {
                         "reflex.telemetry.metrics.definitions.documents-by-status.data-source-ref=businessReplicaDataSource",
                         "reflex.telemetry.metrics.definitions.documents-by-status.schedule.fixed-delay=PT5M",
                         "reflex.telemetry.metrics.definitions.documents-by-status.schedule.initial-delay=PT5S");
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(1, TimeUnit.SECONDS)) {
+                throw new AssertionError("Latch was not released");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(exception);
+        }
     }
 
     private static final class TestJdbcMetricSource implements JdbcMetricSource {
