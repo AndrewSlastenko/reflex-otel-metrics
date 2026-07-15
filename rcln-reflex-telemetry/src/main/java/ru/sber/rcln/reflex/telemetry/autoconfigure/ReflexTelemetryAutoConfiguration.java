@@ -6,6 +6,7 @@ import ru.sber.rcln.reflex.telemetry.config.MetricConfigValidator;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryNamingPolicy;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties.OtlpProtocol;
+import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
 import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricQuerySettings;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
@@ -110,7 +111,7 @@ public class ReflexTelemetryAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(InternalTelemetryRecorder.class)
     LoggingSupport loggingSupport() {
         return new LoggingSupport();
     }
@@ -252,20 +253,24 @@ public class ReflexTelemetryAutoConfiguration {
             ObjectProvider<OpenTelemetry> openTelemetryProvider,
             ReflexTelemetryProperties properties) {
         if (!properties.isEnabled() || !properties.getTraces().isEnabled()) {
+            log.debug("Reflex TraceOperations configured as no-op because tracing is disabled");
             return new NoopTraceOperations();
         }
 
         Tracer tracer = tracerProvider.getIfAvailable();
         if (tracer == null) {
+            log.warn("Reflex tracing is enabled but no Tracer bean is available; TraceOperations will be no-op");
             return new NoopTraceOperations();
         }
 
         OpenTelemetry openTelemetry = openTelemetryProvider.getIfAvailable();
         if (openTelemetry == null) {
+            log.debug("Reflex TraceOperations configured with Tracer and no context propagators");
             return new DefaultTraceOperations(tracer);
         }
 
         ContextPropagators propagators = openTelemetry.getPropagators();
+        log.debug("Reflex TraceOperations configured with Tracer and context propagators");
         return new DefaultTraceOperations(tracer, propagators != null ? propagators : ContextPropagators.noop());
     }
 

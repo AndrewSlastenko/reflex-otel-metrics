@@ -14,11 +14,15 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import javax.sql.DataSource;
 import lombok.NonNull;
 
 public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
+
+    private static final Logger log = LoggerFactory.getLogger(JdbcMetricRuntimeRegistrar.class);
 
     private final List<JdbcMetricSource> sources;
     private final BeanFactory beanFactory;
@@ -56,10 +60,17 @@ public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
 
     @Override
     public void afterSingletonsInstantiated() {
-        sources.forEach(this::register);
+        int enabled = 0;
+        for (JdbcMetricSource source : sources) {
+            if (register(source).enabled()) {
+                enabled++;
+            }
+        }
+        log.info("Reflex JDBC metric runtime initialized: sources={}, enabled={}, disabled={}, lockManager={}",
+                sources.size(), enabled, sources.size() - enabled, lockManager.getClass().getSimpleName());
     }
 
-    private void register(JdbcMetricSource source) {
+    private ResolvedMetricConfig register(JdbcMetricSource source) {
         ResolvedMetricConfig config = configResolver.resolve(source);
         DataSource dataSource = dataSource(config);
         JdbcMetricCollector collector = collectorFactory.create(dataSource, config);
@@ -72,6 +83,11 @@ public class JdbcMetricRuntimeRegistrar implements SmartInitializingSingleton {
                 seriesLimiter,
                 config);
         schedulerRegistrar.register(config, () -> dispatcher.dispatch(config, task::runOnce));
+        log.debug("Metric {} registered for JDBC collection: name={}, enabled={}, kind={}, dataSource={}, "
+                        + "schedule={}, timeout={}, maxSeries={}, overflowPolicy={}",
+                config.metricId(), config.exportedMetricName(), config.enabled(), config.metricKind(),
+                config.dataSourceRef(), config.schedule(), config.timeout(), config.maxSeries(), config.overflowPolicy());
+        return config;
     }
 
     private DataSource dataSource(ResolvedMetricConfig config) {

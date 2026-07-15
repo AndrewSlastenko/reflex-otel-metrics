@@ -4,7 +4,6 @@ import ru.sber.rcln.reflex.telemetry.api.JdbcMetricSource;
 import ru.sber.rcln.reflex.telemetry.config.MetricConfigResolver;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
-import ru.sber.rcln.reflex.telemetry.internal.NoopInternalTelemetryRecorder;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricCollectorFactory;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricRuntimeRegistrar;
 import ru.sber.rcln.reflex.telemetry.locking.LocalMetricLockManager;
@@ -29,6 +28,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +50,8 @@ import javax.sql.DataSource;
 @ConditionalOnProperty(prefix = "reflex.telemetry.metrics.jdbc", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ReflexJdbcTelemetryAutoConfiguration {
 
+    private static final Logger log = LoggerFactory.getLogger(ReflexJdbcTelemetryAutoConfiguration.class);
+
     @Bean
     @ConditionalOnMissingBean
     JdbcMetricCollectorFactory jdbcMetricCollectorFactory() {
@@ -59,12 +62,6 @@ public class ReflexJdbcTelemetryAutoConfiguration {
     @ConditionalOnMissingBean
     OtelMetricPublisher otelMetricPublisher(OtelInstrumentRegistry registry) {
         return new OtelMetricPublisher(registry);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    InternalTelemetryRecorder internalTelemetryRecorder() {
-        return new NoopInternalTelemetryRecorder();
     }
 
     @Bean(name = "reflexTelemetryMetricScheduledExecutorService", destroyMethod = "shutdown")
@@ -88,6 +85,7 @@ public class ReflexJdbcTelemetryAutoConfiguration {
         if (poolSize < 1) {
             throw new IllegalArgumentException("reflex.telemetry.metrics.jdbc.scheduler.pool-size must be at least 1");
         }
+        log.debug("Reflex JDBC metric worker pool configured: size={}", poolSize);
         return new ThreadPoolExecutor(
                 poolSize,
                 poolSize,
@@ -167,14 +165,17 @@ public class ReflexJdbcTelemetryAutoConfiguration {
                 ReflexTelemetryProperties properties) {
             String lockProviderRef = properties.getMetrics().getJdbc().getLockProviderRef();
             if (hasText(lockProviderRef)) {
+                log.info("Reflex JDBC metric locking configured with LockProvider bean '{}'", lockProviderRef);
                 return new ShedLockMetricLockManager(beanFactory.getBean(lockProviderRef, LockProvider.class));
             }
 
             List<LockProvider> available = lockProviders.stream().toList();
             if (available.isEmpty()) {
+                log.warn("No LockProvider bean is available; Reflex JDBC metrics will use JVM-local locking only");
                 return new LocalMetricLockManager();
             }
             if (available.size() == 1) {
+                log.info("Reflex JDBC metric locking configured with ShedLock");
                 return new ShedLockMetricLockManager(available.get(0));
             }
 
@@ -190,6 +191,7 @@ public class ReflexJdbcTelemetryAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         MetricLockManager metricLockManager() {
+            log.info("ShedLock is not available; Reflex JDBC metrics will use JVM-local locking");
             return new LocalMetricLockManager();
         }
     }

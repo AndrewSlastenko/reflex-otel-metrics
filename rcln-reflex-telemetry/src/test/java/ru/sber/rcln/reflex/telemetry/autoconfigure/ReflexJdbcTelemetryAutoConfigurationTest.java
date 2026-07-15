@@ -5,6 +5,8 @@ import ru.sber.rcln.reflex.telemetry.api.MetricPoint;
 import ru.sber.rcln.reflex.telemetry.api.QueryDefinition;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricCollectorFactory;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricRuntimeRegistrar;
+import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
+import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
 import ru.sber.rcln.reflex.telemetry.locking.LocalMetricLockManager;
 import ru.sber.rcln.reflex.telemetry.locking.MetricLockManager;
 import ru.sber.rcln.reflex.telemetry.locking.ShedLockMetricLockManager;
@@ -63,6 +65,7 @@ class ReflexJdbcTelemetryAutoConfigurationTest {
                     assertThat(context).hasSingleBean(MetricSchedulerRegistrar.class);
                     assertThat(context).hasSingleBean(MetricExecutionDispatcher.class);
                     assertThat(context).hasSingleBean(JdbcMetricRuntimeRegistrar.class);
+                    assertThat(context.getBean(InternalTelemetryRecorder.class)).isInstanceOf(LoggingSupport.class);
                     assertThat(context).hasBean("reflexTelemetryMetricWorkerExecutorService");
                     assertThat(context).hasSingleBean(MetricLockManager.class);
                     assertThat(context.getBean(MetricLockManager.class)).isInstanceOf(LocalMetricLockManager.class);
@@ -160,6 +163,18 @@ class ReflexJdbcTelemetryAutoConfigurationTest {
         contextRunner
                 .withBean(MetricLockManager.class, () -> lockManager)
                 .run(context -> assertThat(context.getBean(MetricLockManager.class)).isSameAs(lockManager));
+    }
+
+    @Test
+    void shouldBackOffWhenInternalTelemetryRecorderIsProvidedByApplication() {
+        InternalTelemetryRecorder recorder = mock(InternalTelemetryRecorder.class);
+
+        contextRunner
+                .withBean(InternalTelemetryRecorder.class, () -> recorder)
+                .run(context -> {
+                    assertThat(context.getBean(InternalTelemetryRecorder.class)).isSameAs(recorder);
+                    assertThat(context).doesNotHaveBean(LoggingSupport.class);
+                });
     }
 
     @Test

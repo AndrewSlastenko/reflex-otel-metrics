@@ -11,6 +11,8 @@ import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class OtelInstrumentRegistry {
+
+    private static final Logger log = LoggerFactory.getLogger(OtelInstrumentRegistry.class);
 
     private final @NonNull Meter meter;
     private final @NonNull GaugeSeriesStore gaugeSeriesStore;
@@ -81,12 +85,14 @@ public class OtelInstrumentRegistry {
                 return existing;
             }
 
-            return switch (kind) {
+            RegisteredInstrument registered = switch (kind) {
                 case COUNTER -> registerCounter(name, description, unit);
                 case GAUGE -> registerGauge(name, description, unit);
                 case UP_DOWN_COUNTER -> registerUpDownCounter(name, description, unit);
                 case HISTOGRAM -> registerHistogram(name, description, unit);
             };
+            log.debug("Registered OpenTelemetry metric instrument: name={}, kind={}, unit={}", name, kind, unit);
+            return registered;
         });
     }
 

@@ -14,8 +14,12 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import java.util.function.Supplier;
 import lombok.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReflexMetricFactory {
+
+    private static final Logger log = LoggerFactory.getLogger(ReflexMetricFactory.class);
 
     private final MetricConfigResolver configResolver;
     private final Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier;
@@ -39,6 +43,7 @@ public class ReflexMetricFactory {
 
     public CounterMetric counter(String metricId) {
         ResolvedMetricConfig config = configResolver.resolveManual(metricId, MetricKind.COUNTER);
+        logResolvedMetric(config);
         if (!config.enabled()) {
             return (value, attributes) -> {
             };
@@ -54,6 +59,7 @@ public class ReflexMetricFactory {
 
     public GaugeMetric gauge(String metricId) {
         ResolvedMetricConfig config = configResolver.resolveManual(metricId, MetricKind.GAUGE);
+        logResolvedMetric(config);
         if (!config.enabled()) {
             return (value, attributes) -> {
             };
@@ -69,6 +75,7 @@ public class ReflexMetricFactory {
 
     public UpDownCounterMetric upDownCounter(String metricId) {
         ResolvedMetricConfig config = configResolver.resolveManual(metricId, MetricKind.UP_DOWN_COUNTER);
+        logResolvedMetric(config);
         if (!config.enabled()) {
             return (value, attributes) -> {
             };
@@ -84,6 +91,7 @@ public class ReflexMetricFactory {
 
     public HistogramMetric histogram(String metricId) {
         ResolvedMetricConfig config = configResolver.resolveManual(metricId, MetricKind.HISTOGRAM);
+        logResolvedMetric(config);
         if (!config.enabled()) {
             return (value, attributes) -> {
             };
@@ -105,6 +113,12 @@ public class ReflexMetricFactory {
                             + "Enable reflex.telemetry.metrics.enabled or provide an OtelInstrumentRegistry bean.");
         }
         return instrumentRegistry;
+    }
+
+    private static void logResolvedMetric(ResolvedMetricConfig config) {
+        log.debug("Metric {} manual handle resolved: name={}, enabled={}, kind={}, maxSeries={}, overflowPolicy={}",
+                config.metricId(), config.exportedMetricName(), config.enabled(), config.metricKind(),
+                config.maxSeries(), config.overflowPolicy());
     }
 
     private static Supplier<OtelInstrumentRegistry> instrumentRegistrySupplier(
