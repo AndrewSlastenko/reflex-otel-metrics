@@ -74,7 +74,7 @@ class MetricExecutionTaskTest {
     }
 
     @Test
-    void shouldRecordFailureWithoutThrowing() {
+    void shouldClearGaugeAndRecordFailureWithoutThrowing() {
         MetricExecutionCoordinator coordinator = mock(MetricExecutionCoordinator.class);
         ru.sber.rcln.reflex.telemetry.locking.MetricLockManager lockManager = mock(ru.sber.rcln.reflex.telemetry.locking.MetricLockManager.class);
         OtelMetricPublisher publisher = mock(OtelMetricPublisher.class);
@@ -87,37 +87,20 @@ class MetricExecutionTaskTest {
             return true;
         });
 
+        ResolvedMetricConfig config = gaugeConfig();
         MetricExecutionTask task = new MetricExecutionTask(
                 coordinator,
                 lockManager,
                 publisher,
                 telemetryRecorder,
                 seriesLimiter,
-                new ResolvedMetricConfig(
-                        "documents-by-status",
-                        ReflexTelemetryProperties.MetricSourceType.JDBC,
-                        true,
-                        "ci054147.documents.current",
-                        "documents.current",
-                        "business",
-                        "Documents current",
-                        "1",
-                        AttributesSchema.empty(),
-                        "businessReplicaDataSource",
-                        ru.sber.rcln.reflex.telemetry.api.MetricKind.UP_DOWN_COUNTER,
-                        MetricScheduleSettings.fixedDelay(Duration.ofMinutes(5), Duration.ofSeconds(5)),
-                        Duration.ofSeconds(30),
-                        Duration.ofMinutes(10),
-                        Duration.ZERO,
-                        500,
-                        SeriesOverflowPolicy.AGGREGATE_TO_OTHER,
-                        List.of()
-                )
+                config
         );
 
         MetricRunOutcome outcome = task.runOnce();
 
         assertThat(outcome).isEqualTo(MetricRunOutcome.FAILED);
+        verify(publisher).clear(config);
         verify(telemetryRecorder).recordFailure(any(), any());
     }
 

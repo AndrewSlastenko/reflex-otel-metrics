@@ -74,6 +74,11 @@ public class MetricExecutionTask {
                     config.metricId(), elapsedMillis(executionStartedAt));
             return MetricRunOutcome.SUCCESS;
         } catch (Exception exception) {
+            try {
+                publisher.clear(config);
+            } catch (Exception clearException) {
+                exception.addSuppressed(clearException);
+            }
             log.debug("Metric {} JDBC execution failed: durationMs={}",
                     config.metricId(), elapsedMillis(executionStartedAt), exception);
             telemetryRecorder.recordFailure(config, exception);
