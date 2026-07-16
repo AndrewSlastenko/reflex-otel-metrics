@@ -43,12 +43,12 @@ class MetricSchedulerRegistrarTest {
         registrar.register(cronConfig(), runnable);
 
         var captor = org.mockito.ArgumentCaptor.forClass(Runnable.class);
-        verify(executor).schedule(captor.capture(), anyLong(), eq(TimeUnit.MILLISECONDS));
+        verify(executor).schedule(captor.capture(), anyLong(), eq(TimeUnit.NANOSECONDS));
 
         captor.getValue().run();
 
         verify(runnable).run();
-        verify(executor, times(2)).schedule(any(Runnable.class), anyLong(), eq(TimeUnit.MILLISECONDS));
+        verify(executor, times(2)).schedule(any(Runnable.class), anyLong(), eq(TimeUnit.NANOSECONDS));
         verify(executor, never()).scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class));
     }
 

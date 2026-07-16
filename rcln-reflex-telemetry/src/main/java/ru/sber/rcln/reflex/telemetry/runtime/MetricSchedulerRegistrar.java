@@ -56,8 +56,8 @@ public class MetricSchedulerRegistrar {
                         scheduleCronRun(cronExpression, runnable, nextDelay(cronExpression));
                     }
                 },
-                Math.max(0L, delay.toMillis()),
-                TimeUnit.MILLISECONDS
+                Math.max(0L, delay.toNanos()),
+                TimeUnit.NANOSECONDS
         );
     }
 
