@@ -67,6 +67,7 @@ public class ReflexTelemetryProperties {
         private String endpoint;
         private Duration exportInterval = Duration.ofMinutes(1);
         private MetricsTemporalityPreference temporalityPreference = MetricsTemporalityPreference.DELTA;
+        private PayloadLoggingProperties payloadLogging = new PayloadLoggingProperties();
         private JdbcProperties jdbc = new JdbcProperties();
         private Map<String, ScopeProperties> scopes = new LinkedHashMap<>();
         @Setter(AccessLevel.NONE)
@@ -76,6 +77,10 @@ public class ReflexTelemetryProperties {
             this.jdbc = jdbc != null ? jdbc : new JdbcProperties();
         }
 
+        public void setPayloadLogging(PayloadLoggingProperties payloadLogging) {
+            this.payloadLogging = payloadLogging != null ? payloadLogging : new PayloadLoggingProperties();
+        }
+
         public void setScopes(Map<String, ScopeProperties> scopes) {
             this.scopes = scopes != null ? scopes : new LinkedHashMap<>();
         }
@@ -83,6 +88,17 @@ public class ReflexTelemetryProperties {
         public void setDefinitions(Map<String, MetricDefinitionProperties> definitions) {
             this.definitions = definitions != null ? definitions : new LinkedHashMap<>();
         }
+    }
+
+    @Getter
+    @Setter
+    public static class PayloadLoggingProperties {
+
+        /**
+         * Log each exported metric snapshot as OTLP JSON before the delivery exporter sends it.
+         * The payload can contain metric values and attributes, so enable this only for diagnostics.
+         */
+        private boolean enabled;
     }
 
     @Getter

@@ -156,6 +156,7 @@ reflex:
 | `metrics.endpoint` | empty | Endpoint только для метрик |
 | `metrics.export-interval` | `1m` | Период OTLP export |
 | `metrics.temporality-preference` | `DELTA` | Temporality selector для OTLP-метрик |
+| `metrics.payload-logging.enabled` | `false` | Диагностический вывод экспортируемых метрик в OTLP JSON |
 | `metrics.jdbc.enabled` | `true` | Выключатель JDBC polling runtime |
 | `metrics.jdbc.scheduler.pool-size` | `2` | Максимум параллельных запусков JDBC-метрик на JVM. Очередь worker-ов равна `0`; один `metricId` всё равно защищён от локального overlap. |
 | `metrics.jdbc.lock-provider-ref` | empty | Имя `LockProvider` bean-а для JDBC polling, если в контексте несколько ShedLock providers |
@@ -279,6 +280,20 @@ logging:
 ```
 
 В `DEBUG` доступны регистрация JDBC-источников и manual-инструментов, параметры worker pool, этапы JDBC-запуска, получение lock-а, количество собранных и опубликованных серий, длительность этапов, причины skip и полные stack trace ошибок. SQL, значения атрибутов и отдельные metric points не логируются.
+
+Чтобы сравнить содержимое OTLP-запросов двух приложений без доступа к collector-у, временно включите логирование payload:
+
+```yaml
+reflex:
+  telemetry:
+    metrics:
+      payload-logging:
+        enabled: true
+```
+
+Перед каждой отправкой starter пишет тот же snapshot метрик в OTLP JSON, а затем передаёт его настроенному `MetricExporter`. Одна строка содержит один `ResourceMetrics` с resource attributes, scope, именами и типами метрик, data points, attributes, temporality и timestamps. HTTP-заголовки и бинарное Protobuf-представление в этот лог не входят.
+
+Payload пишется на уровне `INFO` логгером `io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingMetricExporter`. Attributes могут содержать прикладные данные. Включайте настройку только на время диагностики и выключайте после сравнения. Ошибка диагностического логирования не блокирует OTLP export.
 
 ## Temporality метрик
 

@@ -8,6 +8,7 @@ import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties.OtlpProtocol;
 import ru.sber.rcln.reflex.telemetry.internal.InternalTelemetryRecorder;
 import ru.sber.rcln.reflex.telemetry.internal.LoggingSupport;
+import ru.sber.rcln.reflex.telemetry.internal.PayloadLoggingMetricExporter;
 import ru.sber.rcln.reflex.telemetry.jdbc.JdbcMetricQuerySettings;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
@@ -25,6 +26,7 @@ import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingMetricExporter;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -181,10 +183,19 @@ public class ReflexTelemetryAutoConfiguration {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder();
         applyServiceNameResource(builder, properties, namingPolicy);
         registerHistogramViews(builder, properties, namingPolicy);
-        return builder.registerMetricReader(PeriodicMetricReader.builder(exporter)
+        return builder.registerMetricReader(PeriodicMetricReader.builder(payloadLoggingExporter(exporter, properties))
                 .setInterval(properties.getMetrics().getExportInterval())
                 .build())
                 .build();
+    }
+
+    static MetricExporter payloadLoggingExporter(MetricExporter exporter, ReflexTelemetryProperties properties) {
+        if (!properties.getMetrics().getPayloadLogging().isEnabled()) {
+            return exporter;
+        }
+        log.warn("Reflex telemetry OTLP metrics payload logging is enabled; metric values and attributes "
+                + "will be written to application logs");
+        return new PayloadLoggingMetricExporter(exporter, OtlpJsonLoggingMetricExporter.create());
     }
 
     @Bean

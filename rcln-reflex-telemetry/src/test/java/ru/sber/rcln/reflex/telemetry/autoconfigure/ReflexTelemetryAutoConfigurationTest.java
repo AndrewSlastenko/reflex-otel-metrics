@@ -14,6 +14,7 @@ import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties;
 import ru.sber.rcln.reflex.telemetry.config.ReflexTelemetryProperties.OtlpProtocol;
 import ru.sber.rcln.reflex.telemetry.manual.AttributeValidator;
 import ru.sber.rcln.reflex.telemetry.manual.ReflexMetricFactory;
+import ru.sber.rcln.reflex.telemetry.internal.PayloadLoggingMetricExporter;
 import ru.sber.rcln.reflex.telemetry.otel.OtelInstrumentRegistry;
 import ru.sber.rcln.reflex.telemetry.runtime.SeriesLimiter;
 import ru.sber.rcln.reflex.telemetry.tracing.NoopTraceOperations;
@@ -31,6 +32,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import org.junit.jupiter.api.Test;
@@ -167,6 +169,36 @@ class ReflexTelemetryAutoConfigurationTest {
                 .run(context -> assertThat(context.getBean(OtlpHttpMetricExporter.class)
                         .getAggregationTemporality(InstrumentType.HISTOGRAM))
                         .isEqualTo(AggregationTemporality.CUMULATIVE));
+    }
+
+    @Test
+    void shouldKeepMetricPayloadLoggingDisabledByDefault() {
+        contextRunner.run(context -> assertThat(context.getBean(ReflexTelemetryProperties.class)
+                .getMetrics()
+                .getPayloadLogging()
+                .isEnabled()).isFalse());
+    }
+
+    @Test
+    void shouldBindMetricPayloadLoggingFlag() {
+        contextRunner
+                .withPropertyValues(
+                        "reflex.telemetry.metrics.enabled=false",
+                        "reflex.telemetry.metrics.payload-logging.enabled=true")
+                .run(context -> assertThat(context.getBean(ReflexTelemetryProperties.class)
+                        .getMetrics()
+                        .getPayloadLogging()
+                        .isEnabled()).isTrue());
+    }
+
+    @Test
+    void shouldWrapMetricExporterWhenPayloadLoggingIsEnabled() {
+        MetricExporter delegate = mock(MetricExporter.class);
+        ReflexTelemetryProperties properties = new ReflexTelemetryProperties();
+        properties.getMetrics().getPayloadLogging().setEnabled(true);
+
+        assertThat(ReflexTelemetryAutoConfiguration.payloadLoggingExporter(delegate, properties))
+                .isInstanceOf(PayloadLoggingMetricExporter.class);
     }
 
     @Test
